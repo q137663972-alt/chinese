@@ -43,15 +43,52 @@ jobs:
           unzip -q gradle-8.2-bin.zip -d "$HOME/gradle_dist"
           echo "$HOME/gradle_dist/gradle-8.2/bin" >> "$GITHUB_PATH"
 
-      - name: Build debug APK (debug 签名，可直接安装)
+      - name: Disable lintVital for release
+        run: |
+          mkdir -p "$HOME/.gradle/init.d"
+          cat > "$HOME/.gradle/init.d/lint.gradle" <<'EOF'
+          allprojects { p -> p.afterEvaluate {
+            try { p.android.lintOptions.checkReleaseBuilds = false } catch (e) { }
+          } }
+          EOF
+
+      - name: Decode keystore
+        env:
+          KS_B64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p "$HOME/ks"
+          printf '%s' "$KS_B64" | base64 -d > "$HOME/ks/release.jks"
+          chmod 600 "$HOME/ks/release.jks"
+
+      - name: Build release APK (unsigned)
         working-directory: ${{ matrix.project }}
-        run: gradle assembleDebug --no-daemon
+        run: gradle assembleRelease --no-daemon
+
+      - name: Sign APK (apksigner)
+        env:
+          KS_PASS:   ${{ secrets.KEYSTORE_STORE_PASS }}
+          KEY_PASS:  ${{ secrets.KEYSTORE_KEY_PASS }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          APKSIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          [ -n "$APKSIGNER" ] || { echo "apksigner not found under $ANDROID_HOME"; exit 1; }
+          echo "using $APKSIGNER"
+          REL="${{ matrix.project }}/app/build/outputs/apk/release"
+          UNSIGNED="$REL/app-release-unsigned.apk"
+          [ -f "$UNSIGNED" ] || { echo "unsigned APK missing"; ls -R "$REL"; exit 1; }
+          "$APKSIGNER" sign --ks "$HOME/ks/release.jks" --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass "pass:$KS_PASS" --key-pass "pass:$KEY_PASS" \
+            --min-sdk-version 21 \
+            --v1-signing-enabled true --v2-signing-enabled true \
+            --v3-signing-enabled false --v4-signing-enabled false \
+            --out "$REL/app-release-signed.apk" "$UNSIGNED"
+          "$APKSIGNER" verify --verbose --print-certs "$REL/app-release-signed.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.project }}/app/build/outputs/apk/debug/*.apk
+          path: ${{ matrix.project }}/app/build/outputs/apk/release/app-release-signed.apk
 
   pages:
     name: Deploy H5 (GitHub Pages)

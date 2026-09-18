@@ -5,3 +5,11 @@ build/
 local.properties
 .idea/
 *.iml
+
+# 签名钥匙 —— 绝不入库
+*.jks
+*.keystore
+keystore.properties
+
+# 内容包（由 tools/gen-content.mjs 在 CI 里生成，不入库）
+content/
