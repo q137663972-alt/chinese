@@ -38,6 +38,34 @@ function optsOf(u, correct, n, homo){
   if(r.length < n && homo) r = zDistractorsAll(u, correct, n, null);
   return r;
 }
+/* 看图类题目专用干扰项（看图识字 / 挑战·看图选字）
+   题干显示的是 PICS[正确字] 这张图，选项是汉字文本。
+   只要选项里存在「与正确答案共用同一张图」的字，孩子眼里就是两个都对的答案 —— 题无解。
+   历史 bug：一上·天地自然 天=日、人=你=我=他 四字共用一张图。
+   这里强制把同图的字排除掉；同单元不够就向同年级其它单元借（借来的同样过同图过滤）。 */
+function picDistractors(u, correct, n){
+  var P = window.PICS || {};
+  var svg = P[correct.z] || null;
+  function usable(list){
+    return (list || []).filter(function(w){
+      if(!w || w.z === correct.z) return false;
+      if(svg && P[w.z] === svg) return false;   /* 同图 = 看起来和正确答案一模一样，必须排除 */
+      return true;
+    });
+  }
+  var pick = shuffle(usable(u.w)).slice(0, n - 1);
+  if(pick.length < n - 1){
+    var all = [];
+    (DATA && DATA.grades && DATA.grades[state.gi] ? DATA.grades[state.gi].books : []).forEach(function(b){
+      (b.u || []).forEach(function(un){ all = all.concat(un.w || []); });
+    });
+    var more = shuffle(usable(all)).filter(function(w){
+      return !pick.some(function(x){ return x.z === w.z; });
+    });
+    pick = pick.concat(more.slice(0, n - 1 - pick.length));
+  }
+  return shuffle([correct].concat(pick));
+}
 /* 本单元里是否存在与 w 同音（不论声调）的其它字 */
 function hasHomophone(u, w){
   var s = stripTone(w.p);
@@ -119,7 +147,7 @@ function startPicture(){
   var rounds = buildRounds(u, 8); var cur = 0, correct = 0, locked = false;
   function renderRound(){
     locked = false;
-    var r = rounds[cur]; var opts = optsOf(u, r.correct, 4);
+    var r = rounds[cur]; var opts = picDistractors(u, r.correct, 4);
     bindReplay(r.correct.z);
     gameShell(
       head(cur + 1, rounds.length, true) +
@@ -857,7 +885,7 @@ function startChallenge(){
       return { tip: "哪条成语是这个意思？", big: '<div class="idiom-meaning">' + esc(it.m) + '</div>',
         opts: optsD.map(function(o){ return { label: o, ok: o === it.w }; }), say: it.w, small: true };
     }
-    var optsE = optsOf(u, w, 4);
+    var optsE = picDistractors(u, w, 4);
     return { tip: "看图选字", big: '<div class="big-pic">' + picHTML(w.z) + '</div>',
       opts: optsE.map(function(o){ return { label: o.z, ok: o.z === w.z }; }), say: w.z };
   }
