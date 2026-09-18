@@ -53,18 +53,6 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.project }}/app/build/outputs/apk/debug/*.apk
 
-  # 一次性清理：删除临时 Release 与 tag；本次执行后下一次提交会移除此 job
-  cleanup:
-    name: Delete temp release
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: Delete release apk-latest
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete apk-latest --yes --cleanup-tag --repo "${{ github.repository }}"
-
   pages:
     name: Deploy H5 (GitHub Pages)
     needs: build
