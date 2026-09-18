@@ -57,6 +57,10 @@ body{
 .progress-pill{background:#fff;box-shadow:var(--shadow);border-radius:999px;padding:6px 14px;font-weight:700;font-size:14px}
 .replay{width:46px;height:46px;border:none;border-radius:50%;background:#fff;box-shadow:var(--shadow);font-size:22px;cursor:pointer;flex:0 0 auto}
 .big-emoji{font-size:96px;text-align:center;margin:6px 0 4px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.08))}
+/* 手绘 SVG 看图素材：替换原 emoji 大图 */
+.big-pic{display:flex;justify-content:center;align-items:center;width:140px;height:140px;margin:6px auto 4px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.08))}
+.big-pic svg{width:100%;height:100%;display:block}
+.big-pic--char{font-size:88px;font-weight:800;font-family:"KaiTi","STKaiti","楷体",serif;color:var(--ink,#37474f)}
 .big-word{text-align:center;font-size:34px;font-weight:800;letter-spacing:1px;margin:6px 0}
 .prompt{text-align:center;color:var(--sub);font-size:15px;margin-bottom:12px}
 .options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -180,6 +184,7 @@ input[type=range]{width:150px}
   .opt .opt-zh { font-size: 18px; }
   .btn { font-size: 24px; padding: 22px; border-radius: 22px; }
   .big-emoji { font-size: 140px; }
+  .big-pic { width: 160px; height: 160px; }
   .big-word { font-size: 52px; }
   .prompt { font-size: 22px; }
   .replay { width: 60px; height: 60px; font-size: 28px; }
@@ -235,6 +240,7 @@ body.tv .switch:focus { box-shadow: 0 0 0 7px #ffd400, 0 0 22px 6px rgba(255,212
 body.tv .grade-card .g-emoji { font-size: 80px; }
 body.tv .mode-card .m-icon { font-size: 64px; }
 body.tv .big-emoji { font-size: 170px; }
+body.tv .big-pic { width: 200px; height: 200px; }
 
 /* ===================== 语文乐园专用样式 ===================== */
 .game-head .spacer{width:46px;flex:0 0 auto}

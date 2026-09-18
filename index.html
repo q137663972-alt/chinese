@@ -15,6 +15,13 @@
     <div class="set-row"><label>🔊 中文朗读</label><div id="ttsSwitch" class="switch on"></div></div>
     <div class="set-row"><label>语速</label><input id="rateRange" type="range" min="0.5" max="1.2" step="0.05" value="0.85"></div>
     <div class="set-row"><label>试听</label><button class="btn ghost" style="width:auto;padding:8px 16px" onclick="speak('欢迎来到语文乐园，我们一起快乐学习汉字')">🔊 播放</button></div>
+    <div class="set-row"><label>进度备份</label>
+      <div>
+        <button class="btn ghost" style="width:auto;padding:8px 12px" onclick="exportProgress()">💾 导出</button>
+        <button class="btn ghost" style="width:auto;padding:8px 12px" onclick="importProgress()">📥 恢复</button>
+      </div>
+    </div>
+    <textarea id="backupBox" class="hidden" rows="3" style="width:100%;font-size:12px;margin-top:6px"></textarea>
     <button class="btn pink" style="margin-top:8px" onclick="closeSettings()">完成</button>
   </div>
 </div>
@@ -22,6 +29,9 @@
 <div id="toast" class="toast"></div>
 
 <!-- 生字数据：1-6 年级（每年级一个文件，含拼音/笔画数/组词） -->
+<!-- 内容包热更新：加载器必须先于数据文件加载 -->
+<script>window.CP_BASE="https://q137663972-alt.github.io/chinese/content/";</script>
+<script src="js/cp.js"></script>
 <script src="js/data-c1.js"></script>
 <script src="js/data-c2.js"></script>
 <script src="js/data-c3.js"></script>

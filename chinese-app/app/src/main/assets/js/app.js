@@ -1,6 +1,20 @@
 /* ===================== 数据装配 ===================== */
-var GRADES = (window.GRADES || []).slice().sort(function(a, b){ return a.g - b.g; });
+/* 兜底快照：必须在 var GRADES 之前取 —— 下一行会把 window.GRADES 覆盖成空数组 */
+var __G0 = (window.GRADES || []).slice();
+var GRADES = [];
 var DATA = { grades: GRADES };
+/* 内容包热更新：远程分片注入后调 setGrades() 重建。
+   只原地增删 GRADES，数组引用保持不变，DATA.grades 自动同步。 */
+function setGrades(){
+  var src = (window.CP && window.CP.list) ? window.CP.list() : __G0;
+  GRADES.length = 0;
+  Array.prototype.push.apply(GRADES,
+    src.slice().sort(function(a, b){ return a.g - b.g; }));
+  if (typeof state !== "undefined" && state && state.gi >= GRADES.length){
+    state.gi = 0; state.view = "grades";
+  }
+}
+setGrades();
 
 /* ===================== 状态 & 进度 ===================== */
 var MODES = [
@@ -26,6 +40,35 @@ var progress = JSON.parse(localStorage.getItem("cn_progress") || '{}');
 
 function saveSettings(){ localStorage.setItem("cn_settings", JSON.stringify(settings)); }
 function saveProgress(){ localStorage.setItem("cn_progress", JSON.stringify(progress)); }
+/* 进度备份 / 恢复 —— 换签名、换手机、重装都能救回星星 */
+function progressJSON(){
+  return JSON.stringify({ v:1, app:"cn", ts:Date.now(), settings:settings, progress:progress });
+}
+function exportProgress(){
+  var box = document.getElementById("backupBox");
+  box.value = progressJSON();
+  box.classList.remove("hidden");
+  box.focus(); box.select();
+  try { box.setSelectionRange(0, 999999); } catch(e){}
+  var ok = false;
+  try { ok = document.execCommand("copy"); } catch(e){}
+  toast(ok ? "已复制 " + totalStars() + " 颗星的记录，粘贴到备忘录/微信收藏" : "请长按全选框内文本复制");
+}
+function importProgress(){
+  var box = document.getElementById("backupBox");
+  box.classList.remove("hidden");
+  var txt = (box.value || "").trim();
+  if (!txt){ toast("先把备份内容粘进框里，再点恢复"); return; }
+  var d;
+  try { d = JSON.parse(txt); } catch(e){ toast("格式不对，不是有效的备份"); return; }
+  if (!d || !d.progress){ toast("备份里没有进度数据"); return; }
+  var n = 0;
+  for (var k in d.progress){ if (Object.prototype.hasOwnProperty.call(d.progress, k)){ progress[k] = d.progress[k]; n++; } }
+  saveProgress();
+  if (d.settings){ settings = d.settings; saveSettings(); }
+  toast("已恢复 " + n + " 个单元，共 " + totalStars() + " 颗星");
+  if (typeof render === "function") render();
+}
 function uKey(gi, bi, ui){ return gi + "-" + bi + "-" + ui; }
 function getStars(gi, bi, ui){ return progress[uKey(gi, bi, ui)] || 0; }
 function setStars(gi, bi, ui, n){
@@ -203,7 +246,7 @@ function startGame(mode){
 }
 
 /* ===================== 设置 & 导航 ===================== */
-function openSettings(){ $("#settingsModal").classList.remove("hidden"); syncSettings(); }
+function openSettings(){ $("#settingsModal").classList.remove("hidden"); var b = document.getElementById("backupBox"); if (b) b.classList.add("hidden"); syncSettings(); }
 function closeSettings(){ $("#settingsModal").classList.add("hidden"); }
 function syncSettings(){
   $("#ttsSwitch").classList.toggle("on", settings.tts);

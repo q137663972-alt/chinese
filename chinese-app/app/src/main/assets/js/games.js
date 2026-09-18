@@ -65,6 +65,15 @@ function head( Cur, total, replay ){
   return '<div class="game-head"><div class="progress-pill">' + Cur + '/' + total + '</div>' +
     (replay ? '<button class="replay" onclick="replayCurrent()">🔊</button>' : '<div class="spacer"></div>') + '</div>';
 }
+
+// 看图素材：优先用「手绘 SVG 图库」window.PICS[z]，PICS 已覆盖全部 567 个唯一字；
+// 极端情况下缺失时回退为纯大字卡（防御用，正常不会触发）
+function picHTML(z){
+  var svg = window.PICS && window.PICS[z];
+  if(svg) return '<div class="big-pic">' + svg + '</div>';
+  return '<div class="big-pic big-pic--char">' + z + '</div>';
+}
+
 function optZi(list, fn){
   return '<div class="options">' + list.map(function(o, i){
     return '<div class="opt opt-zi" onclick="' + fn + '(' + i + ')">' + esc(o.z || o) + '</div>';
@@ -114,7 +123,7 @@ function startPicture(){
     bindReplay(r.correct.z);
     gameShell(
       head(cur + 1, rounds.length, true) +
-      '<div class="big-emoji">' + r.correct.k + '</div>' +
+      '<div class="big-pic">' + picHTML(r.correct.z) + '</div>' +
       '<div class="prompt">看图，选出对应的字</div>' +
       optZi(opts, "answerPicture") +
       '<div class="feedback" id="fb"></div>', "看图识字");
@@ -261,7 +270,7 @@ function startWordFill(){
     bindReplay(ci);
     gameShell(
       head(cur + 1, list.length, true) +
-      '<div class="big-emoji">' + r.z.k + '</div>' +
+      '<div class="big-pic">' + picHTML(r.z.z) + '</div>' +
       '<div class="big-word zi-gap">' + esc(shown) + '</div>' +
       '<div class="prompt">把词语补完整（' + esc(r.z.z) + " · " + esc(r.z.p) + '）</div>' +
       '<div class="options">' + opts.map(function(o, i){
@@ -702,7 +711,7 @@ function startRead(){
     bindReplay(w.z + "，" + w.w[0]);
     gameShell(
       head(cur + 1, list.length, true) +
-      '<div class="big-emoji">' + w.k + '</div>' +
+      '<div class="big-pic">' + picHTML(w.z) + '</div>' +
       '<div class="big-word zi-huge">' + esc(w.z) + '</div>' +
       '<div class="pinyin-sub">' + esc(w.p) + ' · ' + esc(w.w.join("/")) + '</div>' +
       '<div class="prompt">先听示范，再大声读出来</div>' +
@@ -849,7 +858,7 @@ function startChallenge(){
         opts: optsD.map(function(o){ return { label: o, ok: o === it.w }; }), say: it.w, small: true };
     }
     var optsE = optsOf(u, w, 4);
-    return { tip: "看图选字", big: '<div class="big-emoji">' + w.k + '</div>',
+    return { tip: "看图选字", big: '<div class="big-pic">' + picHTML(w.z) + '</div>',
       opts: optsE.map(function(o){ return { label: o.z, ok: o.z === w.z }; }), say: w.z };
   }
   function draw(){
