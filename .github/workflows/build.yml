@@ -53,36 +53,17 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.project }}/app/build/outputs/apk/debug/*.apk
 
-  # ⚠️ 临时下载入口：你确认下载完成后，删除本 job，并到 Releases 撤销 apk-latest
-  release:
-    name: Publish temp download
-    needs: build
+  # 一次性清理：删除临时 Release 与 tag；本次执行后下一次提交会移除此 job
+  cleanup:
+    name: Delete temp release
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
-      - name: Download TV apk
-        uses: actions/download-artifact@v4
-        with:
-          name: ChinesePlaygroundTV-apk
-          path: out/tv
-      - name: Download Phone apk
-        uses: actions/download-artifact@v4
-        with:
-          name: ChinesePlaygroundPhone-apk
-          path: out/phone
-      - name: Rename apks
-        run: |
-          mkdir -p rel
-          mv out/tv/*.apk    "rel/ChinesePlayground-TV.apk"
-          mv out/phone/*.apk "rel/ChinesePlayground-Phone.apk"
-      - name: Publish to release apk-latest
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: apk-latest
-          name: "APK 临时下载（确认后删除）"
-          files: rel/*.apk
-          overwrite_files: true
+      - name: Delete release apk-latest
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete apk-latest --yes --cleanup-tag --repo "${{ github.repository }}"
 
   pages:
     name: Deploy H5 (GitHub Pages)
