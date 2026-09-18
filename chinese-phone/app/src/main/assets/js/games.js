@@ -38,6 +38,95 @@ function optsOf(u, correct, n, homo){
   if(r.length < n && homo) r = zDistractorsAll(u, correct, n, null);
   return r;
 }
+/* ═══ 易混字组 ═══
+   看图识字题干是图、选项是字。两个意思相近的字摆在同一道题里，
+   图做得再像孩子也分不清（典型：你/我/他/人、天/日）。
+   规则：同组字永不同时出现在一道看图题里；且作为「正确答案」时降频。 */
+var CONFUSE_GROUPS = [
+  ["你","我","他","人"],
+  ["天","日"], ["月","星"], ["云","雾"],
+  ["风","雨"], ["雷","电"], ["木","禾"], ["石","岩"],
+  ["口","舌"], ["耳","目"], ["手","足"], ["头","背"],
+  ["鸡","鸭"], ["牛","羊"], ["猫","虎"], ["马","鹿"],
+  ["上","下"],
+  ["爸","爷","哥"], ["妈","奶","姐"], ["弟","妹"], ["家","房"],
+  ["书","本"], ["笔","纸"], ["读","写"], ["学","课"],
+  ["春","夏","秋","冬"], ["花","草"], ["树","叶"], ["雪","冰"], ["热","冷"], ["霜","露"], ["霞","虹"], ["晨","昏"], ["晴","阴"], ["暗","影"],
+  ["江","河","湖","海","波","浪"], ["泉","溪"], ["岛","岸","滩"], ["沙","滩"], ["潮","汐"],
+  ["桃","梨","杏"], ["瓜","果"], ["米","面"], ["茶","糖"], ["菜","豆"],
+  ["跑","跳","走"], ["看","听"], ["说","唱"], ["笑","哭"], ["洗","扫","擦"], ["吃","喝"], ["种","收"], ["找","送"],
+  ["长","短"], ["高","矮"], ["圆","方"], ["红","黄","蓝","绿"],
+  ["年","月","日"], ["时","分","秒"], ["早","午","晚"], ["今","明","昨"],
+  ["门","窗"], ["桌","椅"], ["床","灯"], ["街","桥"], ["院","城"],
+  ["喜","乐"], ["怒","哀"], ["怕","急"], ["静","忙"], ["暖","甜","美"],
+  ["狐","狸"], ["鹰","雀"], ["蚕","蜂"], ["蛇","龙"],
+  ["岭","峰","崖"], ["森","林"], ["谷","原","野"], ["潭","瀑"],
+  ["柳","杨","竹"], ["松","柏"], ["荷","莲","菊"], ["梅","兰"], ["草","芽"],
+  ["观","察"], ["研","究"], ["试","验"], ["探","索"], ["寻","秘"], ["秘","密"],
+  ["寓","言"], ["规","矩"], ["道","理"], ["劝","告"], ["警","示"], ["教","训"],
+  ["粽","饼"], ["舟","龙"], ["灯","宵"],
+  ["关","怀"], ["助","帮"], ["善","良"], ["慈","悲"], ["怜","惜"], ["尊","敬"],
+  ["崩","裂"], ["涨","沸"], ["腾","涌"], ["吼","震","撼"],
+  ["均","匀"], ["叠","隙"], ["茎","柄"], ["固","牢"], ["逐","渐"],
+  ["宫","殿"], ["皇","冠"], ["巫","魔","仙"], ["幸","福"],
+  ["性","格"], ["贪","脾"], ["乖","巧"], ["傲","慢"],
+  ["棚","架"], ["檐","篱","笆"], ["蔬","畜","禽"], ["桑","麻"], ["织","锄"],
+  ["箭","舱"], ["宇","宙"], ["测","控"], ["讯","码"], ["网","芯"],
+  ["诺","誓"], ["诚","信"], ["欺","骗"], ["谎","悔"], ["错","责"], ["改","约"],
+  ["阁","楼","亭","台","廊","塔","寺","庙"], ["碑","雕"], ["窟","洞"],
+  ["籍","卷"], ["诵","阅"], ["博","雅"], ["典","奥"], ["慧","智"], ["妙","贤"],
+  ["列","举","例"], ["比","较"], ["数","据"], ["图","表"], ["简","准","确"],
+  ["郎","梭"], ["筐","缘"], ["媒","聘"], ["嫁","娶"], ["鹊","桥"], ["银","汉"],
+  ["旗","徽"], ["疆","域"], ["英","烈"], ["捐","报"], ["愿","严"],
+  ["趣","逗"], ["耍","闹"], ["惹","祸"], ["闯","荡"], ["蹦","窜"], ["瞒","偷"],
+  ["曹","操"], ["备","羽"], ["亮","瑜"], ["谋","略"], ["计","策"], ["疑","忌"],
+  ["描","绘"], ["刻","画"], ["神","态"], ["举","止"], ["貌","韵"], ["眸","唇"],
+  ["洲","湾","屿","礁"], ["港","舶","艇","帆"], ["漠","驼"], ["洋","际"],
+  ["滋","润"], ["孕","育"], ["繁","衍"], ["枯","萎","凋"], ["萌","茂"],
+  ["帜","号"], ["征","途"], ["艰","险"], ["牺","牲"], ["雄","魂"], ["魄","魂"],
+  ["桑","娜"], ["渔","魁"], ["遭","遇"], ["煎","熬"], ["忧","虑"],
+  ["咏","吟"], ["赋","序"], ["跋","铭","箴"], ["哉","乎","矣","焉","兮"],
+  ["饺","粥","蒜"], ["锣","鼓"], ["鞭","炮"], ["摊","贩"], ["货","联","幅"],
+  ["鲁","滨","逊"], ["漂","筏"], ["荒","蛮"], ["峻","搏"], ["帐","篷"],
+  ["挚","眷"], ["恋","惦"], ["聊","慰"], ["绪","牵"], ["挂","思"], ["藉","深"],
+  ["毕","赠"], ["留","珍"], ["展","望"], ["未","程"], ["锦","棒"], ["迈","翔"]
+];
+/* 字 → 所属组号列表 */
+var CONFUSE_MAP = (function(){
+  var m = {};
+  CONFUSE_GROUPS.forEach(function(g, i){
+    g.forEach(function(z){ (m[z] = m[z] || []).push(i); });
+  });
+  return m;
+})();
+/* 两个字是否同属某个易混组 */
+function confuseWith(a, b){
+  var A = CONFUSE_MAP[a], B = CONFUSE_MAP[b];
+  if(!A || !B) return false;
+  for(var i = 0; i < A.length; i++){ if(B.indexOf(A[i]) >= 0) return true; }
+  return false;
+}
+/* 看图识字抽题：易混字降频（权重 0.35），其余按 1 */
+function buildRoundsPic(u, n){
+  var pool = (u.w || []).slice(), rest = pool.slice(), picked = [];
+  var want = Math.min(n, pool.length);
+  while(picked.length < want && rest.length){
+    var wts = [], total = 0, i;
+    for(i = 0; i < rest.length; i++){
+      var w = CONFUSE_MAP[rest[i].z] ? 0.35 : 1;
+      wts.push(w); total += w;
+    }
+    var r = Math.random() * total, idx = rest.length - 1;
+    for(i = 0; i < wts.length; i++){ r -= wts[i]; if(r <= 0){ idx = i; break; } }
+    picked.push(rest[idx]); rest.splice(idx, 1);
+  }
+  return picked.map(function(c){ return { correct: c }; });
+}
+/* 单次加权抽字（挑战模式看图选字用） */
+function pickPicChar(u){
+  var r = buildRoundsPic(u, 1);
+  return (r[0] && r[0].correct) || u.w[Math.floor(Math.random() * u.w.length)];
+}
 /* 看图类题目专用干扰项（看图识字 / 挑战·看图选字）
    题干显示的是 PICS[正确字] 这张图，选项是汉字文本。
    只要选项里存在「与正确答案共用同一张图」的字，孩子眼里就是两个都对的答案 —— 题无解。
@@ -46,25 +135,41 @@ function optsOf(u, correct, n, homo){
 function picDistractors(u, correct, n){
   var P = window.PICS || {};
   var svg = P[correct.z] || null;
-  function usable(list){
-    return (list || []).filter(function(w){
-      if(!w || w.z === correct.z) return false;
-      if(svg && P[w.z] === svg) return false;   /* 同图 = 看起来和正确答案一模一样，必须排除 */
-      return true;
-    });
+  var chosen = [correct];
+  function dup(w){ return chosen.some(function(c){ return c.z === w.z; }); }
+  /* 严格：与「已选全部」都不同图、不同易混组 —— 任意两项之间都不会互相干扰 */
+  function okStrict(w){
+    if(!w || dup(w)) return false;
+    if(svg && P[w.z] === svg) return false;
+    for(var i = 0; i < chosen.length; i++){
+      if(confuseWith(chosen[i].z, w.z)) return false;
+      if(P[chosen[i].z] && P[chosen[i].z] === P[w.z]) return false;
+    }
+    return true;
   }
-  var pick = shuffle(usable(u.w)).slice(0, n - 1);
-  if(pick.length < n - 1){
+  /* 宽松：只保证与正确答案不撞（严格模式凑不满时降级用） */
+  function okLoose(w){
+    if(!w || dup(w)) return false;
+    if(svg && P[w.z] === svg) return false;
+    return !confuseWith(correct.z, w.z);
+  }
+  function okAny(w){ return !!w && !dup(w); }
+  function fill(list, ok){
+    shuffle(list || []).forEach(function(w){ if(chosen.length < n && ok(w)) chosen.push(w); });
+  }
+  function gradeAll(){
     var all = [];
     (DATA && DATA.grades && DATA.grades[state.gi] ? DATA.grades[state.gi].books : []).forEach(function(b){
       (b.u || []).forEach(function(un){ all = all.concat(un.w || []); });
     });
-    var more = shuffle(usable(all)).filter(function(w){
-      return !pick.some(function(x){ return x.z === w.z; });
-    });
-    pick = pick.concat(more.slice(0, n - 1 - pick.length));
+    return all;
   }
-  return shuffle([correct].concat(pick));
+  fill(u.w, okStrict);            /* 一级：同单元 + 两两互斥 */
+  if(chosen.length < n) fill(gradeAll(), okStrict);  /* 二级：同年级跨单元 + 两两互斥 */
+  if(chosen.length < n) fill(u.w, okLoose);          /* 三级：放宽到只与正确项互斥 */
+  if(chosen.length < n) fill(gradeAll(), okLoose);
+  if(chosen.length < n) fill(gradeAll(), okAny);     /* 兜底：只保证选项够数 */
+  return shuffle(chosen);
 }
 /* 本单元里是否存在与 w 同音（不论声调）的其它字 */
 function hasHomophone(u, w){
@@ -144,7 +249,7 @@ function startListen(){
 /* ===================== 2. 看图识字 ===================== */
 function startPicture(){
   var u = curUnit();
-  var rounds = buildRounds(u, 8); var cur = 0, correct = 0, locked = false;
+  var rounds = buildRoundsPic(u, 8); var cur = 0, correct = 0, locked = false;
   function renderRound(){
     locked = false;
     var r = rounds[cur]; var opts = picDistractors(u, r.correct, 4);
@@ -885,6 +990,7 @@ function startChallenge(){
       return { tip: "哪条成语是这个意思？", big: '<div class="idiom-meaning">' + esc(it.m) + '</div>',
         opts: optsD.map(function(o){ return { label: o, ok: o === it.w }; }), say: it.w, small: true };
     }
+    w = pickPicChar(u);                    /* 看图选字：易混字降频后再抽 */
     var optsE = picDistractors(u, w, 4);
     return { tip: "看图选字", big: '<div class="big-pic">' + picHTML(w.z) + '</div>',
       opts: optsE.map(function(o){ return { label: o.z, ok: o.z === w.z }; }), say: w.z };
