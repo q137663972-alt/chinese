@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 发音需联网拉取有道 MP3 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 带麦遥控器跟读打分需要录音（仅运行时申请；无麦设备不授予，自动回落手动） -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- 电视/机顶盒无触摸屏、无麦克风，声明为非必需，避免安装被拒 -->
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/banner"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:hardwareAccelerated="true"
+        android:theme="@style/Theme.NoActionBar.Fullscreen">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|uiMode"
+            android:theme="@style/Theme.NoActionBar.Fullscreen">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <!-- 普通安卓/机顶盒桌面入口 -->
+                <category android:name="android.intent.category.LAUNCHER" />
+                <!-- Android TV 首页横幅入口 -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

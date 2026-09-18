@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>语文乐园 · 小学1-6年级 · 识字/古诗/词语/笔顺</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app"></div>
+
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-card">
+    <h3>⚙️ 设置</h3>
+    <div class="set-row"><label>🔊 中文朗读</label><div id="ttsSwitch" class="switch on"></div></div>
+    <div class="set-row"><label>语速</label><input id="rateRange" type="range" min="0.5" max="1.2" step="0.05" value="0.85"></div>
+    <div class="set-row"><label>试听</label><button class="btn ghost" style="width:auto;padding:8px 16px" onclick="speak('欢迎来到语文乐园，我们一起快乐学习汉字')">🔊 播放</button></div>
+    <button class="btn pink" style="margin-top:8px" onclick="closeSettings()">完成</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- 生字数据：1-6 年级（每年级一个文件，含拼音/笔画数/组词） -->
+<script src="js/data-c1.js"></script>
+<script src="js/data-c2.js"></script>
+<script src="js/data-c3.js"></script>
+<script src="js/data-c4.js"></script>
+<script src="js/data-c5.js"></script>
+<script src="js/data-c6.js"></script>
+<!-- 笔顺数据（SVG 笔画路径） -->
+<script src="js/strokes.js"></script>
+<!-- 古诗 / 成语 / 词语 题库 -->
+<script src="js/data-poem.js"></script>
+<script src="js/data-word.js"></script>
+<!-- 发音引擎：原生 zh-CN TTS + 有道音频兜底 -->
+<script src="js/tts.js"></script>
+<!-- 14 种玩法 -->
+<script src="js/games.js"></script>
+<!-- 主程序：状态、进度、导航、启动 -->
+<script src="js/app.js"></script>
+<!-- 电视/机顶盒 D-pad 遥控适配（仅在 TV 模式启用，不影响手机/桌面） -->
+<script src="js/tv.js"></script>
+</body>
+</html>

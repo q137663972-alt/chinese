@@ -1,0 +1,7 @@
+# 构建产物不入库
+*.apk
+.gradle/
+build/
+local.properties
+.idea/
+*.iml

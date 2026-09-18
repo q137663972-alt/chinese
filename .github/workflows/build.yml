@@ -1,0 +1,105 @@
+name: Build APK + Deploy H5
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.project }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: chinese-app
+            artifact: ChinesePlaygroundTV-apk
+          - project: chinese-phone
+            artifact: ChinesePlaygroundPhone-apk
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # runner 已预装 Android SDK（$ANDROID_HOME 含 API34 / build-tools 34.0.0），
+      # 不用第三方 setup-android（近期不稳定，曾导致构建在 16s 内失败）
+      - name: Accept Android SDK licenses
+        run: 'yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true'
+
+      - name: Install SDK platform & build-tools (API 34)
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"'
+
+      - name: Download Gradle 8.2 (repo 未带 wrapper jar)
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
+          unzip -q gradle-8.2-bin.zip -d "$HOME/gradle_dist"
+          echo "$HOME/gradle_dist/gradle-8.2/bin" >> "$GITHUB_PATH"
+
+      - name: Build debug APK (debug 签名，可直接安装)
+        working-directory: ${{ matrix.project }}
+        run: gradle assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.project }}/app/build/outputs/apk/debug/*.apk
+
+  # ⚠️ 临时下载入口：你确认下载完成后，删除本 job，并到 Releases 撤销 apk-latest
+  release:
+    name: Publish temp download
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download TV apk
+        uses: actions/download-artifact@v4
+        with:
+          name: ChinesePlaygroundTV-apk
+          path: out/tv
+      - name: Download Phone apk
+        uses: actions/download-artifact@v4
+        with:
+          name: ChinesePlaygroundPhone-apk
+          path: out/phone
+      - name: Rename apks
+        run: |
+          mkdir -p rel
+          mv out/tv/*.apk    "rel/ChinesePlayground-TV.apk"
+          mv out/phone/*.apk "rel/ChinesePlayground-Phone.apk"
+      - name: Publish to release apk-latest
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: "APK 临时下载（确认后删除）"
+          files: rel/*.apk
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  pages:
+    name: Deploy H5 (GitHub Pages)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Collect H5 files
+        run: |
+          mkdir -p page
+          cp index.html page/
+          cp -r css js page/
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./page
+          force_orphan: true

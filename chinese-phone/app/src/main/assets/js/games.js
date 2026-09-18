@@ -1,0 +1,913 @@
+/* ===================== 出题工具 ===================== */
+function buildRounds(u, n){
+  var pool = u.w;
+  var list = shuffle(pool).slice(0, Math.min(n, pool.length));
+  return list.map(function(c){ return { correct: c }; });
+}
+/* 同单元其它生字作干扰项
+   homo: "same" 排除与正确答案完全同音同调的字；"toneless" 排除同音（不论声调）的字 */
+function zDistractors(u, correct, n, homo){
+  var cp = correct.p, cs = stripTone(correct.p);
+  var others = u.w.filter(function(w){
+    if(w.z === correct.z) return false;
+    if(homo === "same" && w.p === cp) return false;
+    if(homo === "toneless" && stripTone(w.p) === cs) return false;
+    return true;
+  });
+  var pick = shuffle(others).slice(0, n - 1);
+  return shuffle([correct].concat(pick));
+}
+/* 全册随机字作干扰（单元字数不足时用） */
+function zDistractorsAll(u, correct, n, homo){
+  var all = [];
+  DATA.grades[state.gi].books.forEach(function(b){ b.u.forEach(function(un){ all = all.concat(un.w); }); });
+  var cp = correct.p, cs = stripTone(correct.p);
+  var others = all.filter(function(w){
+    if(w.z === correct.z) return false;
+    if(homo === "same" && w.p === cp) return false;
+    if(homo === "toneless" && stripTone(w.p) === cs) return false;
+    return true;
+  });
+  var pick = shuffle(others).slice(0, n - 1);
+  return shuffle([correct].concat(pick));
+}
+function optsOf(u, correct, n, homo){
+  var r = homo ? zDistractors(u, correct, n, homo) : [];
+  if(r.length < n) r = zDistractors(u, correct, n, homo);
+  if(r.length < n) r = zDistractorsAll(u, correct, n, homo);
+  if(r.length < n && homo) r = zDistractorsAll(u, correct, n, null);
+  return r;
+}
+/* 本单元里是否存在与 w 同音（不论声调）的其它字 */
+function hasHomophone(u, w){
+  var s = stripTone(w.p);
+  return u.w.some(function(x){ return x.z !== w.z && stripTone(x.p) === s; });
+}
+/* 本单元里是否存在与 w 完全同音同调的其它字 */
+function hasSameSound(u, w){
+  return u.w.some(function(x){ return x.z !== w.z && x.p === w.p; });
+}
+/* 按年级取素材：本年级及以前 */
+function poolByGrade(arr){
+  var g = state.gi + 1;
+  var r = arr.filter(function(x){ return (x.g || 1) <= g; });
+  return r.length ? r : arr.slice();
+}
+/* 拼音去声调 */
+var TONE_MAP = {"ā":"a","á":"a","ǎ":"a","à":"a","ē":"e","é":"e","ě":"e","è":"e",
+  "ī":"i","í":"i","ǐ":"i","ì":"i","ō":"o","ó":"o","ǒ":"o","ò":"o",
+  "ū":"u","ú":"u","ǔ":"u","ù":"u","ǖ":"v","ǘ":"v","ǚ":"v","ǜ":"v","ü":"v","ń":"n","ň":"n","ǹ":"n","ḿ":"m"};
+function stripTone(s){
+  return String(s).replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüńňǹḿ]/g, function(c){ return TONE_MAP[c] || c; });
+}
+function bindReplay(text){ window.replayCurrent = function(){ speak(text); }; }
+function head( Cur, total, replay ){
+  return '<div class="game-head"><div class="progress-pill">' + Cur + '/' + total + '</div>' +
+    (replay ? '<button class="replay" onclick="replayCurrent()">🔊</button>' : '<div class="spacer"></div>') + '</div>';
+}
+function optZi(list, fn){
+  return '<div class="options">' + list.map(function(o, i){
+    return '<div class="opt opt-zi" onclick="' + fn + '(' + i + ')">' + esc(o.z || o) + '</div>';
+  }).join("") + '</div>';
+}
+
+/* ===================== 1. 听音选字 ===================== */
+function startListen(){
+  var u = curUnit();
+  var rounds = buildRounds(u, 8); var cur = 0, correct = 0, locked = false;
+  function renderRound(){
+    locked = false;
+    var r = rounds[cur]; var opts = optsOf(u, r.correct, 4, "same");
+    bindReplay(r.correct.z);
+    gameShell(
+      head(cur + 1, rounds.length, true) +
+      '<div class="big-emoji">🔊</div>' +
+      '<div class="prompt">听一听，选出听到的字</div>' +
+      optZi(opts, "answerListen") +
+      '<div class="feedback" id="fb"></div>', "听音选字");
+    setTimeout(function(){ speak(r.correct.z); }, 350);
+    window.answerListen = function(i){
+      if(locked) return; locked = true;
+      var el = $all(".opt")[i]; var chosen = opts[i]; speak(chosen.z);
+      var fb = $("#fb");
+      if(chosen.z === r.correct.z){ el.classList.add("correct"); correct++; fb.textContent = "✅ 答对啦！" + r.correct.p; fb.className = "feedback ok"; }
+      else{
+        el.classList.add("wrong"); fb.textContent = "❌ 是「" + r.correct.z + "」" + r.correct.p; fb.className = "feedback no";
+        $all(".opt").forEach(function(o, j){ if(opts[j].z === r.correct.z) o.classList.add("correct"); });
+      }
+      setTimeout(function(){
+        cur++;
+        if(cur < rounds.length) renderRound(); else finishGame(correct, rounds.length, "听音选字");
+      }, 1200);
+    };
+  }
+  renderRound();
+}
+
+/* ===================== 2. 看图识字 ===================== */
+function startPicture(){
+  var u = curUnit();
+  var rounds = buildRounds(u, 8); var cur = 0, correct = 0, locked = false;
+  function renderRound(){
+    locked = false;
+    var r = rounds[cur]; var opts = optsOf(u, r.correct, 4);
+    bindReplay(r.correct.z);
+    gameShell(
+      head(cur + 1, rounds.length, true) +
+      '<div class="big-emoji">' + r.correct.k + '</div>' +
+      '<div class="prompt">看图，选出对应的字</div>' +
+      optZi(opts, "answerPicture") +
+      '<div class="feedback" id="fb"></div>', "看图识字");
+    window.answerPicture = function(i){
+      if(locked) return; locked = true;
+      var el = $all(".opt")[i]; var chosen = opts[i]; speak(chosen.z);
+      var fb = $("#fb");
+      if(chosen.z === r.correct.z){
+        el.classList.add("correct"); correct++;
+        fb.textContent = "✅ " + r.correct.p + " · " + r.correct.w.join("/"); fb.className = "feedback ok";
+      } else {
+        el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + r.correct.z + "」" + r.correct.p; fb.className = "feedback no";
+        $all(".opt").forEach(function(o, j){ if(opts[j].z === r.correct.z) o.classList.add("correct"); });
+      }
+      setTimeout(function(){
+        cur++;
+        if(cur < rounds.length) renderRound(); else finishGame(correct, rounds.length, "看图识字");
+      }, 1200);
+    };
+  }
+  renderRound();
+}
+
+/* ===================== 3. 拼音配对 ===================== */
+function startPinyin(){
+  var u = curUnit();
+  var rounds = buildRounds(u, 8); var cur = 0, correct = 0, locked = false;
+  function renderRound(){
+    locked = false;
+    var r = rounds[cur];
+    /* 本单元有同音字时：必须显示声调，并排除同音干扰项，避免出现两个"都对"的答案 */
+    var homo = hasHomophone(u, r.correct), same = hasSameSound(u, r.correct);
+    var opts = optsOf(u, r.correct, 4, same ? "same" : (homo ? "toneless" : null));
+    var showTone = !homo && Math.random() < 0.5;
+    var py = showTone ? r.correct.p : stripTone(r.correct.p);
+    bindReplay(r.correct.z);
+    gameShell(
+      head(cur + 1, rounds.length, true) +
+      '<div class="big-word pinyin-big">' + esc(py) + '</div>' +
+      '<div class="prompt">读拼音，选出对应的字</div>' +
+      optZi(opts, "answerPinyin") +
+      '<div class="feedback" id="fb"></div>', "拼音配对");
+    setTimeout(function(){ speak(r.correct.z); }, 300);
+    window.answerPinyin = function(i){
+      if(locked) return; locked = true;
+      var el = $all(".opt")[i]; var chosen = opts[i]; speak(chosen.z);
+      var fb = $("#fb");
+      if(chosen.z === r.correct.z){ el.classList.add("correct"); correct++; fb.textContent = "✅ 对啦！" + r.correct.w.join("/"); fb.className = "feedback ok"; }
+      else{
+        el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + r.correct.z + "」"; fb.className = "feedback no";
+        $all(".opt").forEach(function(o, j){ if(opts[j].z === r.correct.z) o.classList.add("correct"); });
+      }
+      setTimeout(function(){
+        cur++;
+        if(cur < rounds.length) renderRound(); else finishGame(correct, rounds.length, "拼音配对");
+      }, 1200);
+    };
+  }
+  renderRound();
+}
+
+/* ===================== 4. 生字消消乐 ===================== */
+function startEliminate(){
+  var u = curUnit();
+  /* 逐个挑字，并为它挑一个「本轮没被别人用过」的词语，
+     否则会出现「观/察」都配「观察」这种两个一样的词块 */
+  var cand = shuffle(u.w);
+  var words = [], usedCi = {};
+  for(var i = 0; i < cand.length && words.length < 6; i++){
+    var w = cand[i], ci = null;
+    for(var j = 0; j < w.w.length; j++){
+      var c = w.w[j];
+      if(c && c.indexOf(w.z) >= 0 && c.length >= 2 && !usedCi[c]){ ci = c; break; }
+    }
+    if(!ci) continue;
+    usedCi[ci] = 1;
+    words.push({ w: w, ci: ci });
+  }
+  if(words.length < 2){ toast("本单元暂无可配对的词语"); return; }
+  var cells = [];
+  words.forEach(function(it, idx){
+    cells.push({ type: "zi", word: it.w, ci: it.ci, key: idx, gone: false });
+    cells.push({ type: "ci", word: it.w, ci: it.ci, key: idx, gone: false });
+  });
+  cells = shuffle(cells);
+  var sel = -1, matched = 0, lock = false;
+  function draw(){
+    gameShell(
+      head("已消 " + matched, words.length, true) +
+        '<div class="prompt">点「字」和它的「词语」，配成一对消掉</div>' +
+      '<div class="xgrid" id="xg">' + cells.map(function(c, i){
+        return '<div class="xcell ' + (c.gone ? "gone " : "") + (sel === i ? "sel " : "") + '" onclick="tapCell(' + i + ')">' +
+          (c.type === "zi"
+            ? '<div class="cx zi">' + esc(c.word.z) + '</div>'
+            : '<div class="cx ci">' + esc(c.ci) + '</div>') +
+        '</div>';
+      }).join("") + '</div>' +
+      '<div class="feedback" id="fb"></div>', "生字消消乐");
+    bindReplay("把字和词语配成一对");
+  }
+  window.tapCell = function(i){
+    if(lock) return;
+    var c = cells[i];
+    if(c.gone) return;
+    if(sel === i){ sel = -1; draw(); return; }
+    if(sel < 0){ sel = i; speak(c.word.z); draw(); return; }
+    var a = cells[sel];
+    if(a.key === c.key && a.type !== c.type){
+      a.gone = true; c.gone = true; matched++; sel = -1;
+      speak(c.word.z + "，" + c.ci);
+      var fb = $("#fb"); if(fb){ fb.textContent = "✅ 消掉一对！"; fb.className = "feedback ok"; }
+      draw();
+      if(matched === words.length) setTimeout(function(){ finishGame(matched, words.length, "生字消消乐"); }, 700);
+    } else {
+      lock = true; sel = i; draw();
+      setTimeout(function(){ sel = -1; lock = false; draw(); }, 600);
+    }
+  };
+  draw();
+}
+
+/* ===================== 5. 组词填空 ===================== */
+function startWordFill(){
+  var u = curUnit();
+  var rounds = [];
+  shuffle(u.w).forEach(function(w){
+    var ci = w.w[Math.floor(Math.random() * w.w.length)];
+    if(ci && ci.indexOf(w.z) >= 0 && ci.length >= 2) rounds.push({ z: w, ci: ci });
+  });
+  if(!rounds.length){ toast("本单元暂无可填空的词语"); return; }
+  var list = rounds.slice(0, Math.min(8, rounds.length));
+  var cur = 0, correct = 0, locked = false;
+  function renderRound(){
+    locked = false;
+    var r = list[cur];
+    var ci = r.ci;
+    var pos = ci.indexOf(r.z.z);
+    var gapI = (pos === 0 ? 1 : 0);
+    var target = ci.charAt(gapI);
+    var shown = ci.split("").map(function(c, i){ return i === gapI ? "○" : c; }).join("");
+    var pool = [];
+    DATA.grades[state.gi].books.forEach(function(b){ b.u.forEach(function(un){ un.w.forEach(function(x){ if(x.z !== target) pool.push(x.z); }); }); });
+    var opts = shuffle([target].concat(shuffle(pool).slice(0, 3)));
+    bindReplay(ci);
+    gameShell(
+      head(cur + 1, list.length, true) +
+      '<div class="big-emoji">' + r.z.k + '</div>' +
+      '<div class="big-word zi-gap">' + esc(shown) + '</div>' +
+      '<div class="prompt">把词语补完整（' + esc(r.z.z) + " · " + esc(r.z.p) + '）</div>' +
+      '<div class="options">' + opts.map(function(o, i){
+        return '<div class="opt opt-zi" onclick="answerWordFill(' + i + ')">' + esc(o) + '</div>';
+      }).join("") + '</div>' +
+      '<div class="feedback" id="fb"></div>', "组词填空");
+    setTimeout(function(){ speak(ci); }, 300);
+    window.answerWordFill = function(i){
+      if(locked) return; locked = true;
+      var el = $all(".opt")[i]; var fb = $("#fb");
+      if(opts[i] === target){
+        el.classList.add("correct"); correct++; fb.textContent = "✅ " + ci; fb.className = "feedback ok"; speak(ci);
+      } else {
+        el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + ci + "」"; fb.className = "feedback no";
+        $all(".opt").forEach(function(o, j){ if(opts[j] === target) o.classList.add("correct"); });
+      }
+      setTimeout(function(){
+        cur++;
+        if(cur < list.length) renderRound(); else finishGame(correct, list.length, "组词填空");
+      }, 1300);
+    };
+  }
+  renderRound();
+}
+
+/* ===================== 6. 诗句填空 ===================== */
+function startPoemFill(){
+  var pool = poolByGrade(window.POEMS || []);
+  if(!pool.length){ toast("暂无古诗"); return; }
+  var list = shuffle(pool).slice(0, Math.min(6, pool.length));
+  var cur = 0, correct = 0, locked = false;
+  function renderRound(){
+    locked = false;
+    var p = list[cur];
+    var idx = Math.floor(Math.random() * p.l.length);
+    var prev = idx > 0 ? p.l[idx - 1] : "";
+    var target = p.l[idx];
+    var opts = shuffle([target].concat(shuffle(
+      pool.filter(function(x){ return x.t !== p.t; })
+          .map(function(x){ return x.l[Math.floor(Math.random() * x.l.length)]; })
+    ).slice(0, 3)));
+    bindReplay(prev + target);
+    gameShell(
+      head(cur + 1, list.length, true) +
+      '<div class="poem-box">' +
+        '<div class="poem-title">' + esc(p.t) + ' · ' + esc(p.d) + '·' + esc(p.a) + '</div>' +
+        (prev ? '<div class="poem-line dim">' + esc(prev) + '</div>' : '') +
+        '<div class="poem-line gap">？</div>' +
+      '</div>' +
+      '<div class="prompt">' + (prev ? "接出下一句" : "选出第一句") + '</div>' +
+      '<div class="options">' + opts.map(function(o, i){
+        return '<div class="opt opt-poem" onclick="answerPoemFill(' + i + ')">' + esc(o) + '</div>';
+      }).join("") +       '</div>' +
+      '<div class="feedback" id="fb"></div>', "诗句填空");
+    setTimeout(function(){ speak(prev || p.t); }, 300);
+    window.answerPoemFill = function(i){
+      if(locked) return; locked = true;
+      var el = $all(".opt")[i]; var fb = $("#fb");
+      if(opts[i] === target){
+        el.classList.add("correct"); correct++; fb.textContent = "✅ " + target; fb.className = "feedback ok"; speak(target);
+      } else {
+        el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + target + "」"; fb.className = "feedback no";
+        $all(".opt").forEach(function(o, j){ if(opts[j] === target) o.classList.add("correct"); });
+      }
+      setTimeout(function(){
+        cur++;
+        if(cur < list.length) renderRound(); else finishGame(correct, list.length, "诗句填空");
+      }, 1500);
+    };
+  }
+  renderRound();
+}
+
+/* ===================== 7. 连句成诗 ===================== */
+function startPoemSort(){
+  var pool = poolByGrade(window.POEMS || []).filter(function(p){ return p.l.length >= 4; });
+  if(!pool.length){ toast("暂无古诗"); return; }
+  var list = shuffle(pool).slice(0, Math.min(4, pool.length));
+  var cur = 0, correct = 0;
+  function renderRound(){
+    var p = list[cur];
+    var bank = shuffle(p.l.slice());
+    var used = [];
+    function draw(){
+      gameShell(
+        head(cur + 1, list.length, true) +
+        '<div class="poem-box"><div class="poem-title">' + esc(p.t) + ' · ' + esc(p.a) + '</div>' +
+          used.map(function(i, k){ return '<div class="poem-line" onclick="unpickLine(' + k + ')">' + esc(bank[i]) + '</div>'; }).join("") +
+        '</div>' +
+        '<div class="prompt">按顺序点出诗句，连成一首诗</div>' +
+        '<div class="sent-bank">' + bank.map(function(s, i){
+          return '<span class="bw poem-bw ' + (used.indexOf(i) >= 0 ? "used" : "") + '" onclick="pickLine(' + i + ')">' + esc(s) + '</span>';
+        }).join("") + '</div>' +
+        '<div class="feedback" id="fb"></div>', "连句成诗");
+      bindReplay(p.t);
+    }
+    window.pickLine = function(i){
+      if(used.indexOf(i) >= 0) return;
+      used.push(i); draw();
+      if(used.length === bank.length){
+        var built = used.map(function(x){ return bank[x]; }).join("");
+        var fb = $("#fb");
+        if(built === p.l.join("")){
+          correct++; fb.textContent = "✅ 背对啦！"; fb.className = "feedback ok"; speak(p.l.join(""));
+          setTimeout(function(){
+            cur++;
+            if(cur < list.length) renderRound(); else finishGame(correct, list.length, "连句成诗");
+          }, 1500);
+        } else {
+          fb.textContent = "❌ 顺序不对，再试一次"; fb.className = "feedback no";
+          setTimeout(function(){ used = []; draw(); }, 1200);
+        }
+      }
+    };
+    window.unpickLine = function(k){ used.splice(k, 1); draw(); };
+    draw();
+    setTimeout(function(){ speak(p.t + "，" + p.a); }, 300);
+  }
+  renderRound();
+}
+
+/* ===================== 8. 成语填空 ===================== */
+function startIdiom(){
+  var pool = poolByGrade(window.IDIOMS || []);
+  if(!pool.length){ toast("暂无成语"); return; }
+  var list = shuffle(pool).slice(0, Math.min(8, pool.length));
+  var cur = 0, correct = 0, locked = false;
+  function renderRound(){
+    locked = false;
+    var it = list[cur];
+    var pos = 1 + Math.floor(Math.random() * 3);
+    var target = it.w.charAt(pos);
+    var shown = it.w.split("").map(function(c, i){ return i === pos ? "○" : c; }).join("");
+    var mode = Math.random() < 0.5; // true 补字 / false 看义选成语
+    var opts, answer;
+    if(mode){
+      var others = [];
+      pool.forEach(function(x){ if(x.w !== it.w) x.w.split("").forEach(function(c){ if(c !== target) others.push(c); }); });
+      opts = shuffle([target].concat(shuffle(others).slice(0, 3)));
+      answer = target;
+    } else {
+      /* 题干是释义 → 选项必须是「成语」本身 */
+      var wrong = shuffle(pool.filter(function(x){ return x.w !== it.w; })).slice(0, 3);
+      var seenW = {}; seenW[it.w] = 1;
+      var cands = [it.w];
+      wrong.forEach(function(x){ if(!seenW[x.w]){ seenW[x.w] = 1; cands.push(x.w); } });
+      opts = shuffle(cands);
+      answer = it.w;
+    }
+    bindReplay(it.w);
+    gameShell(
+      head(cur + 1, list.length, true) +
+      (mode
+        ? '<div class="big-word idiom-big">' + esc(shown) + '</div><div class="prompt">补出成语中缺少的字</div><div class="sent-zh">' + esc(it.m) + '</div>'
+        : '<div class="idiom-meaning">' + esc(it.m) + '</div><div class="prompt">哪条成语是这个意思？</div>') +
+        '<div class="options">' + opts.map(function(o, i){
+        return '<div class="opt opt-zi" onclick="answerIdiom(' + i + ')">' + esc(o) + '</div>';
+      }).join("") + '</div>' +
+      '<div class="feedback" id="fb"></div>', "成语填空");
+    window.answerIdiom = function(i){
+      if(locked) return; locked = true;
+      var el = $all(".opt")[i]; var fb = $("#fb");
+      if(opts[i] === answer){
+        el.classList.add("correct"); correct++; fb.textContent = "✅ " + it.w + "：" + it.m; fb.className = "feedback ok"; speak(it.w);
+      } else {
+        el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + it.w + "」" + it.m; fb.className = "feedback no";
+        $all(".opt").forEach(function(o, j){ if(opts[j] === answer) o.classList.add("correct"); });
+      }
+      setTimeout(function(){
+        cur++;
+        if(cur < list.length) renderRound(); else finishGame(correct, list.length, "成语填空");
+      }, 1500);
+    };
+  }
+  renderRound();
+}
+
+/* ===================== 9. 笔画数练习 ===================== */
+function startStroke(){
+  var u = curUnit();
+  var rounds = buildRounds(u, 8); var cur = 0, correct = 0, locked = false;
+  function renderRound(){
+    locked = false;
+    var r = rounds[cur];
+    var n = r.correct.n;
+    var cand = {}; cand[n] = true; var d = 1;
+    while(Object.keys(cand).length < 4 && d <= 12){
+      var a = n - d, b = n + d;
+      if(a >= 1 && Object.keys(cand).length < 4) cand[a] = true;
+      if(b <= 30 && Object.keys(cand).length < 4) cand[b] = true;
+      d++;
+    }
+    var opts = shuffle(Object.keys(cand).map(Number));
+    bindReplay(r.correct.z);
+    gameShell(
+      head(cur + 1, rounds.length, true) +
+      '<div class="big-word zi-huge">' + esc(r.correct.z) + '</div>' +
+      '<div class="pinyin-sub">' + esc(r.correct.p) + '</div>' +
+      '<div class="prompt">这个字一共有几画？</div>' +
+      '<div class="options">' + opts.map(function(o, i){
+        return '<div class="opt opt-zi" onclick="answerStroke(' + i + ')">' + o + '</div>';
+      }).join("") + '</div>' +
+      '<div class="feedback" id="fb"></div>', "笔画数练习");
+    setTimeout(function(){ speak(r.correct.z); }, 300);
+    window.answerStroke = function(i){
+      if(locked) return; locked = true;
+      var el = $all(".opt")[i]; var fb = $("#fb");
+      if(opts[i] === n){
+        el.classList.add("correct"); correct++; fb.textContent = "✅ " + r.correct.z + " 共 " + n + " 画"; fb.className = "feedback ok"; speak(r.correct.z);
+      } else {
+        el.classList.add("wrong"); fb.textContent = "❌ " + r.correct.z + " 共 " + n + " 画"; fb.className = "feedback no";
+        $all(".opt").forEach(function(o, j){ if(opts[j] === n) o.classList.add("correct"); });
+      }
+      setTimeout(function(){
+        cur++;
+        if(cur < rounds.length) renderRound(); else finishGame(correct, rounds.length, "笔画数练习");
+      }, 1300);
+    };
+  }
+  renderRound();
+}
+
+/* ===================== 10. 笔顺演示 ===================== */
+function startWrite(){
+  var u = curUnit();
+  var list = shuffle(u.w).slice(0, Math.min(10, u.w.length));
+  var cur = 0, done = 0;
+  function renderRound(){
+    var w = list[cur];
+    var paths = (window.STROKES || {})[w.z];
+    bindReplay(w.z);
+    if(!paths || !paths.length){
+      gameShell(
+        head(cur + 1, list.length, true) +
+        '<div class="big-word zi-huge">' + esc(w.z) + '</div>' +
+        '<div class="pinyin-sub">' + esc(w.p) + '</div>' +
+        '<div class="prompt">这个字共 ' + w.n + ' 画（暂无笔顺动画）</div>' +
+        '<button class="btn green" style="margin-top:16px" onclick="nextWrite(1)">下一个 ➡️</button>', "笔顺演示");
+      setTimeout(function(){ speak(w.z); }, 250);
+      return;
+    }
+    var total = paths.length;
+    gameShell(
+      head(cur + 1, list.length, true) +
+      '<div class="tian-wrap"><div class="tian" id="tian">' +
+        '<svg viewBox="0 0 1024 1024" class="tian-svg">' +
+          '<g class="grid-lines"><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="512" x2="1024" y2="512"/>' +
+          '<line x1="512" y1="0" x2="0" y2="512" class="diag"/><line x1="512" y1="0" x2="1024" y2="512" class="diag"/>' +
+          '<line x1="0" y1="512" x2="512" y2="1024" class="diag"/><line x1="1024" y1="512" x2="512" y2="1024" class="diag"/></g>' +
+          paths.map(function(d, i){
+            return '<path class="sk" data-i="' + i + '" d="' + d + '"></path>';
+          }).join("") +
+        '</svg>' +
+        '<canvas class="tian-canvas" id="tc" width="440" height="440"></canvas>' +
+      '</div></div>' +
+      '<div class="stroke-info"><b class="zi-huge-sm">' + esc(w.z) + '</b> <span>' + esc(w.p) + '</span> · 共 <b>' + total + '</b> 笔 · 第 <b id="skIdx">0</b> 笔</div>' +
+      '<div class="prompt">看笔顺，一笔一画写清楚</div>' +
+      '<div class="row">' +
+        '<button class="btn ghost" onclick="prevStroke()">◀️ 上一笔</button>' +
+        '<button class="btn green" onclick="nextStroke()">下一笔 ▶️</button>' +
+        '<button class="btn ghost" onclick="playStroke()">▶️ 自动</button>' +
+      '</div>' +
+      '<div class="row">' +
+        '<button class="btn ghost" onclick="clearTrace()">🧽 擦掉</button>' +
+        '<button class="btn ghost" onclick="window.replayCurrent()">🔊 读一读</button>' +
+        '<button class="btn pink" onclick="nextWrite(1)">下一个 ➡️</button>' +
+      '</div>', "笔顺演示");
+    window.__skTotal = total; window.__skCur = 1;
+    paintStrokes();
+    setupTrace();
+    setTimeout(function(){ speak(w.z); }, 250);
+  }
+  window.nextWrite = function(ok){
+    if(ok) done++;
+    cur++;
+    if(cur < list.length) renderRound(); else finishGame(done, list.length, "笔顺演示");
+  };
+  renderRound();
+}
+function paintStrokes(){
+  var n = window.__skCur || 0;
+  $all("#tian .sk").forEach(function(p, i){
+    p.classList.toggle("on", i < n);
+    p.classList.toggle("now", i === n - 1);
+  });
+  var el = $("#skIdx"); if(el) el.textContent = n;
+}
+window.prevStroke = function(){
+  if(window.__skCur > 0) window.__skCur--;
+  paintStrokes();
+};
+window.nextStroke = function(){
+  if(window.__skCur < window.__skTotal) window.__skCur++;
+  paintStrokes();
+  if(window.__skCur === window.__skTotal) toast("写完啦！");
+};
+window.playStroke = function(){
+  if(window.__strokeTimer) clearInterval(window.__strokeTimer);
+  window.__skCur = 0; paintStrokes();
+  var t = setInterval(function(){
+    window.__skCur++;
+    paintStrokes();
+    if(window.__skCur >= window.__skTotal){ clearInterval(t); window.__strokeTimer = null; }
+  }, 620);
+  window.__strokeTimer = t;
+};
+window.clearTrace = function(){
+  var c = $("#tc"); if(!c) return;
+  var ctx = c.getContext("2d"); ctx.clearRect(0, 0, c.width, c.height);
+};
+function setupTrace(){
+  var c = $("#tc"); if(!c) return;
+  var ctx = c.getContext("2d");
+  ctx.lineWidth = 14; ctx.lineCap = "round"; ctx.strokeStyle = "#ff6f91";
+  var drawing = false;
+  function pos(e){
+    var r = c.getBoundingClientRect();
+    var t = e.touches ? e.touches[0] : e;
+    return { x: (t.clientX - r.left) * (c.width / r.width), y: (t.clientY - r.top) * (c.height / r.height) };
+  }
+  function start(e){ drawing = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+  function move(e){ if(!drawing) return; var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); }
+  function end(){ drawing = false; }
+  c.addEventListener("pointerdown", start);
+  c.addEventListener("pointermove", move);
+  c.addEventListener("pointerup", end);
+  c.addEventListener("pointerleave", end);
+}
+
+/* ===================== 11. 近反义配对 ===================== */
+function startNearFar(){
+  var pool = poolByGrade(window.NEARFAR || []);
+  if(!pool.length){ toast("暂无词语"); return; }
+  var list = shuffle(pool).slice(0, Math.min(8, pool.length));
+  var cur = 0, correct = 0, locked = false;
+  function renderRound(){
+    locked = false;
+    var p = list[cur];
+    var askNear = p.t === "近";
+    /* 干扰项：整条词对的任何一个词都不能等于题干词或正确答案，且候选词要去重 */
+    var others = pool.filter(function(x){
+      return x.a !== p.a && x.a !== p.b && x.b !== p.a && x.b !== p.b;
+    });
+    var same = others.filter(function(x){ return x.t === p.t; });
+    var cand = [];
+    function pushCand(v){
+      if(cand.length >= 3) return;
+      if(v === p.a || v === p.b || cand.indexOf(v) >= 0) return;
+      cand.push(v);
+    }
+    shuffle(same).concat(shuffle(others)).forEach(function(x){
+      pushCand(x.t === p.t ? x.b : (Math.random() < 0.5 ? x.a : x.b));
+    });
+    if(cand.length < 3){
+      pool.forEach(function(x){ pushCand(x.a); pushCand(x.b); });
+    }
+    var opts = shuffle([p.b].concat(cand));
+    bindReplay(p.a);
+    gameShell(
+      head(cur + 1, list.length, true) +
+      '<div class="big-word zi-big2">' + esc(p.a) + '</div>' +
+      '<div class="prompt">选出「' + esc(p.a) + '」的' + (askNear ? "近义词" : "反义词") + '</div>' +
+      '<div class="options">' + opts.map(function(o, i){
+        return '<div class="opt opt-zi" onclick="answerNearFar(' + i + ')">' + esc(o) + '</div>';
+      }).join("") + '</div>' +
+      '<div class="feedback" id="fb"></div>', "近反义配对");
+    setTimeout(function(){ speak(p.a); }, 250);
+    window.answerNearFar = function(i){
+      if(locked) return; locked = true;
+      var el = $all(".opt")[i]; var fb = $("#fb");
+      if(opts[i] === p.b){
+        el.classList.add("correct"); correct++; fb.textContent = "✅ " + p.a + " — " + p.b + "（" + (askNear ? "近义" : "反义") + "）"; fb.className = "feedback ok"; speak(p.b);
+      } else {
+        el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + p.b + "」"; fb.className = "feedback no";
+        $all(".opt").forEach(function(o, j){ if(opts[j] === p.b) o.classList.add("correct"); });
+      }
+      setTimeout(function(){
+        cur++;
+        if(cur < list.length) renderRound(); else finishGame(correct, list.length, "近反义配对");
+      }, 1400);
+    };
+  }
+  renderRound();
+}
+
+/* ===================== 12. 量词搭配 ===================== */
+function startLiangci(){
+  var pool = poolByGrade(window.LIANGCI || []);
+  if(!pool.length){ toast("暂无量词"); return; }
+  var list = shuffle(pool).slice(0, Math.min(8, pool.length));
+  var cur = 0, correct = 0, locked = false;
+  function renderRound(){
+    locked = false;
+    var p = list[cur];
+    var opts = shuffle([p.l].concat(shuffle(p.o).slice(0, 3)));
+    bindReplay("一" + p.l + p.n);
+    gameShell(
+      head(cur + 1, list.length, true) +
+      '<div class="big-word zi-big2">一（　）' + esc(p.n) + '</div>' +
+      '<div class="prompt">选一个合适的量词</div>' +
+      '<div class="options">' + opts.map(function(o, i){
+        return '<div class="opt opt-zi" onclick="answerLiangci(' + i + ')">' + esc(o) + '</div>';
+      }).join("") + '</div>' +
+      '<div class="feedback" id="fb"></div>', "量词搭配");
+    window.answerLiangci = function(i){
+      if(locked) return; locked = true;
+      var el = $all(".opt")[i]; var fb = $("#fb");
+      if(opts[i] === p.l){
+        el.classList.add("correct"); correct++; fb.textContent = "✅ 一" + p.l + p.n; fb.className = "feedback ok"; speak("一" + p.l + p.n);
+      } else {
+        el.classList.add("wrong"); fb.textContent = "❌ 正确是「一" + p.l + p.n + "」"; fb.className = "feedback no";
+        $all(".opt").forEach(function(o, j){ if(opts[j] === p.l) o.classList.add("correct"); });
+      }
+      setTimeout(function(){
+        cur++;
+        if(cur < list.length) renderRound(); else finishGame(correct, list.length, "量词搭配");
+      }, 1300);
+    };
+  }
+  renderRound();
+}
+
+/* ===================== 13. 朗读跟读 ===================== */
+function startRead(){
+  var u = curUnit();
+  var list = shuffle(u.w).slice(0, Math.min(8, u.w.length));
+  var cur = 0, total = 0, sumScore = 0;
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function hasNativeSR(){
+    if(!window.AndroidSR) return false;
+    try { return window.AndroidSR.isAvailable ? !!window.AndroidSR.isAvailable() : true; }
+    catch(e){ return false; }
+  }
+  var nativeSR = hasNativeSR();
+  var noMic = (!SR && !nativeSR);
+  function renderRound(){
+    var w = list[cur];
+    bindReplay(w.z + "，" + w.w[0]);
+    gameShell(
+      head(cur + 1, list.length, true) +
+      '<div class="big-emoji">' + w.k + '</div>' +
+      '<div class="big-word zi-huge">' + esc(w.z) + '</div>' +
+      '<div class="pinyin-sub">' + esc(w.p) + ' · ' + esc(w.w.join("/")) + '</div>' +
+      '<div class="prompt">先听示范，再大声读出来</div>' +
+      (noMic ? "" : '<button class="mic-btn" id="mic" onclick="startRec()">🎤</button>') +
+      '<div class="read-score" id="score"></div>' +
+      '<div class="read-hint" id="hint">' + (noMic ? "点「我读啦，过关」继续" : "点麦克风开始跟读") + '</div>' +
+      '<div class="row" id="manualRow" style="display:' + (noMic ? "flex" : "none") + '">' +
+        '<button class="btn green" onclick="manualPass()">✅ 我读啦，过关</button>' +
+        '<button class="btn ghost" onclick="nextRead()">跳过 ➡️</button>' +
+      '</div>', "朗读跟读");
+    setTimeout(function(){ speak(w.z); }, 350);
+  }
+  function showManual(msg){
+    var mr = $("#manualRow"); if(mr) mr.style.display = "flex";
+    var h = $("#hint"); if(h && msg) h.textContent = msg;
+  }
+  var gotResult = false;
+  window.startRec = function(){
+    if(nativeSR && window.AndroidSR){
+      var mic = $("#mic"); if(mic) mic.classList.add("listening");
+      var h = $("#hint"); if(h) h.textContent = "正在聆听…大声读出来吧！";
+      gotResult = false;
+      window.__onNativeSRResult = function(t){
+        gotResult = true;
+        var m = $("#mic"); if(m) m.classList.remove("listening");
+        finishRec(t || "");
+      };
+      window.__onNativeSRError = function(m){
+        var m2 = $("#mic"); if(m2) m2.classList.remove("listening");
+        showManual(m || "没听清，可以直接点「我读啦，过关」");
+      };
+      try{ window.AndroidSR.start(); }catch(err){
+        var m3 = $("#mic"); if(m3) m3.classList.remove("listening");
+        showManual("麦克风启动失败，可以直接点「我读啦，过关」");
+      }
+      setTimeout(function(){
+        if(!gotResult){ var m4 = $("#mic"); if(m4) m4.classList.remove("listening"); showManual("没听到声音，可以直接点「我读啦，过关」"); }
+      }, 8000);
+      return;
+    }
+    if(!SR){ toast("当前浏览器不支持语音识别"); return; }
+    var mic = $("#mic"); mic.classList.add("listening"); $("#hint").textContent = "正在聆听…大声读出来吧！";
+    var rec = new SR(); rec.lang = "zh-CN"; rec.interimResults = false; rec.maxAlternatives = 3;
+    gotResult = false;
+    rec.onresult = function(e){
+      gotResult = true;
+      var best = "";
+      for(var i = 0; i < e.results[0].length; i++){ if(!best || e.results[0][i].transcript.length >= best.length) best = e.results[0][i].transcript; }
+      finishRec(best);
+    };
+    rec.onerror = function(e){ mic.classList.remove("listening"); showManual(e && e.error === "not-allowed" ? "麦克风被禁用了，可以直接点「我读啦，过关」" : "没听清，可以直接点「我读啦，过关」"); };
+    rec.onend = function(){ mic.classList.remove("listening"); };
+    try{ rec.start(); }catch(err){ mic.classList.remove("listening"); showManual("麦克风启动失败，可以直接点「我读啦，过关」"); }
+    setTimeout(function(){
+      if(!gotResult){ mic.classList.remove("listening"); showManual("没听到声音，可以直接点「我读啦，过关」"); }
+    }, 8000);
+  };
+  function finishRec(txt){
+    var w = list[cur]; var sc = scoreRead(w.z, txt);
+    var scEl = $("#score");
+    if(scEl){
+      scEl.textContent = sc + "分";
+      scEl.style.color = sc >= 80 ? "#3fc26b" : sc >= 50 ? "#ffd166" : "#ff6f91";
+    }
+    var hint = $("#hint"); if(hint) hint.textContent = txt ? "你说的是：" + txt : "没听清";
+    total++; sumScore += sc;
+    setTimeout(nextRead, 1300);
+  }
+  window.manualPass = function(){ total++; sumScore += 100; nextRead(); };
+  function nextRead(){
+    cur++;
+    if(cur < list.length) renderRound();
+    else{
+      var avg = total ? Math.round(sumScore / total) : 0;
+      var earned = avg >= 80 ? 3 : avg >= 50 ? 2 : total > 0 ? 1 : 0;
+      finishGame(earned, 1, "朗读跟读");
+    }
+  }
+  window.nextRead = nextRead;
+  function scoreRead(target, transcript){
+    if(!transcript) return 0;
+    var t = String(target).replace(/[，。！？、\s]/g, "");
+    var h = String(transcript).replace(/[，。！？、\s]/g, "");
+    if(!h) return 0;
+    if(h.indexOf(t) >= 0 || t.indexOf(h) >= 0) return 100;
+    return Math.round((1 - lev(t, h) / Math.max(t.length, h.length)) * 100);
+  }
+  function lev(a, b){
+    var m = a.length, n = b.length, d = [];
+    for(var i = 0; i <= m; i++){ d[i] = [i]; for(var j = 1; j <= n; j++) d[i][j] = j; }
+    for(var j2 = 0; j2 <= n; j2++) d[0][j2] = j2;
+    for(var i2 = 1; i2 <= m; i2++)
+      for(var j3 = 1; j3 <= n; j3++)
+        d[i2][j3] = Math.min(d[i2 - 1][j3] + 1, d[i2][j3 - 1] + 1, d[i2 - 1][j3 - 1] + (a[i2 - 1] === b[j3 - 1] ? 0 : 1));
+    return d[m][n];
+  }
+  renderRound();
+}
+
+/* ===================== 14. 限时挑战 ===================== */
+function startChallenge(){
+  var u = curUnit();
+  var TIME = 60;
+  var left = TIME, score = 0, streak = 0;
+  var best = parseInt(localStorage.getItem("cn_best_challenge") || "0", 10) || 0;
+  var timer = null, locked = false, q = null;
+  function mkQ(){
+    var kind = Math.random();
+    var w = u.w[Math.floor(Math.random() * u.w.length)];
+    if(kind < 0.35){
+      /* 拼音无声调，同音字必须排除，否则会出现两个正确答案 */
+      var optsA = optsOf(u, w, 4, "toneless");
+      return { tip: "看拼音，选出对应的字", big: '<div class="big-word pinyin-big">' + esc(stripTone(w.p)) + '</div>',
+        opts: optsA.map(function(o){ return { label: o.z, ok: o.z === w.z }; }), say: w.z };
+    }
+    if(kind < 0.6){
+      var ci = w.w[Math.floor(Math.random() * w.w.length)];
+      var pos = ci.indexOf(w.z);
+      var gapI = pos === 0 ? 1 : 0;
+      var target = ci.charAt(gapI);
+      var shown = ci.split("").map(function(c, i){ return i === gapI ? "○" : c; }).join("");
+      var pool = [];
+      DATA.grades[state.gi].books.forEach(function(b){ b.u.forEach(function(un){ un.w.forEach(function(x){ if(x.z !== target) pool.push(x.z); }); }); });
+      var optsB = shuffle([target].concat(shuffle(pool).slice(0, 3)));
+      return { tip: "把词语补完整", big: '<div class="big-word zi-gap">' + esc(shown) + '</div>',
+        opts: optsB.map(function(o){ return { label: o, ok: o === target }; }), say: ci };
+    }
+    if(kind < 0.8){
+      var n = w.n; var set = {}; set[n] = 1; var d = 1;
+      while(Object.keys(set).length < 4 && d <= 12){
+        if(n - d >= 1 && Object.keys(set).length < 4) set[n - d] = 1;
+        if(n + d <= 30 && Object.keys(set).length < 4) set[n + d] = 1;
+        d++;
+      }
+      var optsC = shuffle(Object.keys(set).map(Number));
+      return { tip: "「" + w.z + "」共几画？", big: '<div class="big-word zi-huge">' + esc(w.z) + '</div>',
+        opts: optsC.map(function(o){ return { label: String(o), ok: o === n }; }), say: w.z };
+    }
+    var pool2 = poolByGrade(window.IDIOMS || []);
+    if(pool2.length){
+      var it = pool2[Math.floor(Math.random() * pool2.length)];
+      var optsD = shuffle([it.w].concat(shuffle(pool2.filter(function(x){ return x.w !== it.w; })).slice(0, 3).map(function(x){ return x.w; })));
+      return { tip: "哪条成语是这个意思？", big: '<div class="idiom-meaning">' + esc(it.m) + '</div>',
+        opts: optsD.map(function(o){ return { label: o, ok: o === it.w }; }), say: it.w, small: true };
+    }
+    var optsE = optsOf(u, w, 4);
+    return { tip: "看图选字", big: '<div class="big-emoji">' + w.k + '</div>',
+      opts: optsE.map(function(o){ return { label: o.z, ok: o.z === w.z }; }), say: w.z };
+  }
+  function draw(){
+    var pct = Math.max(0, left / TIME * 100);
+    gameShell(
+      '<div class="game-head"><div class="progress-pill">⏱️ ' + left + 's</div><div class="progress-pill">💯 ' + score + '</div></div>' +
+      '<div class="timer-wrap"><div class="timer-bar ' + (pct < 25 ? "low" : "") + '" style="width:' + pct + '%"></div></div>' +
+      '<div class="combo" id="combo">' + (streak >= 3 ? "🔥 连击 x" + streak : "") + '</div>' +
+      q.big +
+      '<div class="prompt">' + esc(q.tip) + '</div>' +
+      '<div class="options">' + q.opts.map(function(o, i){
+        return '<div class="opt ' + (q.small ? "opt-text" : "opt-zi") + '" onclick="answerChallenge(' + i + ')">' + esc(o.label) + '</div>';
+      }).join("") + '</div>' +
+      '<div class="feedback" id="fb"></div>', "限时挑战");
+  }
+  function tick(){
+    left--;
+    if(left <= 0){ endChallenge(); return; }
+    var bar = $(".timer-bar");
+    if(bar){ bar.style.width = Math.max(0, left / TIME * 100) + "%"; if(left / TIME < 0.25) bar.classList.add("low"); }
+    var pill = $(".progress-pill");
+    if(pill) pill.textContent = "⏱️ " + left + "s";
+  }
+  window.answerChallenge = function(i){
+    if(locked) return; locked = true;
+    var el = $all(".opt")[i]; var fb = $("#fb");
+    if(q.opts[i].ok){
+      el.classList.add("correct"); streak++; score += 10 + (streak >= 3 ? 5 : 0);
+      fb.textContent = "✅ +" + (10 + (streak >= 3 ? 5 : 0)); fb.className = "feedback ok"; speak(q.say);
+    } else {
+      el.classList.add("wrong"); streak = 0;
+      var right = q.opts.filter(function(o){ return o.ok; })[0];
+      fb.textContent = "❌ " + (right ? right.label : ""); fb.className = "feedback no";
+      $all(".opt").forEach(function(o, j){ if(q.opts[j].ok) o.classList.add("correct"); });
+    }
+    setTimeout(function(){ q = mkQ(); locked = false; draw(); }, 750);
+  };
+  function endChallenge(){
+    clearInterval(timer);
+    window.__cnTimer = null;
+    if(score > best){ best = score; localStorage.setItem("cn_best_challenge", String(best)); }
+    setStars(state.gi, state.bi, state.ui, score >= 120 ? 3 : score >= 60 ? 2 : score > 0 ? 1 : 0);
+    app.innerHTML = topbar("挑战结束", true) +
+      '<div class="result-box">' +
+        '<div style="font-size:46px">' + (score >= 60 ? "🏆" : "⏱️") + '</div>' +
+        '<div class="read-score">' + score + '</div>' +
+        '<div style="font-size:16px;color:var(--sub)">限时挑战 · 60 秒得分</div>' +
+        '<div class="best">🏅 历史最高：' + best + '</div>' +
+        '<div class="row">' +
+          '<button class="btn ghost" onclick="startChallenge()">🔁 再来一次</button>' +
+          '<button class="btn green" onclick="state.view=\'modes\';render()">🎮 换玩法</button>' +
+        '</div>' +
+        '<button class="btn pink" style="margin-top:12px" onclick="state.view=\'units\';render()">返回单元列表</button>' +
+      '</div>';
+  }
+  if(window.__cnTimer) clearInterval(window.__cnTimer);
+  q = mkQ();
+  draw();
+  timer = setInterval(tick, 1000);
+  window.__cnTimer = timer;
+}
