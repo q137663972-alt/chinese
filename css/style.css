@@ -284,3 +284,16 @@ body.tv .pinyin-big{font-size:58px}
 body.tv .poem-line{font-size:30px}
 body.tv .idiom-meaning{font-size:26px}
 body.tv .tian{width:min(340px,40vw);height:min(340px,40vw)}
+orm: scale(1.12); }
+/* 图标远距离再放大（仅 TV） */
+body.tv .grade-card .g-emoji { font-size: 80px; }
+body.tv .mode-card .m-icon { font-size: 64px; }
+body.tv .big-emoji { font-size: 170px; }
+
+/* 首页顶部升级提示条（不打断做题，点 × 则本次版本不再提示） */
+.upd-bar{position:fixed;left:0;right:0;top:0;z-index:45;display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--ink);color:#fff;font-size:14px;box-shadow:var(--shadow)}
+.upd-txt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.upd-bar button{border:0;border-radius:12px;padding:6px 14px;font-weight:700;font-size:14px;cursor:pointer}
+.upd-go{background:var(--green);color:#173}
+.upd-x{background:transparent;color:#fff;font-size:18px;padding:2px 8px}
+@media (min-width:900px){.upd-bar{font-size:20px;padding:12px 24px}.upd-bar button{font-size:20px;padding:10px 22px}}

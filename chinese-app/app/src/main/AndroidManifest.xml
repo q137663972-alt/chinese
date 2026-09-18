@@ -6,6 +6,9 @@
 
     <!-- 带麦遥控器跟读打分需要录音（仅运行时申请；无麦设备不授予，自动回落手动） -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 应用内升级：安装本应用的新版本（Android 8+ 需要，用户点一次确认） -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
 
     <!-- 电视/机顶盒无触摸屏、无麦克风，声明为非必需，避免安装被拒 -->
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />

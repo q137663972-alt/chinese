@@ -13,3 +13,7 @@ keystore.properties
 
 # 内容包（由 tools/gen-content.mjs 在 CI 里生成，不入库）
 content/
+
+# 热更包与 Pages 发布目录（由 tools/gen-hot.mjs / CI 生成，不入库）
+hot/
+page/

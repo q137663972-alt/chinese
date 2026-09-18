@@ -6,6 +6,9 @@
 
     <!-- 跟读打分需要录音（仅运行时申请；拒绝授权自动回落手动兜底） -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 应用内升级：安装本应用的新版本（Android 8+ 需要，用户点一次确认） -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
 
     <!-- 手机：触摸屏必需；麦克风非必需（无麦设备也能装，跟读自动回落） -->
     <uses-feature android:name="android.hardware.touchscreen" android:required="true" />

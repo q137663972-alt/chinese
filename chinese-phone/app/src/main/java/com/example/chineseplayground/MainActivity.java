@@ -5,6 +5,16 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.IntentFilter;
+import android.content.IntentSender;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageInstaller;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -35,6 +45,9 @@ public class MainActivity extends Activity {
     private SpeechRecognizer sr;
     private boolean srAvailable;
     private boolean pendingStart = false;
+    /** 应用内升级：接收 PackageInstaller 的安装结果广播 */
+    private BroadcastReceiver installReceiver;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +83,35 @@ public class MainActivity extends Activity {
         }
 
         // 不带 #tv：走原版手机端 H5 样式（触摸交互，非遥控器大屏模式）
+
+        // 应用内升级桥 + 安装结果广播（H5 通过 window.AndroidUpdate 调用）
+        webView.addJavascriptInterface(new UpdateBridge(), "AndroidUpdate");
+        installReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context c, Intent i) {
+                if (i == null) return;
+                int st = i.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
+                String msg = i.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                if (st == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+                    Intent confirm = i.getParcelableExtra(Intent.EXTRA_INTENT);
+                    if (confirm != null) {
+                        confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        try { startActivity(confirm); } catch (Exception ignored) {}
+                    }
+                } else if (st == PackageInstaller.STATUS_SUCCESS) {
+                    reportUpdate("ok", "");
+                } else {
+                    reportUpdate("fail", String.valueOf(st) + " " + msg);
+                }
+            }
+        };
+        IntentFilter updFilter = new IntentFilter(getPackageName() + ".INSTALL_COMMIT");
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(installReceiver, updFilter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(installReceiver, updFilter);
+        }
+
         webView.loadUrl("file:///android_asset/index.html");
     }
 
@@ -161,6 +203,149 @@ public class MainActivity extends Activity {
         @Override public void onEvent(int eventType, Bundle params) {}
     }
 
+
+    /* ==================== 应用内升级（APK） ====================
+     * H5 通过 window.AndroidUpdate 调用。下载地址必须命中白名单 —— 因为热更的远程 JS
+     * 同样能调到这个桥，不限制域名等于允许远程代码安装任意 APK。
+     * 用 PackageInstaller.Session 流式写入，不需要 FileProvider，也不需要 androidx。
+     * ========================================================== */
+    private static final String[] APK_HOSTS = {
+        "https://github.com/q137663972-alt/",
+        "https://ghfast.top/https://github.com/q137663972-alt/",
+        "https://ghproxy.net/https://github.com/q137663972-alt/",
+        "https://gh-proxy.com/https://github.com/q137663972-alt/",
+        "https://q137663972-alt.github.io/"
+    };
+
+    private class UpdateBridge {
+        @JavascriptInterface
+        public int getVersionCode() {
+            try {
+                PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+                return (int) (Build.VERSION.SDK_INT >= 28 ? pi.getLongVersionCode() : pi.versionCode);
+            } catch (Exception e) { return 0; }
+        }
+
+        @JavascriptInterface
+        public String getVersionName() {
+            try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+            catch (Exception e) { return "0"; }
+        }
+
+        @JavascriptInterface
+        public boolean canInstall() {
+            if (Build.VERSION.SDK_INT < 26) return true;
+            try { return getPackageManager().canRequestPackageInstalls(); }
+            catch (Exception e) { return false; }
+        }
+
+        @JavascriptInterface
+        public void openInstallPermission() {
+            if (Build.VERSION.SDK_INT < 26) return;
+            try {
+                Intent it = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:" + getPackageName()));
+                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(it);
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
+        public void install(final String url, final String mirrorUrl) {
+            if (!apkUrlAllowed(url)) { reportUpdate("fail", "url not allowed"); return; }
+            if (!canInstall()) { openInstallPermission(); reportUpdate("need-permission", ""); return; }
+            new Thread(new Runnable() {
+                @Override public void run() { doInstall(url, mirrorUrl); }
+            }).start();
+        }
+    }
+
+    private boolean apkUrlAllowed(String u) {
+        if (u == null || u.length() == 0) return false;
+        for (int i = 0; i < APK_HOSTS.length; i++) {
+            if (u.startsWith(APK_HOSTS[i])) return true;
+        }
+        return false;
+    }
+
+    private void doInstall(String url, String mirrorUrl) {
+        PackageInstaller.Session session = null;
+        try {
+            java.io.InputStream in = openStream(url);
+            if (in == null && apkUrlAllowed(mirrorUrl)) in = openStream(mirrorUrl);
+            if (in == null) { reportUpdate("fail", "download failed"); return; }
+
+            PackageInstaller pi = getPackageManager().getPackageInstaller();
+            PackageInstaller.SessionParams params =
+                    new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(getPackageName());
+            int sid = pi.createSession(params);
+            session = pi.openSession(sid);
+
+            java.io.OutputStream out = session.openWrite("base", 0, -1);
+            byte[] buf = new byte[64 * 1024];
+            int n;
+            long done = 0, last = 0;
+            while ((n = in.read(buf)) > 0) {
+                out.write(buf, 0, n);
+                done += n;
+                if (done - last > 256 * 1024) { last = done; reportProgress(done); }
+            }
+            session.fsync(out);
+            try { in.close(); } catch (Exception ignored) {}
+            try { out.close(); } catch (Exception ignored) {}
+
+            Intent bi = new Intent(getPackageName() + ".INSTALL_COMMIT");
+            bi.setPackage(getPackageName());
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= 23) flags |= PendingIntent.FLAG_IMMUTABLE;
+            PendingIntent pend = PendingIntent.getBroadcast(MainActivity.this, sid, bi, flags);
+            IntentSender sender = pend.getIntentSender();
+            session.commit(sender);
+            reportProgress(-1);                       // 交给系统安装界面
+        } catch (Exception e) {
+            reportUpdate("fail", String.valueOf(e.getMessage()));
+        } finally {
+            if (session != null) { try { session.close(); } catch (Exception ignored) {} }
+        }
+    }
+
+    private java.io.InputStream openStream(String u) {
+        try {
+            java.net.HttpURLConnection c =
+                    (java.net.HttpURLConnection) new java.net.URL(u).openConnection();
+            c.setInstanceFollowRedirects(true);       // release 下载地址是 302 到 CDN
+            c.setConnectTimeout(15000);
+            c.setReadTimeout(30000);
+            c.connect();
+            int code = c.getResponseCode();
+            if (code >= 200 && code < 300) return c.getInputStream();
+            c.disconnect();
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private void reportProgress(final long done) {
+        runOnUiThread(new Runnable() {
+            @Override public void run() {
+                try { webView.evaluateJavascript("window.__onUpdateProgress && window.__onUpdateProgress(" + done + ")", null); }
+                catch (Exception ignored) {}
+            }
+        });
+    }
+
+    private void reportUpdate(final String st, final String msg) {
+        runOnUiThread(new Runnable() {
+            @Override public void run() {
+                try {
+                    webView.evaluateJavascript(
+                        "window.__onUpdateDone && window.__onUpdateDone(" + JSONObject.quote(st) + ","
+                            + JSONObject.quote(msg == null ? "" : msg) + ")", null);
+                } catch (Exception ignored) {}
+            }
+        });
+    }
+
     /** 返回键：先让 H5 逐级回退，回到首页则退出应用 */
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -188,6 +373,10 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         if (sr != null) { try { sr.destroy(); } catch (Exception ignored) {} sr = null; }
+        if (installReceiver != null) {
+            try { unregisterReceiver(installReceiver); } catch (Exception ignored) {}
+            installReceiver = null;
+        }
         if (webView != null) webView.destroy();
         super.onDestroy();
     }

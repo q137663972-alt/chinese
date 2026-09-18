@@ -91,17 +91,49 @@ jobs:
           path: ${{ matrix.project }}/app/build/outputs/apk/release/app-release-signed.apk
 
   pages:
-    name: Deploy H5 (GitHub Pages)
+    name: Deploy H5 + 热更包 (GitHub Pages)
     needs: build
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Collect H5 files
         run: |
           mkdir -p page
           cp index.html page/
           cp -r css js page/
+
+      - name: 生成热更包
+        run: |
+          REPO="${{ github.event.repository.name }}"
+          node tools/gen-hot.mjs --out page/hot \
+            --base "https://${{ github.repository_owner }}.github.io/${REPO}/hot/"
+
+      - name: 下载已签名 APK（构建失败时跳过，不影响热更发布）
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          path: apks
+
+      - name: APK 放进 page（应用内升级用）
+        run: |
+          mkdir -p page/apk
+          if [ -d apks ]; then
+            for d in apks/*/; do
+              n=$(basename "$d")
+              out=$(echo "$n" | sed -E 's/^(.*)(TV|Phone)-apk$/\1-\2.apk/')
+              find "$d" -name '*.apk' -exec cp {} "page/apk/$out" \;
+            done
+          fi
+          ls -la page/apk
+
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
