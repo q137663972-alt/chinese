@@ -39,8 +39,10 @@
     "js/data-poem.js",
     "js/data-word.js",
     "js/tts.js",
+    "js/praise.js",
     "js/pics.js",
     "js/games.js",
+    "js/game-battle.js",
     "js/app.js",
     "js/tv.js",
     "js/update.js"
@@ -153,7 +155,7 @@
       if (p === "js/games.js" && m && m.games && m.games.length) {
         for (var g = 0; g < m.games.length; g++) {
           var gp = m.games[g].file || m.games[g];
-          if (typeof gp === "string" && gp) {
+          if (typeof gp === "string" && gp && BUILTIN.indexOf(gp) < 0) {
             out.push({ name: gp, url: "https://local.hot/" + gp, hot: true, game: true });
           }
         }

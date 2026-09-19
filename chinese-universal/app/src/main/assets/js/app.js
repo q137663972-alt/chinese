@@ -208,10 +208,13 @@ function finishGame(correct, total, modeName){
   var earned = acc >= 90 ? 3 : acc >= 60 ? 2 : acc > 0 ? 1 : 0;
   setStars(state.gi, state.bi, state.ui, earned);
   var next = nextUnit();
+  /* 夸奖语 + 满分特效：praise.js 由热更下发，没加载上时自动退回原来的样子 */
+  var P = window.PRAISE;
+  var lv = P ? P.level(acc, earned) : "";
+  var head = P ? P.block(lv) : '<div style="font-size:46px">' + (earned > 0 ? '🎉' : '💪') + '</div>';
+  var starLine = (P && (lv === "perfect" || lv === "great")) ? "" : '<div class="result-stars">' + stars(earned) + '</div>';
   app.innerHTML = topbar("闯关结果", true) +
-    '<div class="result-box">' +
-      '<div style="font-size:46px">' + (earned > 0 ? '🎉' : '💪') + '</div>' +
-      '<div class="result-stars">' + stars(earned) + '</div>' +
+    '<div class="result-box">' + head + starLine +
       '<div style="font-size:16px;color:var(--sub)">' + modeName + ' · 正确率 ' + acc + '%</div>' +
       '<div style="margin-top:6px;font-weight:700">本单元累计 ⭐ ' + getStars(state.gi, state.bi, state.ui) + '</div>' +
       '<div class="row">' +
@@ -222,6 +225,7 @@ function finishGame(correct, total, modeName){
       '</div>' +
       '<button class="btn pink" style="margin-top:12px" onclick="state.view=\'units\';render()">返回单元列表</button>' +
     '</div>';
+  if (P && lv) setTimeout(function(){ P.fx(lv); }, 60);
 }
 function nextUnit(){
   var g = DATA.grades[state.gi];
@@ -273,6 +277,65 @@ function tvBack(){
   return true;
 }
 window.tvBack = tvBack;
+
+/* ===================== 热更自检 / 强制重新下载（可热更，不动冻结文件） ===================== */
+function renderHotDiag(){
+  var hot = !!window.PRAISE;
+  var hasBattle = (window.GAMES || []).some(function (g) { return g.id === "battle"; });
+  var base = window.HOT_BASE || "(未知)";
+  app.innerHTML = topbar("热更自检", true) +
+    '<div class="result-box" style="text-align:left;font-size:15px;line-height:2">' +
+      '当前内容：' + (hot ? '✅ 已热更（特效/语音可用）' : '❌ 内置版（没拉到热更包）') + '<br>' +
+      '知识圈玩法：' + (hasBattle ? '✅ 已在玩法列表' : '❌ 未出现') + '<br>' +
+      '热更源：<span style="word-break:break-all">' + base + '</span><br>' +
+      '连通性：<span id="hotCon">未测试</span><br>' +
+      '<span style="color:var(--sub);font-size:13px">若显示「没拉到热更包」，多半是手机够不到 ' +
+      'github.io（大陆网络常受限）。点「强制重新下载」可清除本地黑名单后重试。</span>' +
+    '</div>' +
+    '<div class="row" style="margin-top:12px">' +
+      '<button class="btn ghost" onclick="hotTestConn()">🔌 测试连通</button>' +
+      '<button class="btn green" onclick="hotForceReload()">🔄 强制重新下载</button>' +
+    '</div>' +
+    '<button class="btn pink" style="margin-top:10px" onclick="state.view=\'home\';render()">返回</button>';
+}
+window.hotTestConn = function () {
+  var el = document.getElementById("hotCon");
+  if (el) el.textContent = "测试中…";
+  try {
+    if (!window.AndroidHot) { if (el) el.textContent = "❌ 浏览器预览无原生桥"; return; }
+    var url = (window.HOT_BASE || "") + "pack/manifest.json?t=" + Date.now();
+    window.AndroidHot.httpGet(url, "__hotDiag");
+  } catch (e) { if (el) el.textContent = "❌ 调用失败"; }
+};
+window.__hotDiag = function (txt) {
+  var el = document.getElementById("hotCon");
+  if (!el) return;
+  if (txt == null) { el.textContent = "❌ 拉取失败（手机够不到该地址）"; return; }
+  try {
+    var m = JSON.parse(txt);
+    el.textContent = "✅ 可达，线上 build=" + (m.build || "?");
+  } catch (e) { el.textContent = "⚠️ 返回了非预期内容"; }
+};
+window.hotForceReload = function () {
+  try {
+    if (!window.AndroidHot) { toast("浏览器预览无法下载"); return; }
+    window.AndroidHot.reset();
+    toast("已清除本地标记，请关闭 App 再重新打开以拉取内容");
+  } catch (e) { toast("操作失败"); }
+};
+(function () {
+  try {
+    if (document.getElementById("hotDiagBtn")) return;
+    var b = document.createElement("button");
+    b.id = "hotDiagBtn";
+    b.textContent = "🛠️";
+    b.title = "热更自检";
+    b.style.cssText = "position:fixed;right:8px;bottom:8px;z-index:9998;width:42px;height:42px;" +
+      "border-radius:50%;border:none;background:rgba(0,0,0,.16);font-size:20px;cursor:pointer";
+    b.onclick = function () { try { window.renderHotDiag(); } catch (e) {} };
+    document.body.appendChild(b);
+  } catch (e) {}
+})();
 
 /* ===================== 启动 ===================== */
 app = $("#app");
