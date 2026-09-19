@@ -1,11 +1,11 @@
 {
   "code": 5,
   "name": "2.2",
-  "note": "热更源改走大陆可访问的 CDN（jsDelivr），特效/语音/知识圈等热更内容可正常下载",
+  "note": "修复热更源（jsDelivr 优先，国内终于拉得到）+ 内置最新内容。注意：签名已更换，请先卸载旧版再安装本包",
   "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@2f459a9470b0979e982a44d1f4234c2e00304467/apk/ChinesePlayground.apk",
+  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@208e79cfb545c6cc34cfa4db1a4686953f44a4af/apk/ChinesePlayground.apk",
   "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@2f459a9470b0979e982a44d1f4234c2e00304467/apk/ChinesePlayground.apk",
+  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@208e79cfb545c6cc34cfa4db1a4686953f44a4af/apk/ChinesePlayground.apk",
   "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@2f459a9470b0979e982a44d1f4234c2e00304467/apk/ChinesePlayground.apk"
+  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@208e79cfb545c6cc34cfa4db1a4686953f44a4af/apk/ChinesePlayground.apk"
 }
