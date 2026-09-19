@@ -147,11 +147,19 @@
      另外两个「必须一屏放下」的尺寸由这里直接算成 px：
        --tian 田字格边长、--pic 主视觉图边长
      它们取 min(按 --s 放大的尺寸, 视口高度占比)，**不能用 CSS 的 min()** ——
-     安卓 8 的 WebView 会把整条声明丢掉，田字格就会塌掉、底部按钮被顶出屏幕。 */
+     安卓 8 的 WebView 会把整条声明丢掉，田字格就会塌掉、底部按钮被顶出屏幕。
+
+     【按物理分辨率分档】电视上的 WebView 普遍把 CSS 视口报成物理的一半：
+       1080p 电视 = 960×540 CSS px（devicePixelRatio=2）、4K = 1920×1080 CSS px。
+     直接拿 CSS px 分档会把 1080p 当成 720p、4K 当成 1080p，UI 整体偏小一档
+     （Fire TV / Shield 等实测都是这样，见 StackOverflow「Full resolution WebView
+     on Android TV」）。这里乘以 devicePixelRatio 还原物理分辨率再分档 ——
+     与 Android TV 官方按物理档位给 dp 资源的做法一致。 */
   function applyScale() {
-    var vw = window.innerWidth || 0, vh = window.innerHeight || 0;
-    var w = Math.max(vw, window.screen ? window.screen.width : 0);
-    var h = Math.max(vh, window.screen ? window.screen.height : 0);
+    var dpr = window.devicePixelRatio || 1;
+    var vw = (window.innerWidth || 0) * dpr, vh = (window.innerHeight || 0) * dpr;
+    var w = Math.max(vw, window.screen ? (window.screen.width || 0) * dpr : 0);
+    var h = Math.max(vh, window.screen ? (window.screen.height || 0) * dpr : 0);
     var s = 1.2;
     if (w >= 3000 || h >= 1700) s = 2.2;        // 4K
     else if (w >= 2300 || h >= 1300) s = 1.8;   // 2K
@@ -159,7 +167,7 @@
     else if (w >= 1100 || h >= 620) s = 1.25;   // 720p
     var st = document.documentElement.style;
     st.setProperty("--s", String(s));
-    var vhp = vh || 720;
+    var vhp = (window.innerHeight || 720);
     st.setProperty("--tian", Math.round(Math.min(340 * s, vhp * 0.42)) + "px");
     st.setProperty("--pic", Math.round(Math.min(260 * s, vhp * 0.34)) + "px");
   }

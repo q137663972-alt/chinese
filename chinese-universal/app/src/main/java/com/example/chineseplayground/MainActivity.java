@@ -209,6 +209,10 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
         try {
             PackageManager pm = getPackageManager();
+            /* 个别盒子会虚报 touchscreen 特性，被这条兜底误判成手机（竖屏锁死）。
+               先排除真正能打电话的手机/平板（有 telephony 必不是电视盒子），
+               再用「无触屏 → 电视」兜底，误判面就小多了。 */
+            if (pm != null && pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) return false;
             if (pm != null && !pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)) return true;
         } catch (Exception ignored) {}
         return false;
