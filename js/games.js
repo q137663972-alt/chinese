@@ -545,7 +545,13 @@ function startPoemFill(){
       pool.filter(function(x){ return x.t !== p.t; })
           .map(function(x){ return x.l[Math.floor(Math.random() * x.l.length)]; })
     ).slice(0, 3)));
-    bindReplay(p.t + '，' + (prev || '') + target);
+    /* 前半部分：要填位置之前的句子，最多念前三句（长诗别念太久）。
+       🔊 只念「诗题+朝代+作者+前半部分」，绝不念 target —— 否则点一下喇叭就等于报答案。 */
+    var headLines = p.l.slice(0, idx);
+    if (headLines.length > 3) headLines = headLines.slice(-3);
+    var headSay = headLines.join('，');
+    var sayStem = p.t + '，' + p.d + '代，' + p.a + '。' + (headSay ? headSay + '，' : '');
+    bindReplay(sayStem);
     gameShell(
       head(cur + 1, list.length, true) +
       '<div class="poem-box">' +
@@ -558,9 +564,9 @@ function startPoemFill(){
         return '<div class="opt opt-poem" onclick="answerPoemFill(' + i + ')">' + esc(o) + '</div>';
       }).join("") +       '</div>' +
       '<div class="feedback" id="fb"></div>', "诗句填空");
-    /* 题干必读：以前是 speak(prev || p.t)，idx===0 时 prev 为空 → 只剩诗题两个字，
-       这就是「部分诗词没有读音」的来源。现在恒定读「诗题+朝代+作者」，再接上一句。 */
-    setTimeout(function(){ speak(p.t + '，' + p.d + '代，' + p.a + '。' + (prev || '')); }, 300);
+    /* 题干必读：恒定读「诗题+朝代+作者」，再把前半部分全部念出来（以前只念上一句，
+       idx===0 时甚至只剩诗题两个字 —— 那就是「部分诗词没读音」的来源）。 */
+    setTimeout(function(){ speak(sayStem); }, 300);
     window.answerPoemFill = function(i){
       if(locked) return; locked = true;
       var el = $all(".opt")[i]; var fb = $("#fb");
