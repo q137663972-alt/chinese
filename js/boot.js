@@ -78,7 +78,10 @@
   var LOG = [];
   function log(s) { LOG.push(s); try { console.log("[boot] " + s); } catch (e) {} }
   window.__HOT_LOG = LOG;
-  log("start base=" + HOT_BASE);
+  /* 打真实生效的源（HOT_BASES[0]），不要打 HOT_BASE 兜底常量 ——
+     常量永远显示 github.io，会让人误判成「源被锁死」（踩过）。 */
+  log("start base=" + (HOT_BASES[0] || HOT_BASE) +
+      (HOT_BASES.length > 1 ? "  (fallback=" + HOT_BASES[HOT_BASES.length - 1] + ")" : "  (single source)"));
 
   /* ============================================================
    * 1. 设备判定 —— 越早越好，CSS 断点和 tv.js 都依赖它
@@ -117,7 +120,8 @@
     d.style.cssText = "position:fixed;left:0;right:0;top:0;bottom:0;z-index:9999;background:rgba(0,0,0,.88);" +
       "color:#0f0;font:12px/1.5 monospace;overflow:auto;padding:12px;white-space:pre-wrap;margin:0";
     d.textContent =
-      "HOT " + APP + "  apk=" + DEV.apk + "  base=" + HOT_BASE + "\n" +
+      "HOT " + APP + "  apk=" + DEV.apk + "  base=" + (HOT_BASES[0] || HOT_BASE) +
+      "  bases=" + HOT_BASES.length + "\n" +
       "native=" + DEV.native + "  dev=" + JSON.stringify(DEV) + "\n" +
       "build=" + (MAN ? MAN.build : "-") + "  files=" + (MAN ? MAN.files.length : 0) + "\n\n" +
       LOG.join("\n");

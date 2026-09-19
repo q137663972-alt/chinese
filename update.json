@@ -1,11 +1,11 @@
 {
-  "code": 5,
-  "name": "2.2",
-  "note": "修复热更源（jsDelivr 优先，国内终于拉得到）+ 内置最新内容。注意：签名已更换，请先卸载旧版再安装本包",
+  "code": 6,
+  "name": "2.2.1",
+  "note": "修复：机顶盒/电视点「开始学习」后自动退回首页（TV 默认焦点误停在返回键）；修复热更图片不更新。与 2.2 同签名，可直接覆盖安装，无需卸载",
   "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@208e79cfb545c6cc34cfa4db1a4686953f44a4af/apk/ChinesePlayground.apk",
+  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@3c7693ac9fd83441adcdd82f08e968a598bdc6c8/apk/ChinesePlayground.apk",
   "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@208e79cfb545c6cc34cfa4db1a4686953f44a4af/apk/ChinesePlayground.apk",
+  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@3c7693ac9fd83441adcdd82f08e968a598bdc6c8/apk/ChinesePlayground.apk",
   "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@208e79cfb545c6cc34cfa4db1a4686953f44a4af/apk/ChinesePlayground.apk"
+  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@3c7693ac9fd83441adcdd82f08e968a598bdc6c8/apk/ChinesePlayground.apk"
 }

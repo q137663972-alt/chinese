@@ -276,7 +276,7 @@ window.__picErr = function (img) {
   var f = window.PIC_PHOTOS && window.PIC_PHOTOS[z];
   if (f && i < bases.length) {            // 换下一个源再试
     img.setAttribute("data-bi", String(i));
-    img.src = bases[i] + f;
+    img.src = bases[i] + f + __picVer();
     return;
   }
   var svg = (window.PICS || {})[z];       // 全挂了 → 换回原来的 SVG，游戏照常能玩
@@ -286,10 +286,16 @@ window.__picErr = function (img) {
 /* 只返回外层 .big-pic 的【内层】内容 —— 外层 div 由各调用点自己包。
    旧版这里自己包了一层 div.big-pic，调用点又包一层，套两层导致
    尺寸/阴影叠加不一致（同一道题，图片加载成功和失败渲染尺寸还不一样）。 */
+/* 图片版本号：跟着热更 build 走，和 JS/CSS 同款防缓存策略。
+ * 不加大括号会被 WebView 把「local.hot/img 早期失败」缓存死，导致装了资源包也读不到新图。 */
+function __picVer() {
+  var b = window.MAN && window.MAN.build;
+  return b ? ("?b=" + b) : "";
+}
 function picHTML(z){
   var ph = window.PIC_PHOTOS && window.PIC_PHOTOS[z];
   if(ph){
-    return '<img src="' + (window.PIC_BASES || ["https://local.hot/img/"])[0] + ph +
+    return '<img src="' + (window.PIC_BASES || ["https://local.hot/img/"])[0] + ph + __picVer() +
            '" data-z="' + z + '" data-bi="0" alt="' + z +
            '" onerror="window.__picErr&&window.__picErr(this)">';
   }

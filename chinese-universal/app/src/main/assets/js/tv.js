@@ -67,11 +67,22 @@
   var lastFocus = null;
   function focusAt(el) { if (el) { try { el.focus(); } catch (e) {} lastFocus = el; } }
 
+  /* 顶栏（返回 / 设置）不能当默认焦点：
+     页面 HTML 以 topbar 开头，若按「第一个可聚焦元素」取焦点，进子页面时焦点
+     会落在「←」上 —— 遥控器一按确认就执行了返回，表现为「点进年级页立刻退回首页」。
+     默认焦点优先给主内容（年级卡 / 单元卡 / 玩法卡 / 选项），顶栏仍可用方向键走到。 */
+  function inTopbar(el) {
+    var p = el.parentNode;
+    return !!(p && String(p.className || "").indexOf("topbar") >= 0);
+  }
   function ensureFocus() {
     var act = document.activeElement;
     if (act && act !== document.body && act.offsetParent !== null) return; // 已有可见焦点
-    var f = (lastFocus && lastFocus.offsetParent !== null) ? lastFocus : visibleFocusables()[0];
-    focusAt(f);
+    if (lastFocus && lastFocus.offsetParent !== null) { focusAt(lastFocus); return; }
+    var list = visibleFocusables();
+    if (!list.length) return;
+    var main = list.filter(function (el) { return !inTopbar(el); });
+    focusAt(main[0] || list[0]);
   }
 
   // 方向键：几何最近邻（主轴距离 + 垂直偏移惩罚）
