@@ -66,7 +66,27 @@
 
   var lastFocus = null;
   var lastOkAt = 0;   // 确认键防抖时间戳
-  function focusAt(el) { if (el) { try { el.focus(); } catch (e) {} lastFocus = el; } }
+
+  /* 电视没有手指滚动：焦点跳到屏幕外的元素时必须把它拉回视野，
+     否则「焦点在下面但看不见」，表现为按钮像被切掉了。
+     这里自己算 scrollTop（不用 scrollIntoView 的参数形式 —— 老 WebView 不认 options）。 */
+  function ensureVisible(el) {
+    if (!el) return;
+    try {
+      var box = document.getElementById("app");
+      if (!box) return;
+      var r = el.getBoundingClientRect(), b = box.getBoundingClientRect();
+      var pad = Math.round((window.innerHeight || 720) * 0.06);
+      if (r.top < b.top + pad) box.scrollTop -= Math.ceil(b.top + pad - r.top);
+      else if (r.bottom > b.bottom - pad) box.scrollTop += Math.ceil(r.bottom - (b.bottom - pad));
+    } catch (e) {}
+  }
+  function focusAt(el) {
+    if (!el) return;
+    try { el.focus(); } catch (e) {}
+    lastFocus = el;
+    setTimeout(function () { ensureVisible(el); }, 0);
+  }
 
   /* 顶栏（返回 / 设置）不能当默认焦点：
      页面 HTML 以 topbar 开头，若按「第一个可聚焦元素」取焦点，进子页面时焦点
@@ -90,16 +110,25 @@
   }
 
   /* TV 尺度：720p / 1080p / 2K / 4K 盒子差异极大，固定 px 在 4K 上小到看不见、
-     在 720p 上又撑出屏幕。按实测视口分档写入 --s，CSS 侧用 calc(基础 × --s) 缩放。 */
+     在 720p 上又撑出屏幕。按实测视口分档写入 --s，CSS 侧用 calc(基础 × --s) 缩放。
+     另外两个「必须一屏放下」的尺寸由这里直接算成 px：
+       --tian 田字格边长、--pic 主视觉图边长
+     它们取 min(按 --s 放大的尺寸, 视口高度占比)，**不能用 CSS 的 min()** ——
+     安卓 8 的 WebView 会把整条声明丢掉，田字格就会塌掉、底部按钮被顶出屏幕。 */
   function applyScale() {
-    var w = Math.max(window.innerWidth || 0, window.screen ? window.screen.width : 0);
-    var h = Math.max(window.innerHeight || 0, window.screen ? window.screen.height : 0);
+    var vw = window.innerWidth || 0, vh = window.innerHeight || 0;
+    var w = Math.max(vw, window.screen ? window.screen.width : 0);
+    var h = Math.max(vh, window.screen ? window.screen.height : 0);
     var s = 1.2;
     if (w >= 3000 || h >= 1700) s = 2.2;        // 4K
     else if (w >= 2300 || h >= 1300) s = 1.8;   // 2K
     else if (w >= 1700 || h >= 950) s = 1.5;    // 1080p
     else if (w >= 1100 || h >= 620) s = 1.25;   // 720p
-    document.documentElement.style.setProperty("--s", String(s));
+    var st = document.documentElement.style;
+    st.setProperty("--s", String(s));
+    var vhp = vh || 720;
+    st.setProperty("--tian", Math.round(Math.min(340 * s, vhp * 0.42)) + "px");
+    st.setProperty("--pic", Math.round(Math.min(260 * s, vhp * 0.34)) + "px");
   }
 
   // 方向键：几何最近邻（主轴距离 + 垂直偏移惩罚）
@@ -135,6 +164,10 @@
   }
 
   function init() {
+    /* 告诉原生壳：遥控器按键由 WebView 里的 tv.js 接管了。
+       MainActivity.dispatchKeyEvent 原本在 ACTION_UP 时自己再 click() 一次，
+       与这里的 keydown 处理叠加就成了「按一下点两下」—— 有这个标记它就退让。 */
+    window.__tvKeyHandled = true;
     applyScale();
     window.addEventListener("resize", applyScale);
     markFocusable(document);
@@ -150,7 +183,29 @@
       mo.observe(root, { childList: true, subtree: true });
     }
 
+    /* 返回键：遥控器上的「返回 / 退出」。
+       真机上一般由 MainActivity.onKeyDown(KEYCODE_BACK) 直接调 window.tvBack()，
+       这里兜住浏览器预览与部分把按键透传到 WebView 的盒子。
+       顺序很重要：**先让玩法自己收尾**（清计时器、停朗读），再退页面 ——
+       否则玩法里的 setInterval 会继续跑，几秒后把界面又刷回游戏里。 */
+    var BACK_KEY = { Escape: 1, Backspace: 1, GoBack: 1, BrowserBack: 1 };
+    function isBack(e) {
+      var kc = e.keyCode || 0;
+      return !!(BACK_KEY[e.key] || kc === 4 || kc === 461 || kc === 166);
+    }
+    function doBack() {
+      if (typeof window.__gameExit === "function") {
+        try { if (window.__gameExit() !== false) return true; } catch (e) { return true; }
+      }
+      if (typeof window.tvBack === "function") {
+        try { return window.tvBack() !== false; } catch (e) { return true; }
+      }
+      return false;
+    }
+
     document.addEventListener("keydown", function (e) {
+      if (isBack(e)) { e.preventDefault(); doBack(); return; }
+
       var act = document.activeElement;
       // 滑块（语速）放行方向键，交给原生调整数值
       if (act && act.tagName === "INPUT") return;

@@ -166,37 +166,59 @@
         log("games from pack: " + m.games.length);
       }
     }
-    /* 资源包里新增的、BUILTIN 没有的非玩法文件（例如新的工具模块）追加到末尾 */
+    /* 资源包里新增的、BUILTIN 没有的非玩法文件（例如新的工具模块）追加到末尾。
+       只认 js/*.js —— css 由 applyHotCss 走 <link> 注入，图片/音频/字体是二进制。
+       这里手一松把 css 或 webp 当成 <script> 加载，会立刻语法错误 → onerror →
+       整轮启动判失败 → 回滚重载，表现为「装了热更包就白屏」。踩过，别再放进来。 */
     if (m) for (i = 0; i < m.files.length; i++) {
       p = m.files[i].p;
-      if (BUILTIN.indexOf(p) < 0 && p !== "MANIFEST.json" && p !== "css/style.css" && p.indexOf("img/") !== 0) {
+      if (BUILTIN.indexOf(p) < 0 && /^js\/.+\.js$/.test(p)) {
         out.push({ name: p, url: "https://local.hot/" + p, hot: true });
       }
     }
     return out;
   }
 
-  /* ---------- 样式：资源包里有 css 就顶掉内置的 ---------- */
+  /* ---------- 样式：资源包里的 css 逐个顶掉内置的 ----------
+   * 两个要点：
+   *   1. 顺序必须保住 —— css/tv.css 排在 css/style.css 之后才有最高优先级，
+   *      电视版规则全靠它盖住手机版。所以替换时插回「原节点的下一个兄弟」前面，
+   *      不能无脑 appendChild（一 append 就排到 tv.css 后面，电视样式整个失效）。
+   *   2. 取不到就退回内置 —— 绝不让页面裸奔。
+   */
+  var CSS_MAP = { "css/style.css": "css0", "css/tv.css": "cssTV" };
+  function swapCss(path, id, build) {
+    var old = document.getElementById(id);
+    var anchor = old ? old.nextSibling : null;
+    function place(node) {
+      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(node, anchor);
+      else document.head.appendChild(node);
+    }
+    var l = document.createElement("link");
+    l.rel = "stylesheet"; l.id = id;
+    l.href = "https://local.hot/" + path + "?b=" + build;
+    l.onerror = function () {
+      log("hot css failed → builtin: " + path);
+      if (l.parentNode) l.parentNode.removeChild(l);
+      var b = document.createElement("link");
+      b.rel = "stylesheet"; b.id = id; b.href = path;
+      place(b);
+    };
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    place(l);
+  }
   function applyHotCss(m) {
     if (!m) return;
-    var has = false, i;
-    for (i = 0; i < m.files.length; i++) if (m.files[i].p === "css/style.css") has = true;
-    if (!has) return;
-    var l = document.getElementById("css0");
-    if (l && l.parentNode) l.parentNode.removeChild(l);
-    var s = document.createElement("link");
-    s.rel = "stylesheet";
-    s.href = "https://local.hot/css/style.css?b=" + m.build;
-    s.id = "css0";
-    /* 万一资源包里的 css 取不到，退回内置的，绝不能让页面裸奔 */
-    s.onerror = function () {
-      log("hot css failed → builtin");
-      var b = document.createElement("link");
-      b.rel = "stylesheet"; b.href = "css/style.css";
-      document.head.appendChild(b);
-    };
-    document.head.appendChild(s);
-    log("css from pack");
+    var i, n = 0;
+    /* 按 m.files 的顺序处理（style.css 在前、tv.css 在后），顺序才不会错位 */
+    for (i = 0; i < m.files.length; i++) {
+      var p = m.files[i].p;
+      var id = CSS_MAP[p];
+      if (!id) continue;
+      swapCss(p, id, m.build);
+      n++;
+    }
+    if (n) log("css from pack ×" + n);
   }
 
   /* ============================================================
@@ -320,6 +342,8 @@
   if (NO_HOT) { log("nohot → builtin"); run(planFiles(null), watch); return; }
 
   MAN = readManifest();
+  /* 把生效中的资源包版本号暴露出去：热更自检页和 tv.js 都要用它拼 URL 破缓存 */
+  window.__HOT_BUILD = MAN ? MAN.build : "";
   if (MAN) log("use pack build=" + MAN.build + " files=" + MAN.files.length);
   else log("use builtin");
 

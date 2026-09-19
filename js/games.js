@@ -280,7 +280,10 @@ window.__picErr = function (img) {
     return;
   }
   var svg = (window.PICS || {})[z];       // 全挂了 → 换回原来的 SVG，游戏照常能玩
-  if (svg && img.parentNode) img.parentNode.innerHTML = svg;
+  if (svg && img.parentNode) { img.parentNode.innerHTML = svg; return; }
+  /* 图源全挂且连 SVG 都没有：绝不能留一块空白（电视上尤其显眼），
+     就地显示大号汉字，孩子照样认得出这是哪个字。 */
+  if (z && img.parentNode) img.parentNode.innerHTML = '<span class="pic-char">' + esc(z) + "</span>";
   else img.style.visibility = "hidden";
 };
 /* 只返回外层 .big-pic 的【内层】内容 —— 外层 div 由各调用点自己包。

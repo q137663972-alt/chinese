@@ -6,6 +6,9 @@
 <title>语文乐园 · 小学1-6年级 · 识字/古诗/词语/笔顺</title>
 <!-- 内置回退样式：热更成功时 js/boot.js 会先删掉它再注入新版 CSS -->
 <link rel="stylesheet" href="css/style.css" id="css0">
+<!-- 电视版专用样式：所有规则都挂在 body.tv 下，手机/平板完全不生效。
+     必须排在 css0 之后（同优先级后来者胜），热更替换时 boot.js 会保住这个顺序。 -->
+<link rel="stylesheet" href="css/tv.css" id="cssTV">
 </head>
 <body>
 <!-- shell:begin —— tools/gen-hot.mjs 抽取这段生成 hot/shell.html，别删标记 -->

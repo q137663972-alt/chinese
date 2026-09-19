@@ -262,6 +262,13 @@ function syncSettings(){
   $("#rateRange").value = settings.rate;
 }
 function goBack(){
+  /* 玩法自己在跑 → 先让它收尾。
+     玩法内部可能有 setInterval（知识圈的答题倒计时就是），光改 state.view 不清计时器，
+     几秒后它一渲染就把界面又抢回游戏里 —— 表现为「点了返回进了别的页面，
+     过一会儿又自动跳回游戏」。这里把退出权交给玩法自己，它清完再回列表。 */
+  if (typeof window.__gameExit === "function") {
+    try { if (window.__gameExit()) return; } catch (e) { window.__gameExit = null; }
+  }
   if(window.__cnTimer){ clearInterval(window.__cnTimer); window.__cnTimer = null; }
   if(window.__strokeTimer){ clearInterval(window.__strokeTimer); window.__strokeTimer = null; }
   if(state.view === "grades"){ state.view = "home"; render(); }

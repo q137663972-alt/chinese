@@ -66,3 +66,28 @@ try{
   }
   console.log('bad rounds='+bad);
 }catch(e){ console.log('deep fail: '+e.message); }
+
+/* ---- 回归：退出知识圈后，计时器不许再抢回界面 ----
+ * 真机 bug：点了返回 → 回到玩法列表 → 倒计时一到，渲染又把界面刷回知识圈。
+ * 根因是玩法自己的 setInterval 没被清掉。这里等 3 秒（大于题目的 1.7s 推进间隔 +
+ * 15s 倒计时的一部分）确认界面一直停在玩法列表。 */
+console.log('\n=== battle exit regression ===');
+(async function () {
+  const app = () => w.document.getElementById('app').innerHTML;
+  try {
+    w.startGame('battle');
+    if (!/\.battle|b-opt/.test(app())) { console.log('  ❌ 知识圈没起来'); return; }
+    /* 模拟遥控器返回 / 原生返回键：goBack() → __gameExit() */
+    w.goBack();
+    const afterBack = app();
+    const left = /b-opt/.test(afterBack);
+    console.log('  返回后仍在知识圈: ' + (left ? '❌ 是' : '✅ 否'));
+    console.log('  state.view=' + w.state.view);
+    await new Promise(r => setTimeout(r, 3000));
+    const now = app();
+    const back = /b-opt/.test(now);
+    console.log('  3 秒后是否被抢回知识圈: ' + (back ? '❌ 是（计时器泄漏）' : '✅ 否'));
+    console.log('  state.view=' + w.state.view + '   __gameExit=' + (typeof w.__gameExit));
+  } catch (e) { console.log('  regression fail: ' + e.message); }
+  process.exit(0);
+})();

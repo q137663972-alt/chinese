@@ -786,8 +786,13 @@ public class MainActivity extends Activity {
         if (event.getAction() == KeyEvent.ACTION_UP
                 && (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER
                     || event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+            /* 电视上 js/tv.js 已经在 keydown 里处理过确认键了（带 220ms 防抖）。
+               这里再 click() 一次 → 按一下点两下，表现为「OK 键要按两次」。
+               tv.js 起来后会打上 window.__tvKeyHandled，此时原生退让，
+               只在 tv.js 没跑到（非电视 / 脚本异常）时才兜底点一下。 */
             webView.evaluateJavascript(
-                "(function(){var e=document.activeElement; if(e&&e.click){e.click(); return true;} return false;})()",
+                "(function(){ if(window.__tvKeyHandled) return false; " +
+                "var e=document.activeElement; if(e&&e.click){e.click(); return true;} return false;})()",
                 null);
         }
         return super.dispatchKeyEvent(event);
