@@ -65,6 +65,7 @@
   }
 
   var lastFocus = null;
+  var lastOkAt = 0;   // 确认键防抖时间戳
   function focusAt(el) { if (el) { try { el.focus(); } catch (e) {} lastFocus = el; } }
 
   /* 顶栏（返回 / 设置）不能当默认焦点：
@@ -82,7 +83,23 @@
     var list = visibleFocusables();
     if (!list.length) return;
     var main = list.filter(function (el) { return !inTopbar(el); });
-    focusAt(main[0] || list[0]);
+    /* 答题界面：默认焦点直接落在第一个答案选项上，遥控器不用先跨过题干；
+       选择类界面（年级/单元/玩法）没有 .opt，就落在第一张卡片上。 */
+    var opts = main.filter(function (el) { return el.classList && el.classList.contains("opt"); });
+    focusAt(opts[0] || main[0] || list[0]);
+  }
+
+  /* TV 尺度：720p / 1080p / 2K / 4K 盒子差异极大，固定 px 在 4K 上小到看不见、
+     在 720p 上又撑出屏幕。按实测视口分档写入 --s，CSS 侧用 calc(基础 × --s) 缩放。 */
+  function applyScale() {
+    var w = Math.max(window.innerWidth || 0, window.screen ? window.screen.width : 0);
+    var h = Math.max(window.innerHeight || 0, window.screen ? window.screen.height : 0);
+    var s = 1.2;
+    if (w >= 3000 || h >= 1700) s = 2.2;        // 4K
+    else if (w >= 2300 || h >= 1300) s = 1.8;   // 2K
+    else if (w >= 1700 || h >= 950) s = 1.5;    // 1080p
+    else if (w >= 1100 || h >= 620) s = 1.25;   // 720p
+    document.documentElement.style.setProperty("--s", String(s));
   }
 
   // 方向键：几何最近邻（主轴距离 + 垂直偏移惩罚）
@@ -118,6 +135,8 @@
   }
 
   function init() {
+    applyScale();
+    window.addEventListener("resize", applyScale);
     markFocusable(document);
     ensureFocus();
 
@@ -142,6 +161,12 @@
       else if (k === "ArrowUp") { e.preventDefault(); nav("up"); }
       else if (k === "ArrowDown") { e.preventDefault(); nav("down"); }
       else if (k === "Enter" || k === " " || e.keyCode === 13 || e.keyCode === 23) {
+        /* 确认键防抖：部分遥控器/固件一次按下会连发两个 keydown，
+           表现为「按一次却点两下 / 焦点跳两格」。220ms 内重复到达的直接丢弃。
+           只防确认键 —— 方向键长按连发必须保留，否则遥控器连续移动会卡顿。 */
+        var now = Date.now();
+        if (now - lastOkAt < 220) { e.preventDefault(); return; }
+        lastOkAt = now;
         // 原生按钮/链接/输入框交给浏览器触发，避免重复点击
         if (act && /^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/.test(act.tagName)) return;
         if (act && act !== document.body) { e.preventDefault(); act.click(); }

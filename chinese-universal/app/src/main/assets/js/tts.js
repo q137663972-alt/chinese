@@ -45,9 +45,12 @@ function splitZh(text){
   });
   return out.length ? out : [String(text)];
 }
-function speakAudio(text){
+function speakAudio(text, times){
   audioQueue = [];
-  splitZh(text).forEach(function(seg){ audioQueue.push(youdaoURL(seg)); });
+  var n = times || 1;
+  for (var i = 0; i < n; i++) {
+    splitZh(text).forEach(function(seg){ audioQueue.push(youdaoURL(seg)); });
+  }
   audioBusy = false; flushAudio();
 }
 
@@ -64,7 +67,9 @@ function speak(text, lang){
       return;
     }catch(e){ /* 原生失败则落到音频兜底 */ }
   }
-  speakAudio(text);
+  /* 电视版读两遍：遥控器操作慢、孩子常没听清。
+     音频队列是串行的，第一遍播完会自动接上第二遍，不会互相打断。 */
+  speakAudio(text, window.__isTV ? 2 : 1);
 }
 
 /* 首次交互解锁音频 */

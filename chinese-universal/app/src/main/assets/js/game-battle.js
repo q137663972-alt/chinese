@@ -37,7 +37,12 @@
         var units = (books[bi] && books[bi].u) || [];
         for (var ui = 0; ui < units.length; ui++) {
           var ws = (units[ui] && units[ui].w) || [];
-          for (var wi = 0; wi < ws.length; wi++) if (ws[wi] && ws[wi].z) ALLWORDS.push(ws[wi]);
+          for (var wi = 0; wi < ws.length; wi++) {
+            var it = ws[wi];
+            /* 字段不齐的字（拼音/笔画/emoji 缺任何一个）会让界面上直接渲染出
+               undefined —— 宁可不进题库，也不能把 undefined 显示给孩子看。 */
+            if (it && it.z && it.p && it.n) ALLWORDS.push(it);
+          }
         }
       }
     }
@@ -52,7 +57,8 @@
     var pool = (extra && extra.length) ? extra.concat(ALLWORDS) : ALLWORDS;
     var guard = 0;
     while (out.length < n && guard++ < 800) {
-      var c = pick(pool)[field];
+      var it = pick(pool); if (!it) continue;
+    var c = it[field];
       if (c == null) continue;
       if (typeof c === "string" && /[，,、]/.test(c)) c = c.split(/[，,、]/)[0];
       if (seen[c]) continue; seen[c] = 1; out.push(c);
@@ -63,25 +69,28 @@
 
   /* 动态出一道语文题：4 种题型轮换（听音选字 / 看字选拼音 / 看图选字 / 笔画数） */
   function makeQuestion() {
-    var w = pick(ALLWORDS);
+    var w = pick(ALLWORDS) || {};
     var type = pick(["listen", "pinyin", "pic", "stroke"]);
     var opts = [], correct = 0, qText = "", speakText = "", hint = "";
+    /* 字段兜底：任何一处取不到也只降级成空串/默认图，绝不在界面上出现 undefined */
+    var pinyin = w.p || "", zh = w.z || "", strokes = w.n || 0, emoji = w.k || "\uD83D\uDDBC\uFE0F";
+    if (!zh) return { qText: "\u6682\u65e0\u9898\u76ee", speakText: pinyin, hint: "", opts: [], correct: 0 };
     if (type === "listen") {
-      qText = "🔊 听一听，选出听到的字"; speakText = w.p; hint = w.p;
-      opts = shuffle([w.z].concat(distractor("z", w.z, 3))).map(function (z) { var o = findWord(z); return { label: (o ? o.k + " " : "") + z, val: z }; });
-      correct = idx(opts, function (x) { return x.val === w.z; });
+      qText = "🔊 听一听，选出听到的字"; speakText = pinyin; hint = pinyin;
+      opts = shuffle([zh].concat(distractor("z", zh, 3))).map(function (z) { var o = findWord(z); return { label: ((o && o.k) ? o.k + " " : "") + z, val: z }; });
+      correct = idx(opts, function (x) { return x.val === zh; });
     } else if (type === "pinyin") {
-      qText = "「" + w.z + "」的拼音是？"; speakText = w.z; hint = w.z;
-      opts = shuffle([w.p].concat(distractor("p", w.p, 3))).map(function (p) { return { label: p, val: p }; });
-      correct = idx(opts, function (x) { return x.val === w.p; });
+      qText = "「" + zh + "」的拼音是？"; speakText = zh; hint = zh;
+      opts = shuffle([pinyin].concat(distractor("p", pinyin, 3))).map(function (p) { return { label: p, val: p }; });
+      correct = idx(opts, function (x) { return x.val === pinyin; });
     } else if (type === "pic") {
-      qText = (w.k || "🖼️") + " 看图片，选出这个字"; speakText = w.z; hint = w.p;
-      opts = shuffle([w.z].concat(distractor("z", w.z, 3))).map(function (z) { var o = findWord(z); return { label: (o ? o.k + " " : "") + z, val: z }; });
-      correct = idx(opts, function (x) { return x.val === w.z; });
+      qText = emoji + " 看图片，选出这个字"; speakText = zh; hint = pinyin;
+      opts = shuffle([zh].concat(distractor("z", zh, 3))).map(function (z) { var o = findWord(z); return { label: ((o && o.k) ? o.k + " " : "") + z, val: z }; });
+      correct = idx(opts, function (x) { return x.val === zh; });
     } else { /* stroke */
-      qText = "「" + w.z + "」有几笔？"; speakText = w.z; hint = w.p;
-      opts = shuffle([w.n].concat(distractor("n", w.n, 3))).map(function (n) { return { label: String(n), val: n }; });
-      correct = idx(opts, function (x) { return x.val === w.n; });
+      qText = "「" + zh + "」有几笔？"; speakText = zh; hint = pinyin;
+      opts = shuffle([strokes].concat(distractor("n", strokes, 3))).map(function (n) { return { label: String(n), val: n }; });
+      correct = idx(opts, function (x) { return x.val === strokes; });
     }
     return { qText: qText, speakText: speakText, hint: hint, opts: opts, correct: correct };
   }

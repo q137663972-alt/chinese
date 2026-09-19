@@ -81,6 +81,7 @@ public class MainActivity extends Activity {
     private static final String K_BAD   = "bad";       // JSON 数组，坏掉的 build
     private static final String K_CUR   = "cur";
     private static final String K_OFF   = "disabled";
+    private static final String K_APK   = "apk";         // 上次安装过的 APK 版本号（用于升级后清旧热更）
 
     private WebView webView;
     private SpeechRecognizer sr;
@@ -119,6 +120,11 @@ public class MainActivity extends Activity {
 
         webView.setWebViewClient(new LocalClient());
         webView.setWebChromeClient(new WebChromeClient());
+
+        /* 换了新 APK → 清掉旧热更残留：旧包可能是被判过「坏」或已熔断的版本，
+           留着会让用户觉得「改了没生效」。清空后本次一定跑内置的最新代码，
+           后台会重新拉一份干净的热更包。 */
+        resetHotOnUpgrade();
 
         srAvailable = SpeechRecognizer.isRecognitionAvailable(this);
         if (srAvailable) {
@@ -297,6 +303,28 @@ public class MainActivity extends Activity {
     }
 
     private SharedPreferences pref() { return getSharedPreferences(PREF, MODE_PRIVATE); }
+
+    private int apkVersionCode() {
+        try {
+            PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+            return (int) (Build.VERSION.SDK_INT >= 28 ? pi.getLongVersionCode() : pi.versionCode);
+        } catch (Exception e) { return 0; }
+    }
+
+    private void resetHotOnUpgrade() {
+        try {
+            SharedPreferences p = pref();
+            int cur = apkVersionCode();
+            if (cur <= 0) return;
+            if (p.getInt(K_APK, 0) == cur) return;
+            deleteDir(hotDir());
+            deleteDir(hotNewDir());
+            deleteDir(hotOldDir());
+            File tmp = new File(getFilesDir(), "pack.tmp.zip");
+            if (tmp.exists()) tmp.delete();
+            p.edit().clear().putInt(K_APK, cur).apply();
+        } catch (Exception ignored) {}
+    }
 
     private List<String> badList() {
         List<String> out = new ArrayList<String>();
