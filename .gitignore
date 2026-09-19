@@ -11,7 +11,8 @@ local.properties
 .idea/
 *.iml
 
-# 签名钥匙 —— 绝不入库
+# 签名钥匙 —— 绝不入库（publish.sh 的 sync_main 会 git add -A，整目录一起挡住）
+keystore/
 *.jks
 *.keystore
 keystore.properties
