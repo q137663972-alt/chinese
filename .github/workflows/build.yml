@@ -134,6 +134,11 @@ jobs:
               find "$d" -name '*.apk' -exec cp {} "page/apk/$out" \;
             done
           fi
+          # 签名 Secrets 没配时构建产不出 APK：退回仓库里已发布的那一份，
+          # 保证 Pages 上的下载直链永远有东西可以下
+          if [ -z "$(ls -A page/apk 2>/dev/null)" ] && [ -d apk ]; then
+            cp apk/*.apk page/apk/ 2>/dev/null || true
+          fi
           ls -la page/apk
 
       - name: Publish to gh-pages
