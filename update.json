@@ -1,11 +1,11 @@
 {
-  "code": 7,
-  "name": "2.2.2",
-  "note": "电视专项修复：安卓8/老 WebView 不再变形（去掉 clamp/min/aspect-ratio 依赖），1080p/2K/4K 自动匹配缩放，笔顺田字格正常显示，OK键不再按两下，知识圈不再出现 undefined。同签名，可直接覆盖安装",
+  "code": 8,
+  "name": "2.3.0",
+  "note": "电视版单独做了一套 UI：按钮不再被屏幕边缘切掉、焦点框更清楚；知识圈退出后不会再自己跳回来；机顶盒上知识圈不再显示 undefined；看图识字图没出来时直接显示大汉字。同签名，可直接覆盖安装",
   "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@e6ae1f1daf756cb672c25ac057e54cd8429dff3d/apk/ChinesePlayground.apk",
+  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@c376eedb05ba1bc13b81495b38f48eb565ce422e/apk/ChinesePlayground.apk",
   "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@e6ae1f1daf756cb672c25ac057e54cd8429dff3d/apk/ChinesePlayground.apk",
+  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@c376eedb05ba1bc13b81495b38f48eb565ce422e/apk/ChinesePlayground.apk",
   "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@e6ae1f1daf756cb672c25ac057e54cd8429dff3d/apk/ChinesePlayground.apk"
+  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@c376eedb05ba1bc13b81495b38f48eb565ce422e/apk/ChinesePlayground.apk"
 }
