@@ -116,7 +116,7 @@ jobs:
             --base "https://${{ github.repository_owner }}.github.io/${REPO}/hot/"
 
       - name: 生成资源包（v3.0 通道：任意格式 + 玩法热更）
-        run: node tools/gen-pack.mjs --out page/hot/pack
+        run: node tools/gen-pack.mjs --out page/hot/pack --min-apk 3   # v3.0 起所有壳都有热更桥，未带桥的更老版本会自动忽略热更包
 
       - name: 下载已签名 APK（构建失败时跳过，不影响热更发布）
         uses: actions/download-artifact@v4
