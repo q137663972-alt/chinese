@@ -1,0 +1,19 @@
+{
+  "app": "chinese",
+  "sig": "chinese-2026",
+  "build": "9f3e9233190c34a1",
+  "min_apk": 10,
+  "ts": 1789833137228,
+  "packs": [
+    {
+      "name": "assets.zip",
+      "sha256": "80179c747083ad00143935c8d296d51c5432a069f4b06b9ce20ee35283bb2317",
+      "size": 1079794
+    },
+    {
+      "name": "code.zip",
+      "sha256": "bf074067c579d08a2b598ad53a6e803d40e89b96b4e9b94fa3417d4d22fce66d",
+      "size": 582437
+    }
+  ]
+}

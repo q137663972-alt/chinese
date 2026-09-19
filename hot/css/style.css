@@ -1,0 +1,446 @@
+:root{
+  --bg1:#fdf3e7; --bg2:#e3f6fb; --card:#ffffff; --ink:#3a3a4a; --sub:#8a8a9a;
+  --pink:#ff8fa3; --blue:#5ec8e0; --yellow:#ffd166; --green:#7ed957; --purple:#b69cff;
+  --shadow:0 8px 22px rgba(80,90,140,.14);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;
+  color:var(--ink);background:linear-gradient(165deg,var(--bg1),var(--bg2));
+  min-height:100vh;display:flex;justify-content:center;
+}
+/* 容器：手机 520px 居中；大屏由后面的断点放宽。
+   safe-area 处理刘海/圆角，env() 不支持的浏览器自动忽略。 */
+/* 兜底 padding 必须写在带 env() 的那一条之前：安卓 8 的 WebView 不认 env()，
+   整条声明会被丢弃；有这条兜底才不会变成 0 边距、内容贴边被电视裁掉。 */
+#app{padding:14px 14px 28px}
+#app{width:100%;max-width:520px;min-height:100vh;position:relative;margin:0 auto;
+     padding:calc(14px + env(safe-area-inset-top,0px)) calc(14px + env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) calc(14px + env(safe-area-inset-left,0px))}
+.topbar{display:flex;align-items:center;grid-gap:10px; gap:10px;margin-bottom:14px}
+.topbar .back,.topbar .gear{
+  width:42px;height:42px;border:none;border-radius:14px;background:#fff;box-shadow:var(--shadow);
+  font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+}
+.topbar .title{flex:1;text-align:center;font-weight:800;font-size:17px;line-height:1.2}
+.topbar .spacer{width:42px;flex:0 0 auto}
+.hero{text-align:center;padding:26px 10px 10px}
+.mascot{font-size:74px;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.hero h1{font-size:30px;margin:8px 0 4px;background:linear-gradient(90deg,var(--pink),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--sub);margin:4px 0 18px;font-size:14px}
+.stars-total{display:inline-flex;align-items:center;grid-gap:6px; gap:6px;background:#fff;padding:6px 14px;border-radius:999px;box-shadow:var(--shadow);font-weight:700;font-size:14px}
+.btn{
+  border:none;border-radius:18px;padding:16px;font-size:17px;font-weight:700;color:#fff;cursor:pointer;
+  background:linear-gradient(135deg,var(--blue),var(--purple));box-shadow:var(--shadow);width:100%;
+  transition:transform .08s ease;
+}
+.btn:active{transform:scale(.97)}
+.btn.pink{background:linear-gradient(135deg,var(--pink),#ff6f91)}
+.btn.green{background:linear-gradient(135deg,var(--green),#3fc26b)}
+.btn.ghost{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+.grade-grid{display:grid;grid-template-columns:1fr 1fr;grid-gap:14px; gap:14px;margin-top:8px}
+.grade-card{background:var(--card);border-radius:22px;padding:18px 12px;box-shadow:var(--shadow);text-align:center;cursor:pointer;border:3px solid transparent;transition:transform .1s}
+.grade-card:active{transform:scale(.97)}
+.grade-card .g-emoji{font-size:46px}
+.grade-card .g-name{font-weight:800;font-size:18px;margin-top:6px}
+.grade-card .g-stars{color:var(--yellow);font-size:14px;margin-top:4px;font-weight:700}
+.sec-title{font-size:16px;font-weight:800;margin:18px 4px 8px;display:flex;align-items:center;grid-gap:8px; gap:8px}
+.book-label{margin:14px 4px 6px;font-weight:800;color:var(--purple);font-size:15px}
+.unit-grid{display:grid;grid-template-columns:1fr 1fr;grid-gap:12px; gap:12px}
+.unit-card{background:var(--card);border-radius:18px;padding:14px 12px;box-shadow:var(--shadow);cursor:pointer;position:relative;min-height:78px;display:flex;flex-direction:column;justify-content:center;transition:transform .1s}
+.unit-card:active{transform:scale(.97)}
+.unit-card .u-name{font-weight:700;font-size:13px;line-height:1.25}
+.unit-card .u-stars{margin-top:6px;font-size:14px;letter-spacing:1px}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;grid-gap:12px; gap:12px;margin-top:10px}
+.mode-card{background:var(--card);border-radius:20px;padding:14px 10px;box-shadow:var(--shadow);text-align:center;cursor:pointer;transition:transform .1s}
+.mode-card:active{transform:scale(.97)}
+.mode-card .m-icon{font-size:36px}
+.mode-card .m-name{font-weight:800;font-size:15px;margin-top:5px}
+.mode-card .m-desc{color:var(--sub);font-size:11px;margin-top:3px;line-height:1.3}
+/* game */
+.game-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;grid-gap:8px; gap:8px}
+.progress-pill{background:#fff;box-shadow:var(--shadow);border-radius:999px;padding:6px 14px;font-weight:700;font-size:14px}
+.replay{width:46px;height:46px;border:none;border-radius:50%;background:#fff;box-shadow:var(--shadow);font-size:22px;cursor:pointer;flex:0 0 auto}
+.big-emoji{font-size:96px;text-align:center;margin:6px 0 4px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.08))}
+/* 手绘 SVG 看图素材：替换原 emoji 大图 */
+.big-pic{display:flex;justify-content:center;align-items:center;width:140px;height:140px;margin:6px auto 4px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.08))}
+.big-pic svg{width:100%;height:100%;display:block}
+.big-pic img{width:100%;height:100%;display:block;object-fit:contain}
+.big-pic--char{font-size:88px;font-weight:800;font-family:"KaiTi","STKaiti","楷体",serif;color:var(--ink,#37474f)}
+/* picHTML() 改为只吐内层后，无图兜底的纯大字挂在内层 span 上（与 .big-pic--char 同款样式） */
+.big-pic .pic-char{font-size:88px;font-weight:800;font-family:"KaiTi","STKaiti","楷体",serif;color:var(--ink,#37474f);line-height:1}
+.big-word{text-align:center;font-size:34px;font-weight:800;letter-spacing:1px;margin:6px 0}
+.prompt{text-align:center;color:var(--sub);font-size:15px;margin-bottom:12px}
+.options{display:grid;grid-template-columns:1fr 1fr;grid-gap:12px; gap:12px}
+.opt{background:var(--card);border-radius:18px;padding:16px 8px;box-shadow:var(--shadow);text-align:center;cursor:pointer;border:3px solid transparent;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;grid-gap:6px; gap:6px;font-size:22px;font-weight:700;transition:transform .08s}
+.opt:active{transform:scale(.96)}
+.opt .opt-zh{font-size:12px;color:var(--sub);font-weight:600}
+.opt.opt-text{font-size:16px;line-height:1.3;padding:14px 10px}
+.opt.correct{border-color:var(--green);background:#eafbe7}
+.opt.wrong{border-color:var(--pink);background:#ffeef1;animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.feedback{text-align:center;font-size:16px;font-weight:800;min-height:24px;margin-top:10px}
+.feedback.ok{color:#3fc26b}.feedback.no{color:#ff6f91}
+/* spelling */
+.answer-box{min-height:56px;background:#fff;border-radius:16px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;grid-gap:6px; gap:6px;flex-wrap:wrap;padding:8px;margin:6px 0 14px;font-size:26px;font-weight:800;letter-spacing:2px}
+.tiles{display:flex;flex-wrap:wrap;grid-gap:10px; gap:10px;justify-content:center}
+.tile{width:46px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;font-size:24px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow)}
+.tile:active{transform:scale(.92)}
+.tile.used{visibility:hidden}
+/* memory */
+.mem-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-gap:10px; gap:10px}
+.mem-card{aspect-ratio:1/1;background:linear-gradient(135deg,var(--yellow),#ffb347);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;box-shadow:var(--shadow);user-select:none;transition:transform .1s}
+.mem-card:active{transform:scale(.95)}
+.mem-card.flipped{background:#fff}
+.mem-card.matched{background:#eafbe7;opacity:.7;pointer-events:none}
+.mem-card .face{display:none}
+.mem-card.flipped .face,.mem-card.matched .face{display:flex}
+.mem-card .back{font-size:26px}
+.mem-card.flipped .back,.mem-card.matched .back{display:none}
+/* read */
+.read-score{font-size:54px;font-weight:800;text-align:center;margin:4px 0}
+.mic-btn{width:96px;height:96px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--pink),#ff6f91);color:#fff;font-size:42px;cursor:pointer;box-shadow:var(--shadow);display:block;margin:14px auto}
+.mic-btn.listening{background:linear-gradient(135deg,var(--green),#3fc26b);animation:flash .6s infinite}
+@keyframes flash{0%,100%{opacity:1}50%{opacity:.6}}
+.read-hint{text-align:center;color:var(--sub);font-size:14px;min-height:20px}
+/* sentence building */
+.sent-slots{min-height:64px;background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:10px;display:flex;flex-wrap:wrap;grid-gap:8px; gap:8px;align-items:center;justify-content:center;margin:6px 0 12px}
+.sent-slots .sw{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;border-radius:12px;padding:8px 12px;font-weight:800;font-size:16px;cursor:pointer}
+.sent-bank{display:flex;flex-wrap:wrap;grid-gap:8px; gap:8px;justify-content:center}
+.sent-bank .bw{background:#fff;box-shadow:var(--shadow);border-radius:12px;padding:9px 13px;font-weight:700;font-size:16px;cursor:pointer}
+.sent-bank .bw.used{visibility:hidden}
+.sent-zh{text-align:center;color:var(--sub);font-size:14px;margin:8px 0}
+/* buckets (分类) */
+.buckets{display:grid;grid-template-columns:1fr 1fr 1fr;grid-gap:10px; gap:10px;margin:12px 0}
+.bucket{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:10px 6px;text-align:center;cursor:pointer;min-height:86px;border:3px dashed #dfe3f0;display:flex;flex-direction:column;align-items:center;justify-content:center;grid-gap:4px; gap:4px}
+.bucket .bk-emoji{font-size:22px}
+.bucket .bk-name{font-weight:800;font-size:12px;line-height:1.2}
+.bucket .bk-count{font-size:11px;color:var(--sub);font-weight:700}
+.bucket.active{border-color:var(--purple);background:#f6f2ff}
+.bucket.hit{border-color:var(--green);background:#eafbe7}
+.bucket.miss{border-color:var(--pink);background:#ffeef1}
+.word-pool{display:flex;flex-wrap:wrap;grid-gap:8px; gap:8px;justify-content:center;margin:10px 0}
+.wp-item{background:#fff;box-shadow:var(--shadow);border-radius:12px;padding:8px 12px;font-weight:700;cursor:pointer;font-size:15px}
+.wp-item.sel{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff}
+.wp-item.gone{visibility:hidden}
+/* 消消乐 */
+.xgrid{display:grid;grid-template-columns:repeat(4,1fr);grid-gap:9px; gap:9px}
+.xcell{aspect-ratio:1/1.1;background:#fff;border-radius:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;grid-gap:2px; gap:2px;cursor:pointer;font-size:26px;padding:4px;border:3px solid transparent;transition:transform .1s}
+.xcell:active{transform:scale(.95)}
+.xcell .cx{font-size:11px;font-weight:800;text-align:center;line-height:1.1;word-break:break-word}
+.xcell.sel{border-color:var(--purple);background:#f6f2ff}
+.xcell.gone{opacity:0;pointer-events:none;transform:scale(.6)}
+/* 限时挑战 */
+.timer-wrap{height:12px;background:#fff;border-radius:999px;box-shadow:var(--shadow);overflow:hidden;margin:6px 0 10px}
+.timer-bar{height:100%;width:100%;background:linear-gradient(90deg,var(--green),var(--yellow));transition:width .2s linear}
+.timer-bar.low{background:linear-gradient(90deg,var(--pink),#ff6f91)}
+.combo{text-align:center;font-weight:800;color:var(--pink);min-height:22px;font-size:15px}
+/* 对话 */
+.dlg{display:flex;flex-direction:column;grid-gap:10px; gap:10px;margin:8px 0 12px}
+.bubble{max-width:88%;padding:12px 14px;border-radius:16px;font-size:15px;line-height:1.35;font-weight:600;box-shadow:var(--shadow)}
+.bubble.a{background:#fff;align-self:flex-start;border-bottom-left-radius:4px}
+.bubble.b{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.bubble .who{font-size:11px;opacity:.7;display:block;margin-bottom:3px}
+/* result */
+.result-stars{font-size:56px;text-align:center;letter-spacing:6px;margin:10px 0}
+.result-box{background:#fff;border-radius:24px;box-shadow:var(--shadow);padding:24px 18px;text-align:center;margin-top:10px}
+.row{display:flex;grid-gap:12px; gap:12px;margin-top:16px}
+.row .btn{flex:1}
+.best{color:var(--sub);font-size:13px;margin-top:6px;font-weight:700}
+/* modal */
+.modal{position:fixed;top:0;right:0;bottom:0;left:0;background:rgba(40,40,60,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.modal.hidden{display:none}
+.modal-card{background:#fff;border-radius:22px;padding:22px;width:100%;max-width:360px;box-shadow:var(--shadow)}
+.modal-card h3{margin:0 0 14px;text-align:center}
+.set-row{display:flex;align-items:center;justify-content:space-between;margin:14px 0}
+.set-row label{font-weight:700}
+.switch{width:52px;height:30px;border-radius:999px;background:#ccc;position:relative;cursor:pointer;transition:background .2s}
+.switch.on{background:var(--green)}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .2s}
+.switch.on::after{left:25px}
+input[type=range]{width:150px}
+.toast{position:fixed;left:50%;top:18%;transform:translateX(-50%) scale(.8);background:rgba(40,40,60,.9);color:#fff;padding:10px 18px;border-radius:14px;font-weight:700;opacity:0;transition:.2s;z-index:60;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1)}
+.hidden{display:none!important}
+.foot{text-align:center;color:var(--sub);font-size:11px;margin-top:18px}
+
+/* ===================== 大屏自适应：平板 / 大平板 / 电视 ===================== */
+/* 只用「最小宽度」断点，不再用 orientation —— 否则手机横一下屏就跳成大屏样式，
+   而手机上横屏时高度极矮，大字号反而更难用。 */
+
+/* 平板（最小边 ≥ 600dp）：两列变三列，容器放宽，字号略增 */
+@media (min-width: 600px) and (max-width: 899px) {
+  #app { max-width: 760px; }
+  body { font-size: 17px; }
+  .grade-grid, .mode-grid { grid-template-columns: repeat(3, 1fr); grid-gap:16px; gap:16px; }
+  .unit-grid { grid-template-columns: repeat(3, 1fr); grid-gap:14px; gap:14px; }
+  .grade-card .g-emoji { font-size: 52px; }
+  .mode-card .m-icon { font-size: 42px; }
+  .mode-card .m-name { font-size: 17px; }
+  .mode-card .m-desc { font-size: 12px; }
+  .opt { font-size: 26px; min-height: 104px; }
+  .btn { font-size: 19px; padding: 18px; }
+  .big-pic { width: calc(150px * var(--s,1)); width: clamp(150px, 26vmin, 200px); height: calc(150px * var(--s,1)); height: clamp(150px, 26vmin, 200px); }
+  .big-emoji { font-size: 112px; }
+  .big-word { font-size: 42px; }
+  .prompt { font-size: 17px; }
+}
+
+/* 大平板 / 桌面（≥ 900） */
+@media (min-width: 900px) {
+  #app { max-width: 1040px; padding: 22px 30px 40px; }
+  body { font-size: 20px; }
+  .topbar { margin-bottom: 18px; }
+  .topbar .back, .topbar .gear { width: 56px; height: 56px; font-size: 26px; border-radius: 18px; }
+  .topbar .title { font-size: 26px; }
+  .topbar .spacer { width: 56px; }
+  .hero { padding: 30px 10px; }
+  .hero h1 { font-size: 56px; }
+  .hero p { font-size: 20px; }
+  .stars-total, .progress-pill { font-size: 20px; padding: 8px 18px; }
+  .sec-title { font-size: 26px; margin: 22px 6px 12px; }
+  .book-label { font-size: 22px; }
+  .grade-grid, .mode-grid { grid-template-columns: repeat(4, 1fr); grid-gap:18px; gap:18px; }
+  .unit-grid { grid-template-columns: repeat(4, 1fr); grid-gap:16px; gap:16px; }
+  .grade-card .g-emoji { font-size: 64px; }
+  .grade-card .g-name { font-size: 24px; }
+  .grade-card .g-stars { font-size: 18px; }
+  .mode-card .m-icon { font-size: 48px; }
+  .mode-card .m-name { font-size: 22px; }
+  .mode-card .m-desc { font-size: 15px; }
+  .options { grid-template-columns: repeat(2, 1fr); grid-gap:18px; gap:18px; }
+  .opt { font-size: 30px; min-height: 120px; padding: 22px 10px; }
+  .opt .opt-zh { font-size: 18px; }
+  .btn { font-size: 24px; padding: 22px; border-radius: 22px; }
+  .big-emoji { font-size: 140px; }
+  .big-pic { width: 160px; height: 160px; }
+  .big-word { font-size: 52px; }
+  .prompt { font-size: 22px; }
+  .replay { width: 60px; height: 60px; font-size: 28px; }
+  .tile { width: 64px; height: 72px; font-size: 34px; border-radius: 18px; }
+  .mem-grid { grid-gap:16px; gap:16px; }
+  .mem-card { font-size: 44px; }
+  .sent-slots { min-height: 90px; padding: 16px; }
+  .sent-slots .sw, .sent-bank .bw { font-size: 24px; padding: 12px 18px; border-radius: 16px; }
+  .buckets { grid-gap:16px; gap:16px; }
+  .bucket { min-height: 130px; }
+  .bucket .bk-name { font-size: 18px; }
+  .wp-item { font-size: 22px; padding: 12px 18px; border-radius: 16px; }
+  .xgrid { grid-gap:16px; gap:16px; }
+  .xcell { font-size: 38px; }
+  .xcell .cx { font-size: 16px; }
+  .dlg .bubble { font-size: 22px; padding: 16px 20px; }
+  .result-stars { font-size: 80px; }
+  .result-box { padding: 36px 26px; }
+  .modal-card { max-width: 520px; padding: 32px; }
+  .modal-card h3 { font-size: 26px; }
+  .set-row { font-size: 22px; margin: 20px 0; }
+  input[type=range] { width: 260px; height: 28px; }
+  .foot { font-size: 16px; }
+}
+
+/* 电视：overscan 留白（老电视会裁掉边缘 5%），容器不再限宽 */
+body.tv #app {
+  max-width: none;
+  padding: calc(4vh + env(safe-area-inset-top,0px)) calc(5vw + env(safe-area-inset-right,0px))
+           calc(4vh + env(safe-area-inset-bottom,0px)) calc(5vw + env(safe-area-inset-left,0px));
+}
+body.tv { font-size: 20px; }
+body.tv .big-pic { width: calc(200px * var(--s,1)); width: clamp(200px, 26vmin, 320px); height: calc(200px * var(--s,1)); height: clamp(200px, 26vmin, 320px); }
+body.tv .opt { font-size: 40px; min-height: 150px; }
+body.tv .big-emoji { font-size: 190px; }
+/* 平板：不做 TV 那套夸张缩放，但要保证手指点得中 */
+body.tablet .opt { min-height: 96px; }
+body.tablet .mode-card { padding: 16px 12px; }
+
+/* 遥控器焦点描边：方向键选中时清晰可见（仅 TV 模式生效，比手机更夸张） */
+
+body.tv [tabindex]:focus,
+body.tv button:focus,
+body.tv a:focus,
+body.tv input:focus,
+body.tv select:focus {
+  outline: none;
+  box-shadow: 0 0 0 7px #ffd400, 0 0 22px 6px rgba(255,212,0,.75), var(--shadow);
+  transform: scale(1.12);
+  position: relative;
+  z-index: 5;
+}
+/* 选中态：与瞬时聚焦光晕区分，呈现"当前已选"的持久高亮（仅 TV） */
+body.tv .selected,
+body.tv .opt.correct,
+body.tv .opt.wrong {
+  outline: none;
+  box-shadow: 0 0 0 4px #2bb673, 0 0 16px 2px rgba(43,182,115,.55);
+  transform: scale(1.04);
+}
+/* 开关：放大 + 强描边 + ON/OFF 文字（仅 TV，远处也看得清） */
+body.tv .switch { width: 92px; height: 50px; border-radius: 999px; box-shadow: 0 0 0 2px rgba(0,0,0,.18); }
+body.tv .switch::after { width: 42px; height: 42px; top: 4px; left: 4px; }
+body.tv .switch.on::after { left: 46px; }
+body.tv .switch::before { content: "关"; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; font-weight: 700; color: #fff; }
+body.tv .switch.on::before { content: "开"; left: 12px; right: auto; }
+body.tv .switch:focus { box-shadow: 0 0 0 7px #ffd400, 0 0 22px 6px rgba(255,212,0,.75); transform: scale(1.12); }
+/* 图标远距离再放大（仅 TV） */
+body.tv .grade-card .g-emoji { font-size: 80px; }
+body.tv .mode-card .m-icon { font-size: 64px; }
+body.tv .big-emoji { font-size: 170px; }
+body.tv .big-pic { width: 200px; height: 200px; }
+
+/* ===================== 语文乐园专用样式 ===================== */
+.game-head .spacer{width:46px;flex:0 0 auto}
+.opt.opt-zi{font-size:40px;line-height:1.1;font-family:"KaiTi","STKaiti","Kaiti SC","楷体",serif}
+.opt.opt-zi{font-family:"KaiTi","STKaiti","Kaiti SC","楷体",serif}
+.pinyin-big{font-size:38px;color:var(--purple);letter-spacing:2px}
+.zi-gap{font-size:44px;letter-spacing:6px;font-family:"KaiTi","STKaiti","楷体",serif}
+.zi-huge{font-size:92px;line-height:1.1;font-family:"KaiTi","STKaiti","楷体",serif}
+.zi-huge-sm{font-size:26px}
+.zi-big2{font-size:42px;font-family:"KaiTi","STKaiti","楷体",serif}
+.pinyin-sub{text-align:center;color:var(--purple);font-size:18px;margin:-2px 0 10px}
+.poem-box{background:#fff;border-radius:18px;box-shadow:var(--shadow);padding:14px 12px;margin:6px 0 12px}
+.poem-title{font-weight:800;color:var(--purple);font-size:14px;margin-bottom:8px;text-align:center}
+.poem-line{font-size:22px;line-height:1.9;text-align:center;font-family:"KaiTi","STKaiti","楷体",serif;cursor:pointer}
+.poem-line.dim{color:var(--sub)}
+.poem-line.gap{color:var(--pink);font-weight:800}
+.opt.opt-poem{font-size:18px;line-height:1.4;padding:14px 8px;min-height:62px;font-family:"KaiTi","STKaiti","楷体",serif}
+.sent-bank .bw.poem-bw{font-size:17px;font-family:"KaiTi","STKaiti","楷体",serif}
+.idiom-big{font-size:38px;letter-spacing:8px;font-family:"KaiTi","STKaiti","楷体",serif}
+.idiom-meaning{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:16px 14px;font-size:19px;line-height:1.6;text-align:center;margin:8px 0 6px}
+/* 田字格 + 笔顺动画 */
+.tian-wrap{display:flex;justify-content:center;margin:8px 0}
+.tian{position:relative;width: calc(300px * var(--s,1)); width: min(300px,70vw);height: calc(300px * var(--s,1)); height: min(300px,70vw);background:#fff;border:3px solid var(--pink);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.tian-svg{position:absolute;left:0;top:0;width:100%;height:100%}
+.tian-svg .grid-lines line{stroke:#f3cfda;stroke-width:4}
+.tian-svg .grid-lines line.diag{stroke:#fae5ec;stroke-width:3}
+.tian-svg .sk{fill:#2f3542;opacity:0;transition:opacity .3s ease}
+.tian-svg .sk.on{opacity:1}
+.tian-svg .sk.now{fill:var(--pink)}
+.tian-canvas{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none}
+.stroke-info{text-align:center;font-size:15px;margin:12px 0 6px;display:flex;align-items:center;justify-content:center;grid-gap:6px; gap:6px;flex-wrap:wrap}
+.stroke-info b{color:var(--pink)}
+.stroke-info .zi-huge-sm{font-family:"KaiTi","STKaiti","楷体",serif;font-size:30px}
+.xgrid .cx.zi{font-size:38px;font-family:"KaiTi","STKaiti","楷体",serif}
+.xgrid .cx.ci{font-size:20px}
+/* TV 远距离放大 */
+body.tv .opt.opt-zi{font-size:62px}
+body.tv .zi-huge{font-size:150px}
+body.tv .zi-big2{font-size:64px}
+body.tv .pinyin-big{font-size:58px}
+body.tv .poem-line{font-size:30px}
+body.tv .idiom-meaning{font-size:26px}
+body.tv .tian{width: calc(340px * var(--s,1)); width: min(340px,40vw);height: calc(340px * var(--s,1)); height: min(340px,40vw)}
+/* 图标远距离再放大（仅 TV） */
+body.tv .grade-card .g-emoji { font-size: 80px; }
+body.tv .mode-card .m-icon { font-size: 64px; }
+body.tv .big-emoji { font-size: 170px; }
+
+/* 首页顶部升级提示条（不打断做题，点 × 则本次版本不再提示） */
+.upd-bar{position:fixed;left:0;right:0;top:0;z-index:45;display:flex;align-items:center;grid-gap:8px; gap:8px;padding:8px 12px;background:var(--ink);color:#fff;font-size:14px;box-shadow:var(--shadow)}
+.upd-txt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.upd-bar button{border:0;border-radius:12px;padding:6px 14px;font-weight:700;font-size:14px;cursor:pointer}
+.upd-go{background:var(--green);color:#173}
+.upd-x{background:transparent;color:#fff;font-size:18px;padding:2px 8px}
+@media (min-width:900px){.upd-bar{font-size:20px;padding:12px 24px}.upd-bar button{font-size:20px;padding:10px 22px}}
+
+/* =====================================================================
+ * 电视分辨率适配层（1080p / 2K / 4K）
+ * ---------------------------------------------------------------------
+ * tv.js 会实测视口宽高，把缩放系数写进 CSS 变量 --s：
+ *     720p → 1.25   1080p → 1.5   2K → 1.8   4K → 2.2
+ * 本层所有尺寸统一写成 calc(基础值 * var(--s))，放在文件末尾覆盖上面的固定值。
+ *
+ * 兼容性：只用 CSS 变量 + calc（Chrome 49+ 起支持），**不用** clamp()/min()/max()
+ * 和 aspect-ratio —— 安卓 8 机顶盒的 WebView（Chrome 6x）不认这几个新函数，整条
+ * 声明会被丢弃，表现为「画面缩小、田字格塌掉、边缘被裁」，就是这个坑。
+ * ===================================================================== */
+body.tv { font-size: calc(20px * var(--s,1)); }
+body.tv #app { max-width: calc(1000px * var(--s,1)); padding: 3vh 4vw; }
+body.tv .topbar { margin-bottom: calc(16px * var(--s,1)); grid-gap: calc(12px * var(--s,1)); gap: calc(12px * var(--s,1)); }
+body.tv .topbar .back, body.tv .topbar .gear { width: calc(48px * var(--s,1)); height: calc(48px * var(--s,1)); font-size: calc(24px * var(--s,1)); border-radius: calc(16px * var(--s,1)); }
+body.tv .topbar .title { font-size: calc(26px * var(--s,1)); }
+body.tv .topbar .spacer { width: calc(48px * var(--s,1)); }
+body.tv .hero h1 { font-size: calc(52px * var(--s,1)); }
+body.tv .hero p { font-size: calc(20px * var(--s,1)); }
+body.tv .sec-title { font-size: calc(26px * var(--s,1)); margin: calc(20px * var(--s,1)) calc(6px * var(--s,1)) calc(12px * var(--s,1)); }
+body.tv .book-label { font-size: calc(22px * var(--s,1)); }
+body.tv .foot { font-size: calc(17px * var(--s,1)); }
+
+/* 网格：电视上多列几排，卡片不至于被拉成细长条（老 WebView 用 grid-gap 兜底） */
+body.tv .grade-grid { grid-template-columns: repeat(3, 1fr); grid-gap: calc(18px * var(--s,1)); gap: calc(18px * var(--s,1)); }
+body.tv .unit-grid  { grid-template-columns: repeat(4, 1fr); grid-gap: calc(16px * var(--s,1)); gap: calc(16px * var(--s,1)); }
+body.tv .mode-grid  { grid-template-columns: repeat(4, 1fr); grid-gap: calc(16px * var(--s,1)); gap: calc(16px * var(--s,1)); }
+body.tv .grade-card { padding: calc(18px * var(--s,1)) calc(12px * var(--s,1)); border-radius: calc(26px * var(--s,1)); }
+body.tv .grade-card .g-emoji { font-size: calc(76px * var(--s,1)); }
+body.tv .grade-card .g-name { font-size: calc(24px * var(--s,1)); }
+body.tv .grade-card .g-stars { font-size: calc(20px * var(--s,1)); }
+body.tv .unit-card { min-height: calc(110px * var(--s,1)); border-radius: calc(20px * var(--s,1)); padding: calc(16px * var(--s,1)) calc(12px * var(--s,1)); }
+body.tv .unit-card .u-name { font-size: calc(20px * var(--s,1)); }
+body.tv .unit-card .u-stars { font-size: calc(20px * var(--s,1)); }
+body.tv .mode-card { padding: calc(18px * var(--s,1)) calc(12px * var(--s,1)); border-radius: calc(24px * var(--s,1)); }
+body.tv .mode-card .m-icon { font-size: calc(64px * var(--s,1)); }
+body.tv .mode-card .m-name { font-size: calc(22px * var(--s,1)); }
+body.tv .mode-card .m-desc { font-size: calc(15px * var(--s,1)); }
+
+/* 答题区：答案项在电视上是主视觉，按 --s 放大后两列仍放得下 */
+body.tv .options { grid-template-columns: repeat(2, 1fr); grid-gap: calc(18px * var(--s,1)); gap: calc(18px * var(--s,1)); }
+body.tv .opt { font-size: calc(40px * var(--s,1)); min-height: calc(150px * var(--s,1)); padding: calc(18px * var(--s,1)) calc(10px * var(--s,1)); border-radius: calc(22px * var(--s,1)); }
+body.tv .opt .opt-zh { font-size: calc(20px * var(--s,1)); }
+body.tv .opt.opt-text { font-size: calc(24px * var(--s,1)); }
+body.tv .opt.opt-poem { font-size: calc(22px * var(--s,1)); min-height: calc(90px * var(--s,1)); }
+body.tv .opt.opt-zi { font-size: calc(62px * var(--s,1)); }
+body.tv .btn { font-size: calc(24px * var(--s,1)); padding: calc(18px * var(--s,1)); border-radius: calc(22px * var(--s,1)); }
+body.tv .row { grid-gap: calc(16px * var(--s,1)); gap: calc(16px * var(--s,1)); }
+body.tv .feedback { font-size: calc(20px * var(--s,1)); min-height: calc(30px * var(--s,1)); }
+body.tv .prompt { font-size: calc(20px * var(--s,1)); }
+body.tv .progress-pill { font-size: calc(20px * var(--s,1)); padding: calc(8px * var(--s,1)) calc(16px * var(--s,1)); }
+body.tv .replay, body.tv .game-head .spacer { width: calc(56px * var(--s,1)); height: calc(56px * var(--s,1)); font-size: calc(28px * var(--s,1)); }
+body.tv .stars-total { font-size: calc(20px * var(--s,1)); padding: calc(8px * var(--s,1)) calc(16px * var(--s,1)); }
+
+/* 汉字主视觉：笔顺演示 / 拼音 / 组词 */
+body.tv .zi-huge { font-size: calc(150px * var(--s,1)); }
+body.tv .zi-huge-sm { font-size: calc(34px * var(--s,1)); }
+body.tv .zi-big2 { font-size: calc(64px * var(--s,1)); }
+body.tv .zi-gap { font-size: calc(70px * var(--s,1)); }
+body.tv .pinyin-big { font-size: calc(58px * var(--s,1)); }
+body.tv .pinyin-sub { font-size: calc(22px * var(--s,1)); }
+body.tv .big-word { font-size: calc(60px * var(--s,1)); }
+body.tv .poem-line { font-size: calc(30px * var(--s,1)); }
+body.tv .poem-title { font-size: calc(20px * var(--s,1)); }
+body.tv .idiom-big { font-size: calc(56px * var(--s,1)); }
+body.tv .idiom-meaning { font-size: calc(26px * var(--s,1)); padding: calc(18px * var(--s,1)) calc(14px * var(--s,1)); }
+body.tv .sent-bank .bw.poem-bw { font-size: calc(22px * var(--s,1)); }
+body.tv .stroke-info { font-size: calc(20px * var(--s,1)); }
+body.tv .stroke-info .zi-huge-sm { font-size: calc(36px * var(--s,1)); }
+
+/* 田字格：min() 在老 WebView 上整条失效会塌成 0 高，这里给确定性尺寸 */
+body.tv .tian { width: calc(340px * var(--s,1)); height: calc(340px * var(--s,1)); border-width: calc(3px * var(--s,1)); }
+body.tv .big-pic { width: calc(260px * var(--s,1)); height: calc(260px * var(--s,1)); }
+body.tv .big-pic .pic-char { font-size: calc(150px * var(--s,1)); }
+body.tv .big-emoji { font-size: calc(170px * var(--s,1)); filter: drop-shadow(0 calc(6px * var(--s,1)) calc(10px * var(--s,1)) rgba(0,0,0,.08)); }
+body.tv .tile { width: calc(60px * var(--s,1)); height: calc(68px * var(--s,1)); font-size: calc(32px * var(--s,1)); border-radius: calc(16px * var(--s,1)); }
+body.tv .answer-box { min-height: calc(72px * var(--s,1)); font-size: calc(34px * var(--s,1)); }
+body.tv .tiles { grid-gap: calc(12px * var(--s,1)); gap: calc(12px * var(--s,1)); }
+body.tv .word-pool .wp-item { font-size: calc(22px * var(--s,1)); padding: calc(10px * var(--s,1)) calc(16px * var(--s,1)); }
+
+/* aspect-ratio 兜底：安卓 8 WebView 不支持，给固定高度元素兜住不至于塌陷 */
+body.tv .mem-card { min-height: calc(96px * var(--s,1)); font-size: calc(52px * var(--s,1)); }
+body.tv .xcell { min-height: calc(120px * var(--s,1)); font-size: calc(36px * var(--s,1)); border-radius: calc(16px * var(--s,1)); }
+body.tv .xcell .cx { font-size: calc(18px * var(--s,1)); }
+body.tv .xgrid .cx.zi { font-size: calc(44px * var(--s,1)); }
+body.tv .xgrid .cx.ci { font-size: calc(24px * var(--s,1)); }
+body.tv .bucket { font-size: calc(22px * var(--s,1)); min-height: calc(110px * var(--s,1)); }
+
+/* 设置弹窗 / 结果页 */
+body.tv .modal-card { max-width: calc(420px * var(--s,1)); padding: calc(24px * var(--s,1)); border-radius: calc(26px * var(--s,1)); }
+body.tv .modal-card h3 { font-size: calc(24px * var(--s,1)); }
+body.tv .set-row { font-size: calc(20px * var(--s,1)); }
+body.tv .switch { width: calc(92px * var(--s,1)); height: calc(50px * var(--s,1)); }
+body.tv .switch::after { width: calc(42px * var(--s,1)); height: calc(42px * var(--s,1)); top: calc(4px * var(--s,1)); left: calc(4px * var(--s,1)); }
+body.tv .switch.on::after { left: calc(46px * var(--s,1)); }
+body.tv .switch::before { font-size: calc(18px * var(--s,1)); right: calc(12px * var(--s,1)); }
+body.tv .switch.on::before { left: calc(12px * var(--s,1)); }
+body.tv .result-box { padding: calc(24px * var(--s,1)); border-radius: calc(26px * var(--s,1)); }
+body.tv .result-stars { font-size: calc(34px * var(--s,1)); }
+body.tv .upd-bar { font-size: calc(18px * var(--s,1)); padding: calc(10px * var(--s,1)) calc(16px * var(--s,1)); }
+body.tv .upd-bar button { font-size: calc(18px * var(--s,1)); padding: calc(8px * var(--s,1)) calc(18px * var(--s,1)); border-radius: calc(14px * var(--s,1)); }

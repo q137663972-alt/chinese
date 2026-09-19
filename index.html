@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>语文乐园 · 小学1-6年级 · 识字/古诗/词语/笔顺</title>
+<!-- 内置回退样式：热更成功时 js/boot.js 会先删掉它再注入新版 CSS -->
+<link rel="stylesheet" href="css/style.css" id="css0">
+<!-- 电视版专用样式：所有规则都挂在 body.tv 下，手机/平板完全不生效。
+     必须排在 css0 之后（同优先级后来者胜），热更替换时 boot.js 会保住这个顺序。 -->
+<link rel="stylesheet" href="css/tv.css" id="cssTV">
+</head>
+<body>
+<!-- shell:begin —— tools/gen-hot.mjs 抽取这段生成 hot/shell.html，别删标记 -->
+<div id="app"></div>
+
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-card">
+    <h3 onclick="window.__hotLog&&window.__hotLog()">⚙️ 设置</h3>
+    <div class="set-row"><label>🔊 中文朗读</label><div id="ttsSwitch" class="switch on"></div></div>
+    <div class="set-row"><label>语速</label><input id="rateRange" type="range" min="0.5" max="1.2" step="0.05" value="0.85"></div>
+    <div class="set-row"><label>试听</label><button class="btn ghost" style="width:auto;padding:8px 16px" onclick="speak('欢迎来到语文乐园，我们一起快乐学习汉字')">🔊 播放</button></div>
+    <div class="set-row"><label>进度备份</label>
+      <div>
+        <button class="btn ghost" style="width:auto;padding:8px 12px" onclick="exportProgress()">💾 导出</button>
+        <button class="btn ghost" style="width:auto;padding:8px 12px" onclick="importProgress()">📥 恢复</button>
+      </div>
+    </div>
+    <textarea id="backupBox" class="hidden" rows="3" style="width:100%;font-size:12px;margin-top:6px"></textarea>
+    <button class="btn pink" style="margin-top:8px" onclick="closeSettings()">完成</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<!-- shell:end -->
+
+<!-- 冻结文件：热更引导器（永不热更，改它必须出新 APK）。
+     所有 js/*.js 与 css/style.css 都由 boot.js 按清单顺序注入：
+     有缓存用缓存（离线也是新版），没缓存用内置 —— 启动路径零网络。 -->
+<script src="js/boot.js"></script>
+</body>
+</html>
