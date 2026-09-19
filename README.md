@@ -45,10 +45,11 @@ python3 -m http.server 8891
 推送到 GitHub 后 Actions 自动构建；也可手动 `workflow_dispatch`。
 产物在 Release（临时）与 Actions Artifacts 中：
 
-- `ChinesePlayground-TV.apk`（电视版）
-- `ChinesePlayground-Phone.apk`（手机版）
+- `ChinesePlayground.apk` —— 手机 / 平板 / 电视通用，装一个就够
 
-电视版遥控器操作：上下左右移动焦点，OK 确认，返回键回退，长按 OK 呼出语音（若设备支持）。
+包名 `com.example.chineseplayground`。三端合一后不再区分电视版与手机版：
+屏幕方向按设备类型在运行时决定（电视锁横屏、手机锁竖屏、平板自由旋转），
+Android TV 首页以横幅显示。遥控器操作：上下左右移动焦点，OK 确认，返回键回退。
 
 ## 数据结构
 

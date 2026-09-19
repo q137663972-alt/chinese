@@ -82,6 +82,19 @@ function optsOf(u, correct, n, homo){
    规则：同组字永不同时出现在一道看图题里；且作为「正确答案」时降频。 */
 var CONFUSE_GROUPS = [
   ["你","我","他","人"],
+  /* 天空/天象族：识字课天生就爱把这些字放一课（一上·天地自然：天地人你我他日月星云山水），
+     配图又全是天空、太阳、云、雨 —— 两个摆进同一题，孩子只能靠猜。
+     2026-09-19 补：原来只有「天-日」「月-星」「云-雾」「风-雨」「雷-电」这种两两小对，
+     交叉组合全漏（天-云、天-月、日-星、雷-雨 都判不出），实测一上·天地自然 里
+     正确=天 时干扰项频次 云856/星717/月701 —— 全是天空图。整族两两互斥。 */
+  ["天","云","日","月","星","雷","雨","电","风","光"],
+  /* 数字族：这些字的配图全是气球/小圆点，只能靠「数几个」来区分，
+     而一年级孩子数都还数不利索 —— 一和七摆一题等于送分或送命。
+     2026-09-19 confuse-lint 查出：数字单元里 36 对是同单元就会同题，和天空族同一类 bug。 */
+  ["一","二","三","四","五","六","七","八","九","十"],
+  /* 下面几族同样是 confuse-lint 查出来的同单元漏配（配图撞车：色块/树/水/日出/房舍） */
+  ["白","黑"], ["树","林","森","松","柏","杨","柳","竹"], ["水","江","河","湖","海","洋"],
+  ["日","早","晨","明","晴"], ["午","时"], ["家","房","院"],
   ["天","日"], ["月","星"], ["云","雾"],
   ["风","雨"], ["雷","电"], ["木","禾"], ["石","岩"],
   ["口","舌"], ["耳","目"], ["手","足"], ["头","背"],
@@ -111,7 +124,7 @@ var CONFUSE_GROUPS = [
   ["棚","架"], ["檐","篱","笆"], ["蔬","畜","禽"], ["桑","麻"], ["织","锄"],
   ["箭","舱"], ["宇","宙"], ["测","控"], ["讯","码"], ["网","芯"],
   ["诺","誓"], ["诚","信"], ["欺","骗"], ["谎","悔"], ["错","责"], ["改","约"],
-  ["阁","楼","亭","台","廊","塔","寺","庙"], ["碑","雕"], ["窟","洞"],
+  ["阁","楼","亭","台","廊","塔","寺","庙","榭"], ["碑","雕"], ["窟","洞"],
   ["籍","卷"], ["诵","阅"], ["博","雅"], ["典","奥"], ["慧","智"], ["妙","贤"],
   ["列","举","例"], ["比","较"], ["数","据"], ["图","表"], ["简","准","确"],
   ["郎","梭"], ["筐","缘"], ["媒","聘"], ["嫁","娶"], ["鹊","桥"], ["银","汉"],
@@ -478,7 +491,11 @@ function startWordFill(){
     var pool = [];
     DATA.grades[state.gi].books.forEach(function(b){ b.u.forEach(function(un){ un.w.forEach(function(x){ if(x.z !== target) pool.push(x.z); }); }); });
     var opts = shuffle([target].concat(shuffle(pool).slice(0, 3)));
-    bindReplay(ci);
+    /* ⚠️ 题干/重播键都不能念完整词：屏幕上是「天○」，念出「天空」等于直接报答案。
+       改成念「天什么」——把要填的那个空读成「什么」，题目完整、答案不泄露。
+       答对以后（下面 answerWordFill 里）再念整词，那时候读是对的。 */
+    var spoken = shown.replace(/○/g, "什么");
+    bindReplay(spoken);
     gameShell(
       head(cur + 1, list.length, true) +
       '<div class="big-pic">' + picHTML(r.z.z) + '</div>' +
@@ -488,10 +505,11 @@ function startWordFill(){
         return '<div class="opt opt-zi" onclick="answerWordFill(' + i + ')">' + esc(o) + '</div>';
       }).join("") + '</div>' +
       '<div class="feedback" id="fb"></div>', "组词填空");
-    setTimeout(function(){ speak(ci); }, 300);
+    setTimeout(function(){ speak(spoken); }, 300);
     window.answerWordFill = function(i){
       if(locked) return; locked = true;
       var el = $all(".opt")[i]; var fb = $("#fb");
+      speak(opts[i]);   /* 点击即读：答错也念一遍被点的字（以前答错完全静音） */
       if(opts[i] === target){
         el.classList.add("correct"); correct++; fb.textContent = "✅ " + ci; fb.className = "feedback ok"; speak(ci);
       } else {
@@ -523,7 +541,7 @@ function startPoemFill(){
       pool.filter(function(x){ return x.t !== p.t; })
           .map(function(x){ return x.l[Math.floor(Math.random() * x.l.length)]; })
     ).slice(0, 3)));
-    bindReplay(prev + target);
+    bindReplay(p.t + '，' + (prev || '') + target);
     gameShell(
       head(cur + 1, list.length, true) +
       '<div class="poem-box">' +
@@ -536,12 +554,17 @@ function startPoemFill(){
         return '<div class="opt opt-poem" onclick="answerPoemFill(' + i + ')">' + esc(o) + '</div>';
       }).join("") +       '</div>' +
       '<div class="feedback" id="fb"></div>', "诗句填空");
-    setTimeout(function(){ speak(prev || p.t); }, 300);
+    /* 题干必读：以前是 speak(prev || p.t)，idx===0 时 prev 为空 → 只剩诗题两个字，
+       这就是「部分诗词没有读音」的来源。现在恒定读「诗题+朝代+作者」，再接上一句。 */
+    setTimeout(function(){ speak(p.t + '，' + p.d + '代，' + p.a + '。' + (prev || '')); }, 300);
     window.answerPoemFill = function(i){
       if(locked) return; locked = true;
       var el = $all(".opt")[i]; var fb = $("#fb");
+      /* 点击即读：对错都把被点的整句念一遍（照抄 startPinyin 的范式）。
+         以前是只在答对时 speak(target)，答错完全静音。 */
+      speak(opts[i]);
       if(opts[i] === target){
-        el.classList.add("correct"); correct++; fb.textContent = "✅ " + target; fb.className = "feedback ok"; speak(target);
+        el.classList.add("correct"); correct++; fb.textContent = "✅ " + target; fb.className = "feedback ok";
       } else {
         el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + target + "」"; fb.className = "feedback no";
         $all(".opt").forEach(function(o, j){ if(opts[j] === target) o.classList.add("correct"); });
@@ -576,11 +599,14 @@ function startPoemSort(){
           return '<span class="bw poem-bw ' + (used.indexOf(i) >= 0 ? "used" : "") + '" onclick="pickLine(' + i + ')">' + esc(s) + '</span>';
         }).join("") + '</div>' +
         '<div class="feedback" id="fb"></div>', "连句成诗");
-      bindReplay(p.t);
     }
+    /* 重播只绑一次：以前写在 draw() 里，每次重绘都被覆盖回「只读标题」，
+       孩子永远没法重听整首诗。 */
+    bindReplay(p.t + '，' + p.d + '代，' + p.a);
     window.pickLine = function(i){
       if(used.indexOf(i) >= 0) return;
-      used.push(i); draw();
+      /* 点击即读：以前点诗句完全不发声，这是「诗词没读音」最严重的一处 */
+      used.push(i); speak(bank[i]); draw();
       if(used.length === bank.length){
         var built = used.map(function(x){ return bank[x]; }).join("");
         var fb = $("#fb");
@@ -598,7 +624,7 @@ function startPoemSort(){
     };
     window.unpickLine = function(k){ used.splice(k, 1); draw(); };
     draw();
-    setTimeout(function(){ speak(p.t + "，" + p.a); }, 300);
+    setTimeout(function(){ speak(p.t + '，' + p.d + '代，' + p.a); }, 300);
   }
   renderRound();
 }
@@ -641,9 +667,12 @@ function startIdiom(){
         return '<div class="opt opt-zi" onclick="answerIdiom(' + i + ')">' + esc(o) + '</div>';
       }).join("") + '</div>' +
       '<div class="feedback" id="fb"></div>', "成语填空");
+    /* 题干补朗读：释义是长句、孩子认不全字，以前题目出来是静音的 */
+    setTimeout(function(){ speak(it.m); }, 300);
     window.answerIdiom = function(i){
       if(locked) return; locked = true;
       var el = $all(".opt")[i]; var fb = $("#fb");
+      speak(opts[i]);   /* 点击即读 */
       if(opts[i] === answer){
         el.classList.add("correct"); correct++; fb.textContent = "✅ " + it.w + "：" + it.m; fb.className = "feedback ok"; speak(it.w);
       } else {
@@ -689,6 +718,7 @@ function startStroke(){
     window.answerStroke = function(i){
       if(locked) return; locked = true;
       var el = $all(".opt")[i]; var fb = $("#fb");
+      speak(r.correct.z);   /* 点击即读：选项是数字，念字比念数字有用 */
       if(opts[i] === n){
         el.classList.add("correct"); correct++; fb.textContent = "✅ " + r.correct.z + " 共 " + n + " 画"; fb.className = "feedback ok"; speak(r.correct.z);
       } else {
@@ -731,9 +761,16 @@ function startWrite(){
           '<g class="grid-lines"><line x1="512" y1="0" x2="512" y2="1024"/><line x1="0" y1="512" x2="1024" y2="512"/>' +
           '<line x1="512" y1="0" x2="0" y2="512" class="diag"/><line x1="512" y1="0" x2="1024" y2="512" class="diag"/>' +
           '<line x1="0" y1="512" x2="512" y2="1024" class="diag"/><line x1="1024" y1="512" x2="512" y2="1024" class="diag"/></g>' +
+          /* strokes.js 是 makemeahanzi 坐标系：原点左下、**y 轴朝上**，字符占 y ∈ [-124,900]。
+             SVG 的 y 轴朝下，所以必须补 scale(1,-1) translate(0,-900)（等价于 y_svg = 900 - y_raw），
+             否则字形整体上下镜像 —— 实测「上」被画成「下」、「下」被画成「上」，567 字无一幸免。
+             ⚠️ 只翻笔画：田字格线本来就在正确的 y-down 空间里，一起翻就错位了。
+             ⚠️ 不要用 1024-y：会溢出到 1124，字的底部被切掉。 */
+          '<g transform="scale(1,-1) translate(0,-900)">' +
           paths.map(function(d, i){
             return '<path class="sk" data-i="' + i + '" d="' + d + '"></path>';
           }).join("") +
+          '</g>' +
         '</svg>' +
         '<canvas class="tian-canvas" id="tc" width="440" height="440"></canvas>' +
       '</div></div>' +
@@ -852,6 +889,7 @@ function startNearFar(){
     window.answerNearFar = function(i){
       if(locked) return; locked = true;
       var el = $all(".opt")[i]; var fb = $("#fb");
+      speak(opts[i]);   /* 点击即读 */
       if(opts[i] === p.b){
         el.classList.add("correct"); correct++; fb.textContent = "✅ " + p.a + " — " + p.b + "（" + (askNear ? "近义" : "反义") + "）"; fb.className = "feedback ok"; speak(p.b);
       } else {
@@ -886,9 +924,12 @@ function startLiangci(){
         return '<div class="opt opt-zi" onclick="answerLiangci(' + i + ')">' + esc(o) + '</div>';
       }).join("") + '</div>' +
       '<div class="feedback" id="fb"></div>', "量词搭配");
+    /* 题干补朗读：读名词本身（选项是量词，读名词不会泄题） */
+    setTimeout(function(){ speak(p.n); }, 300);
     window.answerLiangci = function(i){
       if(locked) return; locked = true;
       var el = $all(".opt")[i]; var fb = $("#fb");
+      speak(opts[i]);   /* 点击即读 */
       if(opts[i] === p.l){
         el.classList.add("correct"); correct++; fb.textContent = "✅ 一" + p.l + p.n; fb.className = "feedback ok"; speak("一" + p.l + p.n);
       } else {
@@ -1097,6 +1138,7 @@ function startChallenge(){
   window.answerChallenge = function(i){
     if(locked) return; locked = true;
     var el = $all(".opt")[i]; var fb = $("#fb");
+    speak(q.opts[i].label);   /* 点击即读（题干不加朗读：含「看图选字」题型，念了就泄题） */
     if(q.opts[i].ok){
       el.classList.add("correct"); streak++; score += 10 + (streak >= 3 ? 5 : 0);
       fb.textContent = "✅ +" + (10 + (streak >= 3 ? 5 : 0)); fb.className = "feedback ok"; speak(q.say);
