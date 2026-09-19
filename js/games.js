@@ -326,12 +326,13 @@ function startListen(){
       if(chosen.z === r.correct.z){ el.classList.add("correct"); correct++; fb.textContent = "✅ 答对啦！" + r.correct.p; fb.className = "feedback ok"; }
       else{
         el.classList.add("wrong"); fb.textContent = "❌ 是「" + r.correct.z + "」" + r.correct.p; fb.className = "feedback no";
+        speak(r.correct.z);          /* 答错也要把正确的字念出来 */
         $all(".opt").forEach(function(o, j){ if(opts[j].z === r.correct.z) o.classList.add("correct"); });
       }
       setTimeout(function(){
         cur++;
         if(cur < rounds.length) renderRound(); else finishGame(correct, rounds.length, "听音选字");
-      }, 1200);
+      }, 1800);
     };
   }
   renderRound();
@@ -360,12 +361,13 @@ function startPicture(){
         fb.textContent = "✅ " + r.correct.p + " · " + r.correct.w.join("/"); fb.className = "feedback ok";
       } else {
         el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + r.correct.z + "」" + r.correct.p; fb.className = "feedback no";
+        speak(r.correct.z);
         $all(".opt").forEach(function(o, j){ if(opts[j].z === r.correct.z) o.classList.add("correct"); });
       }
       setTimeout(function(){
         cur++;
         if(cur < rounds.length) renderRound(); else finishGame(correct, rounds.length, "看图识字");
-      }, 1200);
+      }, 1800);
     };
   }
   renderRound();
@@ -398,12 +400,13 @@ function startPinyin(){
       if(chosen.z === r.correct.z){ el.classList.add("correct"); correct++; fb.textContent = "✅ 对啦！" + r.correct.w.join("/"); fb.className = "feedback ok"; }
       else{
         el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + r.correct.z + "」"; fb.className = "feedback no";
+        speak(r.correct.z);          /* 题干是拼音 → 必须把那个字念出来 */
         $all(".opt").forEach(function(o, j){ if(opts[j].z === r.correct.z) o.classList.add("correct"); });
       }
       setTimeout(function(){
         cur++;
         if(cur < rounds.length) renderRound(); else finishGame(correct, rounds.length, "拼音配对");
-      }, 1200);
+      }, 1800);
     };
   }
   renderRound();
@@ -514,12 +517,13 @@ function startWordFill(){
         el.classList.add("correct"); correct++; fb.textContent = "✅ " + ci; fb.className = "feedback ok"; speak(ci);
       } else {
         el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + ci + "」"; fb.className = "feedback no";
+        speak(ci);
         $all(".opt").forEach(function(o, j){ if(opts[j] === target) o.classList.add("correct"); });
       }
       setTimeout(function(){
         cur++;
         if(cur < list.length) renderRound(); else finishGame(correct, list.length, "组词填空");
-      }, 1300);
+      }, 1900);
     };
   }
   renderRound();
@@ -567,12 +571,13 @@ function startPoemFill(){
         el.classList.add("correct"); correct++; fb.textContent = "✅ " + target; fb.className = "feedback ok";
       } else {
         el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + target + "」"; fb.className = "feedback no";
+        speak(target);               /* 诗句填空：把整句念一遍最有用 */
         $all(".opt").forEach(function(o, j){ if(opts[j] === target) o.classList.add("correct"); });
       }
       setTimeout(function(){
         cur++;
         if(cur < list.length) renderRound(); else finishGame(correct, list.length, "诗句填空");
-      }, 1500);
+      }, 2000);
     };
   }
   renderRound();
@@ -618,7 +623,8 @@ function startPoemSort(){
           }, 1500);
         } else {
           fb.textContent = "❌ 顺序不对，再试一次"; fb.className = "feedback no";
-          setTimeout(function(){ used = []; draw(); }, 1200);
+          speak(p.l.join(""));       /* 把正确顺序的整首诗念一遍 */
+          setTimeout(function(){ used = []; draw(); }, 1900);
         }
       }
     };
@@ -677,12 +683,13 @@ function startIdiom(){
         el.classList.add("correct"); correct++; fb.textContent = "✅ " + it.w + "：" + it.m; fb.className = "feedback ok"; speak(it.w);
       } else {
         el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + it.w + "」" + it.m; fb.className = "feedback no";
+        speak(it.w);
         $all(".opt").forEach(function(o, j){ if(opts[j] === answer) o.classList.add("correct"); });
       }
       setTimeout(function(){
         cur++;
         if(cur < list.length) renderRound(); else finishGame(correct, list.length, "成语填空");
-      }, 1500);
+      }, 2000);
     };
   }
   renderRound();
@@ -723,12 +730,13 @@ function startStroke(){
         el.classList.add("correct"); correct++; fb.textContent = "✅ " + r.correct.z + " 共 " + n + " 画"; fb.className = "feedback ok"; speak(r.correct.z);
       } else {
         el.classList.add("wrong"); fb.textContent = "❌ " + r.correct.z + " 共 " + n + " 画"; fb.className = "feedback no";
+        speak(r.correct.z);
         $all(".opt").forEach(function(o, j){ if(opts[j] === n) o.classList.add("correct"); });
       }
       setTimeout(function(){
         cur++;
         if(cur < rounds.length) renderRound(); else finishGame(correct, rounds.length, "笔画数练习");
-      }, 1300);
+      }, 1900);
     };
   }
   renderRound();
@@ -894,12 +902,13 @@ function startNearFar(){
         el.classList.add("correct"); correct++; fb.textContent = "✅ " + p.a + " — " + p.b + "（" + (askNear ? "近义" : "反义") + "）"; fb.className = "feedback ok"; speak(p.b);
       } else {
         el.classList.add("wrong"); fb.textContent = "❌ 正确是「" + p.b + "」"; fb.className = "feedback no";
+        speak(p.b);
         $all(".opt").forEach(function(o, j){ if(opts[j] === p.b) o.classList.add("correct"); });
       }
       setTimeout(function(){
         cur++;
         if(cur < list.length) renderRound(); else finishGame(correct, list.length, "近反义配对");
-      }, 1400);
+      }, 1900);
     };
   }
   renderRound();
@@ -934,12 +943,13 @@ function startLiangci(){
         el.classList.add("correct"); correct++; fb.textContent = "✅ 一" + p.l + p.n; fb.className = "feedback ok"; speak("一" + p.l + p.n);
       } else {
         el.classList.add("wrong"); fb.textContent = "❌ 正确是「一" + p.l + p.n + "」"; fb.className = "feedback no";
+        speak("一" + p.l + p.n);
         $all(".opt").forEach(function(o, j){ if(opts[j] === p.l) o.classList.add("correct"); });
       }
       setTimeout(function(){
         cur++;
         if(cur < list.length) renderRound(); else finishGame(correct, list.length, "量词搭配");
-      }, 1300);
+      }, 1900);
     };
   }
   renderRound();
@@ -1146,9 +1156,10 @@ function startChallenge(){
       el.classList.add("wrong"); streak = 0;
       var right = q.opts.filter(function(o){ return o.ok; })[0];
       fb.textContent = "❌ " + (right ? right.label : ""); fb.className = "feedback no";
+      if (right) speak(right.label);
       $all(".opt").forEach(function(o, j){ if(q.opts[j].ok) o.classList.add("correct"); });
     }
-    setTimeout(function(){ q = mkQ(); locked = false; draw(); }, 750);
+    setTimeout(function(){ q = mkQ(); locked = false; draw(); }, 1400);
   };
   function endChallenge(){
     clearInterval(timer);
