@@ -3,9 +3,9 @@
   "name": "2.3.1",
   "note": "遥控器专项：① 确认键不再一次点两下（长按连发已屏蔽）；② 设置界面按返回键即可关闭，不会只退回上一级菜单；③ 进入各界面光标不再停在设置按钮上，直接落到可选内容；④ 设置弹层超高时可滚动，\"完成\"按钮不会被顶出屏幕。同签名，可直接覆盖安装",
   "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@c376eedb05ba1bc13b81495b38f48eb565ce422e/apk/ChinesePlayground.apk",
+  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@8b427be4f3059859f511b78c851f8f24acba1c83/apk/ChinesePlayground.apk",
   "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@c376eedb05ba1bc13b81495b38f48eb565ce422e/apk/ChinesePlayground.apk",
+  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@8b427be4f3059859f511b78c851f8f24acba1c83/apk/ChinesePlayground.apk",
   "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@c376eedb05ba1bc13b81495b38f48eb565ce422e/apk/ChinesePlayground.apk"
+  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@8b427be4f3059859f511b78c851f8f24acba1c83/apk/ChinesePlayground.apk"
 }
