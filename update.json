@@ -1,11 +1,11 @@
 {
-  "code": 4,
-  "name": "2.1",
-  "note": "三端合一通用包；签名已更换，需先卸载旧版再安装",
+  "code": 5,
+  "name": "2.2",
+  "note": "热更源改走大陆可访问的 CDN（jsDelivr），特效/语音/知识圈等热更内容可正常下载",
   "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "apkMirror": "",
+  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@gh-pages/apk/ChinesePlayground.apk",
   "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "phoneMirror": "",
+  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@gh-pages/apk/ChinesePlayground.apk",
   "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "tvMirror": ""
+  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@gh-pages/apk/ChinesePlayground.apk"
 }

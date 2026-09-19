@@ -267,7 +267,7 @@ function head( Cur, total, replay ){
 window.PIC_BASES = window.PIC_BASES || [
   "https://local.hot/img/",
   "img/",
-  "https://q137663972-alt.github.io/chinese/img/"
+  "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@gh-pages/img/"
 ];
 window.__picErr = function (img) {
   var z = img.getAttribute("data-z") || "";

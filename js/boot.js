@@ -25,7 +25,9 @@
 
   /* ---------- 配置（每个项目不同） ---------- */
   var APP       = "chinese";
-  var HOT_BASE  = "https://q137663972-alt.github.io/chinese/hot/";
+  var HOT_BASE  = "https://q137663972-alt.github.io/chinese/hot/";   // github.io 兜底
+  var HOT_BASE_ALT = "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@gh-pages/hot/"; // 大陆优先
+  var HOT_BASES = [HOT_BASE_ALT, HOT_BASE];   // 顺序即优先级（jsdelivr 优先，github.io 兜底）
   var HOT_TOKEN = "chinese-2026";
   /* 内置兜底清单：顺序即注入顺序。热更包里有的文件会顶掉同路径的内置文件，
      热更包里新增的文件（玩法 js）会插入在 js/games.js 之后。 */
@@ -55,7 +57,7 @@
     return m ? decodeURIComponent(m[1]) : "";
   }
   var hb = hashArg("hotbase");
-  if (hb) HOT_BASE = hb.replace(/([^/])$/, "$1/");
+  if (hb) HOT_BASES = [hb.replace(/([^/])$/, "$1/")];
   var SEARCH = String(location.search || "");
   var NO_HOT  = HASH.indexOf("nohot") >= 0 || /[?&]safe=1\b/.test(SEARCH);
   var HOT_LOG = HASH.indexOf("hotlog") >= 0;
@@ -68,7 +70,7 @@
     if (__taps < 5) return;
     try { location.hash = "hotlog"; location.reload(); } catch (e) {}
   };
-  window.HOT_BASE = HOT_BASE;
+  window.HOT_BASE = (HOT_BASES[0] || HOT_BASE);
   window.HOT_APP = APP;
 
   var LOG = [];
@@ -244,10 +246,16 @@
   /* ============================================================
    * 4. 后台更新（启动成功后才跑，绝不抢启动）
    * ============================================================ */
+  var __baseIdx = 0, __usedBase = "";
   function bgUpdate() {
     if (!H) { log("bg: no bridge"); return; }
     try { if (H.isDisabled()) { log("bg: disabled"); return; } } catch (e) {}
-    var url = HOT_BASE + "pack/manifest.json?t=" + Date.now();
+    __baseIdx = 0;
+    __fetchManifest();
+  }
+  function __fetchManifest() {
+    if (__baseIdx >= HOT_BASES.length) { log("bg: all hot bases failed"); return; }
+    var url = HOT_BASES[__baseIdx] + "pack/manifest.json?t=" + Date.now();
     log("bg: check " + url);
     H.httpGet(url, "__hotPackManifest");
   }
@@ -255,7 +263,11 @@
   var PENDING = [], PENDING_NAME = "";
 
   window.__hotPackManifest = function (txt) {
-    if (txt == null) { log("bg: no manifest"); return; }
+    if (txt == null) {                 // 当前热更源失败 → 试下一个
+      if (__baseIdx < HOT_BASES.length - 1) { __baseIdx++; log("bg: try next base"); __fetchManifest(); return; }
+      log("bg: no manifest (all bases failed)"); return;
+    }
+    __usedBase = HOT_BASES[__baseIdx] || HOT_BASE;
     var m = null;
     try { m = JSON.parse(txt); } catch (e) { log("bg: manifest bad"); return; }
     if (!m || !m.build) { log("bg: manifest shape bad"); return; }
@@ -285,7 +297,7 @@
     }
     var pk = PENDING.shift();
     log("bg: pack " + pk.name + " (" + (pk.size || "?") + "B)");
-    H.installPack(HOT_BASE + pk.name + "?b=" + PENDING_NAME, pk.sha256 || "");
+    H.installPack((__usedBase || HOT_BASES[0] || HOT_BASE) + pk.name + "?b=" + PENDING_NAME, pk.sha256 || "");
   }
 
   window.__onHotProgress = function (done) { log("bg: " + done + "B"); };

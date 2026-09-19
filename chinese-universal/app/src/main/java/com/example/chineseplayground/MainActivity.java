@@ -602,7 +602,9 @@ public class MainActivity extends Activity {
         "https://ghfast.top/https://github.com/q137663972-alt/",
         "https://ghproxy.net/https://github.com/q137663972-alt/",
         "https://gh-proxy.com/https://github.com/q137663972-alt/",
-        "https://q137663972-alt.github.io/"
+        "https://q137663972-alt.github.io/",
+        "https://cdn.jsdelivr.net/gh/q137663972-alt/",
+        "https://fastly.jsdelivr.net/gh/q137663972-alt/"
     };
 
     private class UpdateBridge {
