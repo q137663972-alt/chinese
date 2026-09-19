@@ -33,11 +33,35 @@ const opt = (n, d) => {
 };
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, String(opt("out", "hot/pack")));
-const MIN_APK = parseInt(opt("min-apk", "3"), 10);
 
-const APP = "chinese";
-const HOT_TOKEN = "chinese-2026";
 const fail = (m) => { console.error("❌ " + m); process.exit(1); };
+
+/* ---------- 配置：全部从 js/boot.js 读，避免两处维护 ---------- */
+const bootSrc = (() => {
+  const f = path.join(ROOT, "js/boot.js");
+  if (!fs.existsSync(f)) fail("找不到 js/boot.js");
+  return fs.readFileSync(f, "utf8");
+})();
+const pick = (name) => {
+  const m = bootSrc.match(new RegExp("var\\s+" + name + "\\s*=\\s*\"([^\"]+)\""));
+  return m ? m[1] : "";
+};
+const APP = pick("APP");
+const HOT_TOKEN = pick("HOT_TOKEN");
+if (!APP || !HOT_TOKEN) fail("js/boot.js 里读不到 APP / HOT_TOKEN");
+
+/* min_apk：默认取壳工程里的 versionCode（老 APK 装不上新包时再手工调低） */
+function gradleVersionCode() {
+  for (const d of fs.readdirSync(ROOT, { withFileTypes: true })) {
+    if (!d.isDirectory() || !d.name.endsWith("-universal")) continue;
+    const g = path.join(ROOT, d.name, "app", "build.gradle");
+    if (!fs.existsSync(g)) continue;
+    const m = fs.readFileSync(g, "utf8").match(/versionCode\s+(\d+)/);
+    if (m) return parseInt(m[1], 10);
+  }
+  return 0;
+}
+const MIN_APK = parseInt(opt("min-apk", String(gradleVersionCode())), 10);
 
 /* FNV-1a 双通道 32bit → 16 hex（与旧 gen-hot.mjs 保持一致，方便对照） */
 function fnv(s) {
@@ -165,10 +189,10 @@ fs.writeFileSync(path.join(OUT, "manifest.json"), JSON.stringify(remote, null, 2
 fs.rmSync(TMP, { recursive: true, force: true });
 
 const kb = (n) => (n / 1024).toFixed(1) + "KB";
-console.log("✅ 资源包已生成 → " + path.relative(ROOT, OUT));
+console.log("✅ 资源包已生成 → " + path.relative(ROOT, OUT) + "   (app=" + APP + " min_apk=" + MIN_APK + ")");
 console.log("   build     " + build);
 console.log("   代码文件  " + codePaths.length + " 个  → code.zip   " + kb(packs[packs.length - 1].size));
 if (packs.length > 1) console.log("   资源文件  " + assetPaths.length + " 个  → assets.zip " + kb(packs[0].size));
-console.log("   玩法      " + (games.length ? games.map((g) => g.id).join(", ") : "（无新增玩法文件）"));
+console.log("   玩法      " + (games.length ? games.map((g) => g.id).join(", ") : "（无 js/game-*.js，玩法都在 games.js 里，改它照样能热更）"));
 console.log("   分包      " + packs.map((p) => p.name + " " + kb(p.size)).join("  |  "));
 console.log("   总计      " + kb(packs.reduce((s, p) => s + p.size, 0)));
