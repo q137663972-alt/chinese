@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ===================== 语文乐园 · 通用壳（手机 / 平板 / 电视 一个包） =====================
+  设计要点：
+    · 同一个 APK 同时出现在手机桌面和 Android TV 首页（LAUNCHER + LEANBACK_LAUNCHER）
+    · 触摸屏、麦克风、leanback 一律声明为「非必需」，否则无触摸屏的盒子会被商店过滤掉
+    · 不写死 screenOrientation：由 MainActivity 按设备类型在运行时决定
+      （电视/盒子锁横屏，手机锁竖屏，平板交给系统自由旋转）
+    · configChanges 声明到最全，避免旋转/分屏/字体缩放时重建 Activity 丢 WebView 状态
+  ====================================================================================== -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 发音需联网拉取 MP3；热更需要下载资源包 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- 跟读打分需要录音（仅运行时申请；无麦设备不授予，自动回落手动兜底） -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 应用内升级：安装本应用的新版本（Android 8+ 需要，用户点一次确认） -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- 全部声明为非必需：手机/平板/电视共用同一个包，任何一项缺失都不能拒绝安装 -->
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone"  android:required="false" />
+    <uses-feature android:name="android.software.leanback"    android:required="false" />
+
+    <supports-screens
+        android:anyDensity="true"
+        android:smallScreens="true"
+        android:normalScreens="true"
+        android:largeScreens="true"
+        android:xlargeScreens="true"
+        android:requiresSmallestWidthDp="320" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/banner"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:hardwareAccelerated="true"
+        android:theme="@style/Theme.NoActionBar.Fullscreen">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="unspecified"
+            android:resizeableActivity="true"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize|density|fontScale|uiMode"
+            android:theme="@style/Theme.NoActionBar.Fullscreen">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <!-- 手机 / 平板桌面入口 -->
+                <category android:name="android.intent.category.LAUNCHER" />
+                <!-- Android TV 首页横幅入口（有 banner 才会显示） -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

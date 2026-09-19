@@ -1,9 +1,11 @@
 {
-  "code": 2,
-  "name": "1.1",
-  "note": "支持在线更新：题目和界面会自动变新，不用再手动装包",
-  "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground-Phone.apk",
+  "code": 3,
+  "name": "2.0",
+  "note": "全新通用版：手机、平板、TV 一个包全适配，内容和玩法都能在线热更",
+  "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
+  "apkMirror": "",
+  "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
   "phoneMirror": "",
-  "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground-TV.apk",
+  "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
   "tvMirror": ""
 }

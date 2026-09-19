@@ -103,10 +103,10 @@ const GAMES = (() => {
   const shuf = (asrc.match(/function shuffle\(a\)\{[\s\S]*?\n\}/) || [''])[0];
   if (!shuf) throw new Error('app.js 里找不到 shuffle()');
   const fn = new Function('window', 'DATA', 'state', 'shuffle',
-    head + '\n' + shuf + '\n;return {picDistractors,confuseWith,CONFUSE_MAP,CONFUSE_GROUPS};');
+    head + '\n' + shuf + '\n;return {picDistractors,confuseWith,CONFUSE_MAP,CONFUSE_GROUPS,ABSTRACT,buildRoundsPic};');
   return fn({ PICS }, { grades }, STATE);
 })();
-const { picDistractors, confuseWith, CONFUSE_MAP, CONFUSE_GROUPS } = GAMES;
+const { picDistractors, confuseWith, CONFUSE_MAP, CONFUSE_GROUPS, ABSTRACT } = GAMES;
 
 /* 易混组里的字必须真实存在于词表，否则规则永远命中不了（幽灵字） */
 const vocab = new Set();
