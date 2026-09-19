@@ -110,7 +110,12 @@ const NO_GATE = process.argv.includes('--no-gate') || !GATE_ENABLED;
    返回 false（放行）或不合格原因串。 */
 async function styleBad(file) {
   const r = await gateImage(file);
-  return r.ok ? false : r.fails.join('+') || 'unknown';
+  /* 分级口径（与「分级替换」决策对齐）：只因「图里有字 / 恐怖元素 / 写实照片」废图，
+     「背景不纯」单独命中不算废 —— 背景杂但主体能认的图要留着，等新图逐步替换。
+     以前用的是 r.ok（任意一项不达标就整张作废），把这类图全废了，
+     实测连废 12 张、产出 0 张 —— 闸门一上线整条通道就归零了。 */
+  const hard = r.fails.filter((f) => f !== '背景不纯');
+  return hard.length ? hard.join('+') : false;
 }
 
 const log = (o) => fs.appendFileSync(LOG, JSON.stringify(o) + '\n');

@@ -55,18 +55,25 @@ export const OVERRIDES = {
   黑: 'a cute fluffy black cartoon cat with big friendly round eyes',
 };
 
+/* 真正生效的画风后缀 —— buildPrompt() 用它。
+   ⚠️ 2026-09-19 修：以前 STYLE/BG/SAFE/COMP/BAN 五个常量全是死代码、从未被引用，
+      gen-pics.mjs 注释里宣称的 PIC_STYLE="..." node tools/gen-pics.mjs 设了根本没用。
+      现在把 PIC_STYLE 修活，以后调画风不用改代码：PIC_STYLE="..." 即可 A/B。
+   ⚠️ 整段控制在 ~300 字符：实测超长会被模型截断/稀释，画风词就白写了。 */
+export const STYLE_TAIL =
+  process.env.PIC_STYLE ||
+  'Flat vector cartoon for young children. Thick even dark outline, solid flat colour fills, ' +
+    'no gradient no shading. Plain empty pastel background, no scenery no props. ' +
+    'One simple centred subject filling most of frame. Cute cheerful, not scary, ' +
+    'not realistic, not anime, not 3D, no text no letters no numbers.';
+
 export function buildPrompt(subject, z) {
   const s = (z && OVERRIDES[z]) || subject;
   /* ⚠️ 顺序是生死线：Subject 必须放最前面。
      第一版把画风写在前、主体写在后，结果「悲」明明改写成「雨云浇蔫花」，
      出来的还是同一张写实少女脸 —— prompt 太长时后面的主体词根本没送到模型那里。
      整段压到 300 字符左右，太长会被截断/稀释。 */
-  return (
-    `${s}. Flat vector cartoon for young children, thick dark outline, solid flat colours, ` +
-    'cute chibi shape, simple dot eyes, gentle smile, plain single pastel background, ' +
-    'one single subject centred filling most of the frame, cheerful and reassuring, ' +
-    'not scary, not realistic, not anime, not 3D, no text no letters.'
-  );
+  return `${s}. ${STYLE_TAIL}`;
 }
 
 /* 教材图那条路不需要画风，只要「别带字」这一条 —— 用于裁完图后的文字泄露闸门 */
