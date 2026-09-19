@@ -3,9 +3,9 @@
   "name": "2.3.2",
   "note": "电视端强化：① 按物理分辨率分档（修复电视 WebView 只报一半分辨率导致 1080p/4K 上 UI 偏小一档）；② 安全区加宽到 Android TV 官方 5% 过扫描标准，边缘按钮不再可能被裁；③ 修正个别虚报触屏特性的盒子被误判成手机的问题。同签名，可直接覆盖安装",
   "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@gh-pages/apk/ChinesePlayground.apk",
+  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@4f89d9aeba95a1b421726ebfb59aee5b4ca63999/apk/ChinesePlayground.apk",
   "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@gh-pages/apk/ChinesePlayground.apk",
+  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@4f89d9aeba95a1b421726ebfb59aee5b4ca63999/apk/ChinesePlayground.apk",
   "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@gh-pages/apk/ChinesePlayground.apk"
+  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@4f89d9aeba95a1b421726ebfb59aee5b4ca63999/apk/ChinesePlayground.apk"
 }
