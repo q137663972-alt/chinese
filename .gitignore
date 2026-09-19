@@ -1,6 +1,10 @@
 # 构建产物不入库
 *.apk
 !apk/ChinesePlayground.apk
+
+# 本地凭据 —— 绝不入库
+.git_token
+.env
 .gradle/
 build/
 local.properties
