@@ -26,6 +26,7 @@ fs.mkdirSync(IMG, { recursive: true });
 fs.mkdirSync(TMP, { recursive: true });
 
 import { buildPrompt } from './prompt.mjs';
+import { gateImage, GATE_ENABLED } from './style-gate.mjs';
 
 const ARGV = process.argv.slice(2);
 const arg = (k, d) => {
@@ -83,7 +84,7 @@ console.log(`待生成 ${todo.length} 张（已完成 ${list.length - todo.lengt
 
 async function fetchOne(z, seed) {
   const subject = scenes[z].subject;
-  const prompt = buildPrompt(scenes[z].subject);
+  const prompt = buildPrompt(scenes[z].subject, z);
   const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) +
     `?width=${REQ}&height=${REQ}&nologo=true&enhance=false&model=${MODEL}&seed=${seed}`;
   const ctl = new AbortController();
@@ -101,8 +102,19 @@ async function fetchOne(z, seed) {
   }
 }
 
+const NO_GATE = process.argv.includes('--no-gate') || !GATE_ENABLED;
+
+/* 画风闸门：图出来后让免费档视觉模型判 4 道二元题（写实? / 背景纯? / 无恐怖? / 无文字?），
+   跑偏的直接废掉重出。生成一张要 40 秒，判一轮只要几秒 —— 这点代价完全值得。
+   判据与 audit-pics 存量复查共用 tools/style-gate.mjs，保证新老图同一把尺子。
+   返回 false（放行）或不合格原因串。 */
+async function styleBad(file) {
+  const r = await gateImage(file);
+  return r.ok ? false : r.fails.join('+') || 'unknown';
+}
+
 const log = (o) => fs.appendFileSync(LOG, JSON.stringify(o) + '\n');
-let ok = 0, fail = 0;
+let ok = 0, fail = 0, rejected = 0;
 const t0 = Date.now();
 
 for (let i = 0; i < todo.length; i++) {
@@ -114,10 +126,22 @@ for (let i = 0; i < todo.length; i++) {
   }
   let done = false;
   for (let a = 0; a < 4 && !done; a++) {
-    const r = await fetchOne(z, 1000 + i * 7 + a);
+    /* 种子必须随机：Pollinations 按 seed 出缓存，固定种子会把同一张废图反复吐回来 */
+    const r = await fetchOne(z, Math.floor(Math.random() * 999983));
     if (r.ok) {
       const raw = path.join(TMP, hex(z) + '.raw');
       fs.writeFileSync(raw, r.buf);
+      /* 画风不过关就换一张重出，别把写实脸/阴森图塞进孩子的识字卡 */
+      if (!NO_GATE) {
+        const bad = await styleBad(raw);
+        if (bad) {
+          if (a === 3) {
+            rejected++;
+            log({ z, ok: false, why: 'style:' + bad, at: new Date().toISOString() });
+          }
+          continue;
+        }
+      }
       try {
         execFileSync('python3', [path.join(ROOT, 'tools', 'imgpost.py'), raw,
           path.join(IMG, hex(z) + '.webp'), String(OUT_SIZE), '80'], { encoding: 'utf8' });
@@ -128,14 +152,16 @@ for (let i = 0; i < todo.length; i++) {
       }
     } else {
       if (a === 3) { fail++; log({ z, ok: false, why: r.code, at: new Date().toISOString() }); }
-      else await sleep([2000, 5000, 10000][a]);
+      /* 429 是限流不是故障：退避要给足时间。实测两条进程并行时会连着吃 429，
+         2s/5s/10s 根本不够，改成 5s/15s/40s 才拉得回来。 */
+      else await sleep(r.code === 429 ? [5000, 15000, 40000][a] : [2000, 5000, 10000][a]);
     }
   }
   const el = Math.round((Date.now() - t0) / 1000);
   const eta = ok + fail ? Math.round((todo.length - ok - fail) * el / (ok + fail) / 60) : '?';
-  console.log(`[${i + 1}/${todo.length}] ${z} ${done ? '✅' : '❌'}  成功${ok} 失败${fail}  用时${el}s  预计还需${eta}分钟`);
+  console.log(`[${i + 1}/${todo.length}] ${z} ${done ? '✅' : '❌'}  成功${ok} 失败${fail} 画风不合格${rejected}  用时${el}s  预计还需${eta}分钟`);
   await sleep(500);
 }
 
-console.log(`\n完成：成功 ${ok} / 失败 ${fail} / 共 ${todo.length}`);
+console.log(`\n完成：成功 ${ok} / 失败 ${fail} / 画风不合格 ${rejected} / 共 ${todo.length}`);
 if (fail) console.log(`失败的字：${todo.filter((z) => !fs.existsSync(path.join(IMG, hex(z) + '.webp'))).join('')}`);

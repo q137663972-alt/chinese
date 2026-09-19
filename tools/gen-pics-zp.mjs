@@ -143,7 +143,7 @@ async function worker() {
     const z = list[i];
     const out = path.join(OUTDIR, hex(z) + '.webp');
     if (fs.existsSync(out)) continue;
-    const prompt = buildPrompt(scenes[z].subject);
+    const prompt = buildPrompt(scenes[z].subject, z);
     let done = false;
     for (let a = 0; a < 3 && !done; a++) {
       try {
