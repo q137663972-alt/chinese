@@ -491,7 +491,11 @@ function startWordFill(){
     var pool = [];
     DATA.grades[state.gi].books.forEach(function(b){ b.u.forEach(function(un){ un.w.forEach(function(x){ if(x.z !== target) pool.push(x.z); }); }); });
     var opts = shuffle([target].concat(shuffle(pool).slice(0, 3)));
-    bindReplay(ci);
+    /* ⚠️ 题干/重播键都不能念完整词：屏幕上是「天○」，念出「天空」等于直接报答案。
+       改成念「天什么」——把要填的那个空读成「什么」，题目完整、答案不泄露。
+       答对以后（下面 answerWordFill 里）再念整词，那时候读是对的。 */
+    var spoken = shown.replace(/○/g, "什么");
+    bindReplay(spoken);
     gameShell(
       head(cur + 1, list.length, true) +
       '<div class="big-pic">' + picHTML(r.z.z) + '</div>' +
@@ -501,7 +505,7 @@ function startWordFill(){
         return '<div class="opt opt-zi" onclick="answerWordFill(' + i + ')">' + esc(o) + '</div>';
       }).join("") + '</div>' +
       '<div class="feedback" id="fb"></div>', "组词填空");
-    setTimeout(function(){ speak(ci); }, 300);
+    setTimeout(function(){ speak(spoken); }, 300);
     window.answerWordFill = function(i){
       if(locked) return; locked = true;
       var el = $all(".opt")[i]; var fb = $("#fb");
