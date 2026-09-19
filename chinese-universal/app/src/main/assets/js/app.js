@@ -257,11 +257,25 @@ function startGame(mode){
 /* ===================== 设置 & 导航 ===================== */
 function openSettings(){ $("#settingsModal").classList.remove("hidden"); var b = document.getElementById("backupBox"); if (b) b.classList.add("hidden"); syncSettings(); }
 function closeSettings(){ $("#settingsModal").classList.add("hidden"); }
+/* 供遥控器返回键 / 原生返回键调用：关掉最上层的弹层（目前只有设置）。
+   关掉了返回 true，表示这次返回被弹层消费掉了，不要再退页面；
+   没有弹层返回 false，交给后面的逐级返回逻辑。
+   遥控器上「设置关不掉、按返回只是退了上一级菜单」就是缺这一步。 */
+function closeTopLayer(){
+  var m = document.getElementById("settingsModal");
+  if (m && !m.classList.contains("hidden")) { closeSettings(); return true; }
+  return false;
+}
+window.closeTopLayer = closeTopLayer;
 function syncSettings(){
   $("#ttsSwitch").classList.toggle("on", settings.tts);
   $("#rateRange").value = settings.rate;
 }
 function goBack(){
+  /* 设置弹层开着 → 这次返回只用来关弹层，不要动背后的页面 */
+  if (typeof window.closeTopLayer === "function") {
+    try { if (window.closeTopLayer()) return; } catch (e) {}
+  }
   /* 玩法自己在跑 → 先让它收尾。
      玩法内部可能有 setInterval（知识圈的答题倒计时就是），光改 state.view 不清计时器，
      几秒后它一渲染就把界面又抢回游戏里 —— 表现为「点了返回进了别的页面，

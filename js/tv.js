@@ -53,6 +53,21 @@
 
   function $all(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
 
+  /* 弹层（设置）打开时，焦点必须锁在弹层里。
+     不锁的话方向键会跑到背后的页面上，按确认还会误触背景按钮 ——
+     表现就是「设置界面关不掉、按返回只是退了上一级菜单」。 */
+  function activeModal() {
+    var m = document.getElementById("settingsModal");
+    if (m && String(m.className || "").indexOf("hidden") < 0) return m;
+    return null;
+  }
+  function scope() { return activeModal() || document; }
+  function inScope(el, root) {
+    if (!el) return false;
+    if (root === document) return true;
+    try { return root.contains(el); } catch (e) { return true; }
+  }
+
   function markFocusable(root) {
     $all(SEL, root || document).forEach(function (el) {
       if (!el.hasAttribute("tabindex") && el.offsetParent !== null) el.setAttribute("tabindex", "0");
@@ -60,8 +75,9 @@
     $all(TEXTY, root || document).forEach(function (el) { el.setAttribute("tabindex", "-1"); });
   }
 
+  /* 取「当前作用域内」的可聚焦元素：弹层打开时只返回弹层里的 */
   function visibleFocusables() {
-    return $all(SEL).filter(function (el) { return el.offsetParent !== null && !el.disabled; });
+    return $all(SEL, scope()).filter(function (el) { return el.offsetParent !== null && !el.disabled; });
   }
 
   var lastFocus = null;
@@ -92,16 +108,33 @@
      页面 HTML 以 topbar 开头，若按「第一个可聚焦元素」取焦点，进子页面时焦点
      会落在「←」上 —— 遥控器一按确认就执行了返回，表现为「点进年级页立刻退回首页」。
      默认焦点优先给主内容（年级卡 / 单元卡 / 玩法卡 / 选项），顶栏仍可用方向键走到。 */
+  /* 向上找若干层：gear 按钮可能被包一层（<div class="topbar"><div><button class="gear">），
+     只看直接父节点会漏判，焦点就又落在设置上了。
+     不用 closest() —— 部分老 WebView 上行为不一，手写遍历最稳。 */
   function inTopbar(el) {
-    var p = el.parentNode;
-    return !!(p && String(p.className || "").indexOf("topbar") >= 0);
+    var p = el, i = 0;
+    while (p && p.nodeType === 1 && i < 5) {
+      if (p.classList && p.classList.contains("topbar")) return true;
+      if (String(p.className || "").indexOf("topbar") >= 0) return true;
+      p = p.parentNode; i++;
+    }
+    return false;
   }
-  function ensureFocus() {
-    var act = document.activeElement;
-    if (act && act !== document.body && act.offsetParent !== null) return; // 已有可见焦点
-    if (lastFocus && lastFocus.offsetParent !== null) { focusAt(lastFocus); return; }
+  function ensureFocus(force) {
+    var root = scope();
+    if (!force) {
+      var act = document.activeElement;
+      /* 已有焦点且在作用域内就别动它 —— 否则每次 DOM 变动都会把用户的焦点抢走。
+         但「在作用域内」这个条件很关键：刚关掉设置弹层时 activeElement 还在弹层里，
+         不判就会一直认为「已经有焦点」，新页面的焦点永远设不上 ——
+         这就是「进了新界面，光标还停在设置按钮上」。 */
+      if (act && act !== document.body && act.offsetParent !== null && inScope(act, root)) return;
+      if (lastFocus && lastFocus.offsetParent !== null && inScope(lastFocus, root)) { focusAt(lastFocus); return; }
+    }
     var list = visibleFocusables();
     if (!list.length) return;
+    /* 弹层里：直接落在第一个可操作元素（朗读开关），不要跑到背景页面去 */
+    if (root !== document) { focusAt(list[0]); return; }
     var main = list.filter(function (el) { return !inTopbar(el); });
     /* 答题界面：默认焦点直接落在第一个答案选项上，遥控器不用先跨过题干；
        选择类界面（年级/单元/玩法）没有 .opt，就落在第一张卡片上。 */
@@ -173,14 +206,35 @@
     markFocusable(document);
     ensureFocus();
 
-    /* 观察整个 body：#app 之外还有设置弹层、升级提示条 */
+    /* 每次视图切换后，强制把焦点放回主内容。
+       不包装的话：切页时旧的 activeElement 可能还在（尤其刚从设置弹层出来），
+       ensureFocus 一看「已经有焦点」就直接跳过 ——
+       表现就是「进了新界面，光标还停在设置按钮上」。 */
+    if (typeof window.render === "function" && !window.__tvRenderWrapped) {
+      window.__tvRenderWrapped = true;
+      var origRender = window.render;
+      window.render = function () {
+        var r = origRender.apply(this, arguments);
+        lastFocus = null;                       // 旧焦点属于上一个页面，别再复用
+        setTimeout(function () { ensureFocus(true); }, 0);
+        return r;
+      };
+    }
+
+    /* 观察整个 body：#app 之外还有设置弹层、升级提示条。
+       额外监听 class 变化 —— 弹层开关就是切一个 class，
+       只听 childList 的话弹层打开时焦点根本不会进去。 */
     var root = document.body;
     if ("MutationObserver" in window) {
       var mo = new MutationObserver(function () {
         markFocusable(root);
         ensureFocus();
       });
-      mo.observe(root, { childList: true, subtree: true });
+      try {
+        mo.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+      } catch (e) {
+        mo.observe(root, { childList: true, subtree: true });   // 老 WebView 不认 attributeFilter
+      }
     }
 
     /* 返回键：遥控器上的「返回 / 退出」。
@@ -194,6 +248,13 @@
       return !!(BACK_KEY[e.key] || kc === 4 || kc === 461 || kc === 166);
     }
     function doBack() {
+      /* ① 最上层是弹层（设置）→ 先关它。
+            不这么排，按返回会直接退掉背后的页面，而设置界面还盖在上面 ——
+            用户看到的就是「返回键只能退回上一级菜单，设置关不掉」。 */
+      if (typeof window.closeTopLayer === "function") {
+        try { if (window.closeTopLayer()) return true; } catch (e) {}
+      }
+      /* ② 玩法自己在跑 → 让它收尾（清计时器、停朗读）再退 */
       if (typeof window.__gameExit === "function") {
         try { if (window.__gameExit() !== false) return true; } catch (e) { return true; }
       }
@@ -215,25 +276,31 @@
       else if (k === "ArrowRight") { e.preventDefault(); nav("right"); }
       else if (k === "ArrowUp") { e.preventDefault(); nav("up"); }
       else if (k === "ArrowDown") { e.preventDefault(); nav("down"); }
-      else if (k === "Enter" || k === " " || e.keyCode === 13 || e.keyCode === 23) {
-        /* 确认键防抖：部分遥控器/固件一次按下会连发两个 keydown，
-           表现为「按一次却点两下 / 焦点跳两格」。220ms 内重复到达的直接丢弃。
-           只防确认键 —— 方向键长按连发必须保留，否则遥控器连续移动会卡顿。 */
+      else if (k === "Enter" || k === " " || e.keyCode === 13 || e.keyCode === 23 || e.keyCode === 66) {
+        /* 三重防护，缺一个都会漏出「按一次点两下」：
+           ① e.repeat —— 安卓固件按住 OK 会持续发 keydown（长按连发），必须丢掉；
+           ② 220ms 防抖 —— 部分遥控器一次按下会补发第二个 keydown；
+           ③ 自己 click 并 preventDefault —— 以前对 <button> 是 return 交给浏览器，
+              浏览器默认 click 与某些固件补发的事件叠加就成了两次
+              （设置开关被点两次 = 开了又关，看着像失灵）。
+           只防确认键：方向键的长按连发必须保留，否则遥控器连续移动会卡顿。 */
+        if (e.repeat) { e.preventDefault(); return; }
         var now = Date.now();
         if (now - lastOkAt < 220) { e.preventDefault(); return; }
         lastOkAt = now;
-        // 原生按钮/链接/输入框交给浏览器触发，避免重复点击
-        if (act && /^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/.test(act.tagName)) return;
-        if (act && act !== document.body) { e.preventDefault(); act.click(); }
+        if (act && act !== document.body) {
+          e.preventDefault();
+          try { act.click(); } catch (err) {}
+        }
       }
     }, true);
 
     document.addEventListener("keydown", unlockOnce, true);
     document.addEventListener("click", unlockOnce, true);
 
-    window.addEventListener("load", function () { setTimeout(ensureFocus, 50); });
+    window.addEventListener("load", function () { setTimeout(function () { ensureFocus(true); }, 50); });
     // 视图切换后焦点可能落在已消失的节点上，兜底复位
-    window.addEventListener("popstate", function () { setTimeout(ensureFocus, 80); });
+    window.addEventListener("popstate", function () { setTimeout(function () { ensureFocus(true); }, 80); });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

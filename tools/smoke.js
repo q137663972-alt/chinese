@@ -16,6 +16,19 @@ const w=dom.window;
 // 模拟 TV + 无 speechSynthesis
 Object.defineProperty(w.navigator,'userAgent',{value:'Mozilla/5.0 (Linux; Android 8.0; MiTV) AppleWebKit/537.36 Chrome/62',configurable:true});
 w.__dev={tv:true,sw:1920,touch:false,mic:false,apk:6,native:true};
+/* jsdom 不做布局：offsetParent 恒为 null，tv.js 里每一处「元素可见吗」的判断都会
+   判成不可见，焦点逻辑等于没跑 —— 焦点相关的回归测试会变成假通过。
+   这里补一个近似实现：处于 .hidden 子树里的元素仍返回 null（跟真机一致），
+   其余返回父节点。只为让焦点回归有效，不追求布局精度。 */
+Object.defineProperty(w.HTMLElement.prototype,'offsetParent',{configurable:true,get:function(){
+  if(this===w.document.body||this===w.document.documentElement) return null;
+  var p=this.parentNode;
+  while(p&&p.nodeType===1){
+    if(String(p.className||'').indexOf('hidden')>=0) return null;
+    p=p.parentNode;
+  }
+  return (this.parentNode&&this.parentNode.nodeType===1)?this.parentNode:w.document.body;
+}});
 const errs=[];
 w.addEventListener('error',e=>errs.push('window error: '+e.message));
 for(const f of BUILTIN){
@@ -89,5 +102,69 @@ console.log('\n=== battle exit regression ===');
     console.log('  3 秒后是否被抢回知识圈: ' + (back ? '❌ 是（计时器泄漏）' : '✅ 否'));
     console.log('  state.view=' + w.state.view + '   __gameExit=' + (typeof w.__gameExit));
   } catch (e) { console.log('  regression fail: ' + e.message); }
+
+  /* ---- 回归：遥控器三件套（设置弹层 / 焦点复位 / 确认键去重） ---- */
+  console.log('\n=== tv remote regression ===');
+  const doc = w.document;
+  const modal = doc.getElementById('settingsModal');
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const act = () => doc.activeElement;
+  const inModal = (el) => !!(el && modal && modal.contains(el));
+
+  try {
+    // ① 打开设置 → 焦点必须进弹层，且返回键关掉的是弹层而不是退页面
+    w.state.view = 'modes'; w.render();
+    await sleep(30);
+    w.openSettings();
+    await sleep(60);
+    console.log('  设置打开后焦点在弹层内: ' + (inModal(act()) ? '✅ 是' : '❌ 否（会跑到背景页面）'));
+    const viewBefore = w.state.view;
+    w.goBack();          // 模拟遥控器返回
+    await sleep(30);
+    const closed = String(modal.className).indexOf('hidden') >= 0;
+    console.log('  返回键关掉了设置: ' + (closed ? '✅ 是' : '❌ 否'));
+    console.log('  页面没有被一起退回: ' + (w.state.view === viewBefore ? '✅ 是' : '❌ 否（' + viewBefore + '→' + w.state.view + '）'));
+
+    // ② 视图切换后焦点不能停在顶栏的设置/返回按钮上
+    let onGear = 0, checked = 0;
+    for (const v of ['home', 'grades', 'units', 'modes']) {
+      w.state.view = v; w.render();
+      await sleep(30);
+      const a = act();
+      checked++;
+      if (a && String(a.className || '').indexOf('gear') >= 0) { onGear++; console.log('    ❌ ' + v + ' 的焦点落在设置按钮上'); }
+    }
+    console.log('  各界面焦点落在设置按钮: ' + (onGear ? '❌ ' + onGear + '/' + checked : '✅ 0/' + checked));
+
+    // ③ 确认键：一次按下只能点一次（连发 repeat 与补发都要被吃掉）
+    w.state.view = 'modes'; w.render();
+    await sleep(30);
+    const card = doc.querySelector('.mode-card');
+    if (card && card.focus) {
+      card.focus();
+      let hits = 0;
+      const orig = card.onclick;
+      card.onclick = function () { hits++; };
+      const key = (rep) => {
+        const e = new w.KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true, cancelable: true });
+        try { Object.defineProperty(e, 'repeat', { value: !!rep }); } catch (err) {}
+        doc.dispatchEvent(e);
+      };
+      key(false);                    // 正常按一次
+      const one = hits;
+      await sleep(260);              // 过了防抖窗口
+      key(false);                    // 再按一次（应生效）
+      const two = hits;
+      await sleep(260);
+      key(true); key(true);          // 长按连发（应被 e.repeat 吃掉）
+      const three = hits;
+      console.log('  按一次触发 ' + one + ' 次（应为 1）: ' + (one === 1 ? '✅' : '❌'));
+      console.log('  再按一次共 ' + two + ' 次（应为 2）: ' + (two === 2 ? '✅' : '❌'));
+      console.log('  长按连发后 ' + three + ' 次（应仍为 2）: ' + (three === 2 ? '✅' : '❌'));
+      card.onclick = orig;
+    } else {
+      console.log('  （找不到 .mode-card，跳过确认键去重检查）');
+    }
+  } catch (e) { console.log('  tv regression fail: ' + e.message + '\n' + String(e.stack).split('\n')[1]); }
   process.exit(0);
 })();

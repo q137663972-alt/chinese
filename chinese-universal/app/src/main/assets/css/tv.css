@@ -295,13 +295,19 @@ body.tv .result-box {
 }
 body.tv .result-stars { font-size: 40px; font-size: calc(40px * var(--s, 1)); }
 body.tv .modal { padding: 4vh 4vw; }
+/* 设置弹层在电视上很容易比屏幕还高：一高就把「完成」按钮顶到屏幕外，
+   遥控器又滚不动，表现就是「点开了设置关不掉」。
+   给卡片封顶 + 内部滚动，按钮永远滚得到。 */
 body.tv .modal-card {
   max-width: 420px; max-width: calc(420px * var(--s, 1));
+  max-height: 88vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 24px; padding: calc(24px * var(--s, 1));
   border-radius: 26px; border-radius: calc(26px * var(--s, 1));
 }
 body.tv .modal-card h3 { font-size: 24px; font-size: calc(24px * var(--s, 1)); }
-body.tv .set-row { font-size: 20px; font-size: calc(20px * var(--s, 1)); margin: 2vh 0; }
+body.tv .set-row { font-size: 20px; font-size: calc(20px * var(--s, 1)); margin: 1.6vh 0; }
 body.tv .toast {
   font-size: 20px; font-size: calc(20px * var(--s, 1));
   padding: 12px 24px; padding: calc(12px * var(--s, 1)) calc(24px * var(--s, 1));
