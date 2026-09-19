@@ -108,9 +108,17 @@
      页面 HTML 以 topbar 开头，若按「第一个可聚焦元素」取焦点，进子页面时焦点
      会落在「←」上 —— 遥控器一按确认就执行了返回，表现为「点进年级页立刻退回首页」。
      默认焦点优先给主内容（年级卡 / 单元卡 / 玩法卡 / 选项），顶栏仍可用方向键走到。 */
+  /* 向上找若干层：gear 按钮可能被包一层（<div class="topbar"><div><button class="gear">），
+     只看直接父节点会漏判，焦点就又落在设置上了。
+     不用 closest() —— 部分老 WebView 上行为不一，手写遍历最稳。 */
   function inTopbar(el) {
-    var p = el.parentNode;
-    return !!(p && String(p.className || "").indexOf("topbar") >= 0);
+    var p = el, i = 0;
+    while (p && p.nodeType === 1 && i < 5) {
+      if (p.classList && p.classList.contains("topbar")) return true;
+      if (String(p.className || "").indexOf("topbar") >= 0) return true;
+      p = p.parentNode; i++;
+    }
+    return false;
   }
   function ensureFocus(force) {
     var root = scope();

@@ -126,15 +126,48 @@ console.log('\n=== battle exit regression ===');
     console.log('  页面没有被一起退回: ' + (w.state.view === viewBefore ? '✅ 是' : '❌ 否（' + viewBefore + '→' + w.state.view + '）'));
 
     // ② 视图切换后焦点不能停在顶栏的设置/返回按钮上
+    //    覆盖两大类：菜单页（home/grades/units/modes）+ 玩法页（startGame 进的界面）。
+    //    用户报的「有些界面」多半是玩法页 —— 只测菜单页会漏。
+    const isTopbar = (el) => {
+      let p = el, i = 0;
+      while (p && p.nodeType === 1 && i < 5) {
+        if (String(p.className || '').indexOf('topbar') >= 0) return true;
+        p = p.parentNode; i++;
+      }
+      return false;
+    };
     let onGear = 0, checked = 0;
-    for (const v of ['home', 'grades', 'units', 'modes']) {
-      w.state.view = v; w.render();
-      await sleep(30);
+    const checkView = async (label) => {
+      await sleep(40);
       const a = act();
       checked++;
-      if (a && String(a.className || '').indexOf('gear') >= 0) { onGear++; console.log('    ❌ ' + v + ' 的焦点落在设置按钮上'); }
+      if (a && (String(a.className || '').indexOf('gear') >= 0 || isTopbar(a))) {
+        onGear++;
+        console.log('    ❌ ' + label + ' 的焦点落在顶栏按钮上（' + (a.className || a.tagName) + '）');
+      }
+    };
+    for (const v of ['home', 'grades', 'units', 'modes']) {
+      w.state.view = v; w.render();
+      await checkView(v);
     }
-    console.log('  各界面焦点落在设置按钮: ' + (onGear ? '❌ ' + onGear + '/' + checked : '✅ 0/' + checked));
+    // 玩法页：跳过 write（jsdom 没 canvas 会抛）
+    for (const gid of ['listen', 'picture', 'pinyin', 'wordfill', 'stroke', 'poemfill', 'battle']) {
+      try { w.startGame(gid); } catch (e) { continue; }
+      await checkView('game:' + gid);
+    }
+    console.log('  各界面焦点落在顶栏按钮: ' + (onGear ? '❌ ' + onGear + '/' + checked : '✅ 0/' + checked));
+
+    // ②b 真实路径：在设置里改完 → 按返回关掉 → 再进下一个界面。
+    //    旧 bug 就出在这条路上：关掉弹层后 activeElement 还留在弹层残留节点里，
+    //    ensureFocus 一看「已经有焦点」就跳过，新页面的焦点永远设不上。
+    w.state.view = 'modes'; w.render(); await sleep(30);
+    w.openSettings(); await sleep(50);
+    w.goBack(); await sleep(50);
+    w.state.view = 'units'; w.render(); await sleep(50);
+    const afterModal = act();
+    const stuck = !afterModal || afterModal === doc.body || isTopbar(afterModal) ||
+                  (modal && modal.contains(afterModal));
+    console.log('  关掉设置后进入新界面，焦点已复位: ' + (stuck ? '❌ 否（还停在 ' + (afterModal ? (afterModal.className || afterModal.tagName) : 'null') + '）' : '✅ 是'));
 
     // ③ 确认键：一次按下只能点一次（连发 repeat 与补发都要被吃掉）
     w.state.view = 'modes'; w.render();
