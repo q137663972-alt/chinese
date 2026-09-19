@@ -208,10 +208,13 @@ function finishGame(correct, total, modeName){
   var earned = acc >= 90 ? 3 : acc >= 60 ? 2 : acc > 0 ? 1 : 0;
   setStars(state.gi, state.bi, state.ui, earned);
   var next = nextUnit();
+  /* 夸奖语 + 满分特效：praise.js 由热更下发，没加载上时自动退回原来的样子 */
+  var P = window.PRAISE;
+  var lv = P ? P.level(acc, earned) : "";
+  var head = P ? P.block(lv) : '<div style="font-size:46px">' + (earned > 0 ? '🎉' : '💪') + '</div>';
+  var starLine = (P && (lv === "perfect" || lv === "great")) ? "" : '<div class="result-stars">' + stars(earned) + '</div>';
   app.innerHTML = topbar("闯关结果", true) +
-    '<div class="result-box">' +
-      '<div style="font-size:46px">' + (earned > 0 ? '🎉' : '💪') + '</div>' +
-      '<div class="result-stars">' + stars(earned) + '</div>' +
+    '<div class="result-box">' + head + starLine +
       '<div style="font-size:16px;color:var(--sub)">' + modeName + ' · 正确率 ' + acc + '%</div>' +
       '<div style="margin-top:6px;font-weight:700">本单元累计 ⭐ ' + getStars(state.gi, state.bi, state.ui) + '</div>' +
       '<div class="row">' +
@@ -222,6 +225,7 @@ function finishGame(correct, total, modeName){
       '</div>' +
       '<button class="btn pink" style="margin-top:12px" onclick="state.view=\'units\';render()">返回单元列表</button>' +
     '</div>';
+  if (P && lv) setTimeout(function(){ P.fx(lv); }, 60);
 }
 function nextUnit(){
   var g = DATA.grades[state.gi];

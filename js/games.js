@@ -1170,11 +1170,17 @@ function startChallenge(){
   function endChallenge(){
     clearInterval(timer);
     window.__cnTimer = null;
-    if(score > best){ best = score; localStorage.setItem("cn_best_challenge", String(best)); }
+    var rec = score > best;
+    if(rec){ best = score; localStorage.setItem("cn_best_challenge", String(best)); }
     setStars(state.gi, state.bi, state.ui, score >= 120 ? 3 : score >= 60 ? 2 : score > 0 ? 1 : 0);
+    /* 挑战没有满分概念，用「打破纪录」当最高光；praise.js 没加载上时退回原来的样子 */
+    var P = window.PRAISE;
+    var lv = P ? P.levelOfScore(score, rec) : "";
+    var head = P
+      ? P.block(lv, rec ? '<div style="margin-top:4px;font-weight:900;color:#e08b00">🎊 新纪录！</div>' : "")
+      : '<div style="font-size:46px">' + (score >= 60 ? "🏆" : "⏱️") + '</div>';
     app.innerHTML = topbar("挑战结束", true) +
-      '<div class="result-box">' +
-        '<div style="font-size:46px">' + (score >= 60 ? "🏆" : "⏱️") + '</div>' +
+      '<div class="result-box">' + head +
         '<div class="read-score">' + score + '</div>' +
         '<div style="font-size:16px;color:var(--sub)">限时挑战 · 60 秒得分</div>' +
         '<div class="best">🏅 历史最高：' + best + '</div>' +
@@ -1184,6 +1190,7 @@ function startChallenge(){
         '</div>' +
         '<button class="btn pink" style="margin-top:12px" onclick="state.view=\'units\';render()">返回单元列表</button>' +
       '</div>';
+    if (P && lv) setTimeout(function(){ P.fx(lv); }, 60);
   }
   if(window.__cnTimer) clearInterval(window.__cnTimer);
   q = mkQ();
