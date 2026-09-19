@@ -95,7 +95,10 @@
   }
   window.__dev = DEV;
   try {
-    document.body.classList.add(DEV.tv ? "tv" : (DEV.sw >= 600 ? "tablet" : "phone"));
+    /* #tv 调试开关：无 TV 设备时在浏览器里模拟 TV（tv.js 里同样判了 hash，
+       这里必须同步判，否则 body.tv 加不上、TV 断点样式整块失效）。 */
+    var forceTV = /tv/.test(String(location.hash || ""));
+    document.body.classList.add((DEV.tv || forceTV) ? "tv" : (DEV.sw >= 600 ? "tablet" : "phone"));
   } catch (e) {}
   log("dev tv=" + DEV.tv + " sw=" + DEV.sw + " touch=" + DEV.touch + " apk=" + DEV.apk);
 

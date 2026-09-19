@@ -1,0 +1,7302 @@
+{
+  "metrics": {
+    "books": [
+      "1211001101241",
+      "1211001301241"
+    ],
+    "pagesIndexed": 239,
+    "pagesDroppedAsOcrNoise": 75,
+    "pagesKept": 164,
+    "objectsMatched": 1225,
+    "clusters": 149,
+    "charsTotal": 567,
+    "gapTotal": 453,
+    "gapCardStyle": 307,
+    "R1_exclusive_all": 0.0176,
+    "R1b_exclusive_gap": 0.011,
+    "R1c_exclusive_cardGap": 0.0033,
+    "R2_exclusive_plus_contested_all": 0.134,
+    "R2b_exclusive_plus_contested_gap": 0.117,
+    "R4_g36_gap_hit_rate": 0.1147,
+    "breakdown": {
+      "all": {
+        "EXCLUSIVE": 10,
+        "CONTESTED": 66,
+        "WEAK": 3,
+        "MISS": 488
+      },
+      "gap": {
+        "EXCLUSIVE": 5,
+        "CONTESTED": 48,
+        "WEAK": 3,
+        "MISS": 397
+      },
+      "cardGap": {
+        "EXCLUSIVE": 1,
+        "CONTESTED": 44,
+        "WEAK": 2,
+        "MISS": 260
+      }
+    },
+    "hitRateByGrade_all": {
+      "1": "21/96",
+      "2": "15/94",
+      "3": "15/93",
+      "4": "12/96",
+      "5": "12/93",
+      "6": "4/95"
+    },
+    "hitRateByGrade_gap": {
+      "1": "2/5",
+      "2": "11/73",
+      "3": "15/92",
+      "4": "12/95",
+      "5": "12/93",
+      "6": "4/95"
+    }
+  },
+  "chars": {
+    "天": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "地": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 35,
+      "bbox": [
+        50,
+        250,
+        80,
+        80
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "笔",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "人": {
+      "status": "EXCLUSIVE",
+      "book": "1211001101241",
+      "page": 15,
+      "bbox": [
+        900,
+        600,
+        50,
+        50
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "人",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "你": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "我": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "他": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "日": {
+      "status": "EXCLUSIVE",
+      "book": "1211001301241",
+      "page": 30,
+      "bbox": [
+        300,
+        250,
+        200,
+        200
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "日记",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "月": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": false
+    },
+    "星": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "云": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "山": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "水": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "金": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "木": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "火": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 1,
+      "bbox": [
+        770,
+        490,
+        200,
+        200
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "玩具",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "土": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "石": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "田": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "禾": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "风": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "雨": {
+      "status": "EXCLUSIVE",
+      "book": "1211001101241",
+      "page": 105,
+      "bbox": [
+        500,
+        600,
+        50,
+        50
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "雨点",
+      "grade": 1,
+      "hasPhoto": false
+    },
+    "雷": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "电": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "光": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "口": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "耳": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "目": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "手": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "足": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "头": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 16,
+      "bbox": [
+        200,
+        300,
+        100,
+        100
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "头发",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "心": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": false
+    },
+    "牙": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "眉": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "舌": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "背": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "腿": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "鸟": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "鱼": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 77,
+      "bbox": [
+        200,
+        250,
+        50,
+        50
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "鱼",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "虫": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "马": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "牛": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "羊": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "猫": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "狗": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "鸡": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 49,
+      "bbox": [
+        600,
+        450,
+        50,
+        50
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "鸡",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "鸭": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "兔": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 33,
+      "bbox": [
+        800,
+        300,
+        150,
+        150
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "小白兔",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "虎": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "一": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "二": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 11,
+      "bbox": [
+        50,
+        150,
+        400,
+        200
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "长江",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "三": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": false
+    },
+    "四": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "五": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "六": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "七": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "八": {
+      "status": "EXCLUSIVE",
+      "book": "1211001101241",
+      "page": 30,
+      "bbox": [
+        250,
+        500,
+        30,
+        40
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "八",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "九": {
+      "status": "EXCLUSIVE",
+      "book": "1211001101241",
+      "page": 34,
+      "bbox": [
+        200,
+        500,
+        50,
+        50
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "九",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "十": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "上": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "下": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 16,
+      "bbox": [
+        180,
+        200,
+        60,
+        60
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "上",
+      "grade": 1,
+      "hasPhoto": false
+    },
+    "爸": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 31,
+      "bbox": [
+        580,
+        350,
+        40,
+        40
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "爸爸",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "妈": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "爷": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "奶": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "哥": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "姐": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "弟": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "妹": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "家": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "亲": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "爱": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "朋": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "书": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 13,
+      "bbox": [
+        820,
+        450,
+        80,
+        80
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "书桌",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "笔": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "纸": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "本": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "学": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "校": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "师": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "课": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 9,
+      "bbox": [
+        200,
+        300,
+        400,
+        400
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "树",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "读": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "写": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "算": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "问": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 84,
+      "bbox": [
+        50,
+        300,
+        150,
+        150
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "旗杆",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "春": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "夏": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "秋": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "冬": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "花": {
+      "status": "EXCLUSIVE",
+      "book": "1211001101241",
+      "page": 89,
+      "bbox": [
+        900,
+        600,
+        60,
+        60
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "花生",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "草": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "树": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "叶": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "雪": {
+      "status": "MISS",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "冰": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 61,
+      "bbox": [
+        900,
+        200,
+        100,
+        100
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "滑冰",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "热": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 19,
+      "bbox": [
+        50,
+        200,
+        150,
+        150
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "日",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "冷": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 73,
+      "bbox": [
+        200,
+        150,
+        300,
+        300
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "雪人",
+      "grade": 1,
+      "hasPhoto": true
+    },
+    "江": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "河": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "湖": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "海": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 79,
+      "bbox": [
+        400,
+        200,
+        80,
+        80
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "帆船",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "波": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "浪": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "泉": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "溪": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "岛": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "岸": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "沙": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 25,
+      "bbox": [
+        470,
+        580,
+        150,
+        150
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "书",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "滩": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "米": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "面": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 109,
+      "bbox": [
+        770,
+        300,
+        60,
+        60
+      ],
+      "conf": 0.45,
+      "kind": "en",
+      "obj": "碗",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "菜": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "果": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "瓜": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "豆": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "桃": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "梨": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "杏": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "枣": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "茶": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "糖": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "跑": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "跳": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "走": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "看": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "听": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "说": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "唱": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "笑": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "哭": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "想": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "打": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "拿": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "红": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "黄": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "蓝": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "绿": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "白": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "黑": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "圆": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "方": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "长": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 44,
+      "bbox": [
+        600,
+        250,
+        120,
+        120
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "长颈鹿",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "短": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "高": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "矮": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "年": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "时": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "分": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "秒": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "早": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "午": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "晚": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "今": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "明": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "昨": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "房": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "门": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "窗": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "床": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "桌": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "椅": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "灯": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "墙": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 8,
+      "bbox": [
+        300,
+        250,
+        400,
+        400
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "长城",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "院": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 56,
+      "bbox": [
+        450,
+        250,
+        80,
+        80
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "树",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "街": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 3,
+      "bbox": [
+        500,
+        420,
+        100,
+        40
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "一年级",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "桥": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "城": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 84,
+      "bbox": [
+        790,
+        400,
+        50,
+        50
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "城市",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "洗": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "扫": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "擦": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 75,
+      "bbox": [
+        250,
+        350,
+        150,
+        150
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "桌子",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "穿": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "吃": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "喝": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "种": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 27,
+      "bbox": [
+        300,
+        400,
+        150,
+        150
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "树",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "收": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 72,
+      "bbox": [
+        500,
+        300,
+        400,
+        400
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "荷叶",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "送": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "找": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "做": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "帮": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 101,
+      "bbox": [
+        350,
+        250,
+        150,
+        150
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "手",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "乐": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "怒": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "怕": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "哀": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "喜": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 24,
+      "bbox": [
+        600,
+        500,
+        150,
+        150
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "鸡",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "静": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "急": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "忙": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "敢": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "暖": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 7,
+      "bbox": [
+        500,
+        300,
+        120,
+        120
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "孔雀",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "甜": {
+      "status": "MISS",
+      "grade": 2,
+      "hasPhoto": false
+    },
+    "美": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 51,
+      "bbox": [
+        350,
+        450,
+        50,
+        50
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "花",
+      "grade": 2,
+      "hasPhoto": true
+    },
+    "霜": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "露": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "霞": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "雾": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "晨": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "昏": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "晴": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "阴": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "暗": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 91,
+      "bbox": [
+        250,
+        400,
+        150,
+        150
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "月亮",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "影": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 92,
+      "bbox": [
+        500,
+        250,
+        150,
+        150
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "影子",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "彩": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "虹": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "狐": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "狸": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "猴": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "鹿": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "象": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "狮": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "狼": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "蛇": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "鹰": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "雀": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "蚕": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "蜂": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "观": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "察": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "研": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "究": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "验": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "试": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "探": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "索": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "追": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "寻": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "秘": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 78,
+      "bbox": [
+        250,
+        300,
+        80,
+        80
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "老爷爷",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "密": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "岭": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "峰": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "崖": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "谷": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "洞": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "潭": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "瀑": {
+      "status": "EXCLUSIVE",
+      "book": "1211001301241",
+      "page": 94,
+      "bbox": [
+        580,
+        250,
+        200,
+        200
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "瀑布",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "原": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "野": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "森": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "林": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "岩": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "柳": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "杨": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 74,
+      "bbox": [
+        880,
+        570,
+        120,
+        120
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "杨梅",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "松": {
+      "status": "EXCLUSIVE",
+      "book": "1211001101241",
+      "page": 66,
+      "bbox": [
+        830,
+        480,
+        130,
+        130
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "松鼠",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "柏": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "荷": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "莲": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "菊": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "梅": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "兰": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "竹": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": true
+    },
+    "藤": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 68,
+      "bbox": [
+        600,
+        700,
+        100,
+        100
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "鱼",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "芽": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "寓": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 44,
+      "bbox": [
+        300,
+        700,
+        200,
+        200
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "狐狸",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "言": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 124,
+      "bbox": [
+        200,
+        300,
+        50,
+        50
+      ],
+      "conf": 0.45,
+      "kind": "en",
+      "obj": "语文",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "规": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 82,
+      "bbox": [
+        250,
+        650,
+        70,
+        70
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "笔袋",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "矩": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "道": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 22,
+      "bbox": [
+        470,
+        400,
+        200,
+        200
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "水泥道",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "理": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "劝": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "告": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "警": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "示": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "教": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "训": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "端": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 32,
+      "bbox": [
+        530,
+        380,
+        40,
+        40
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "灯",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "粽": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "舟": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "龙": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "宵": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "饼": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "赏": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "祭": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "祖": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "关": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "怀": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "助": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 95,
+      "bbox": [
+        460,
+        200,
+        50,
+        50
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "用手",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "善": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "良": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "慈": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "悲": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "怜": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "惜": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 3,
+      "bbox": [
+        500,
+        400,
+        100,
+        100
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "三年级",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "尊": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "敬": {
+      "status": "MISS",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "孝": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 64,
+      "bbox": [
+        870,
+        580,
+        150,
+        150
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "稻草人",
+      "grade": 3,
+      "hasPhoto": false
+    },
+    "潮": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "汐": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "崩": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "裂": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "涨": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "沸": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "腾": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "卷": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "涌": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "吼": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "震": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "撼": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "均": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "匀": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "叠": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "隙": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "茎": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 28,
+      "bbox": [
+        900,
+        300,
+        150,
+        150
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "树叶",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "柄": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 106,
+      "bbox": [
+        500,
+        710,
+        50,
+        50
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "手术刀",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "蜗": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "触": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "固": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "牢": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "逐": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "渐": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "幸": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "福": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "巫": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "魔": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "仙": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 50,
+      "bbox": [
+        200,
+        300,
+        150,
+        150
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "马",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "宫": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "殿": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "皇": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "冠": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "戒": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "指": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "镜": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": true
+    },
+    "性": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "格": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "贪": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "玩": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "脾": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "气": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "乖": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "巧": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "淘": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "傲": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "慢": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 28,
+      "bbox": [
+        500,
+        800,
+        80,
+        80
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "鱼",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "忠": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 71,
+      "bbox": [
+        450,
+        300,
+        80,
+        80
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "马",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "棚": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "架": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 98,
+      "bbox": [
+        300,
+        700,
+        250,
+        250
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "黑板",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "檐": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "篱": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "笆": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "蔬": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 52,
+      "bbox": [
+        150,
+        300,
+        90,
+        90
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "西瓜",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "畜": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 56,
+      "bbox": [
+        150,
+        200,
+        300,
+        300
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "牛",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "禽": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 53,
+      "bbox": [
+        450,
+        500,
+        60,
+        60
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "牛",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "桑": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "麻": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "织": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "锄": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "航": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "宇": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "宙": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "卫": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "箭": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "舱": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "测": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 41,
+      "bbox": [
+        200,
+        300,
+        40,
+        40
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "预测",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "控": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "讯": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "码": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "网": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "芯": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "诺": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "誓": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "约": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "诚": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "信": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "欺": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "骗": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "谎": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "悔": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "改": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "错": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 43,
+      "bbox": [
+        860,
+        300,
+        40,
+        40
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "桥",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "责": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "阁": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "楼": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "亭": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "台": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "廊": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "榭": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "碑": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "塔": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "寺": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "庙": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "窟": {
+      "status": "MISS",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "雕": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 58,
+      "bbox": [
+        350,
+        450,
+        100,
+        100
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "石头",
+      "grade": 4,
+      "hasPhoto": false
+    },
+    "籍": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 13,
+      "bbox": [
+        75,
+        250,
+        100,
+        100
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "书",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "诵": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "阅": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "博": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "雅": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 117,
+      "bbox": [
+        900,
+        550,
+        950,
+        580
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "电话",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "典": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "奥": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "妙": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "慧": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "智": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "贤": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "列": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "举": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "例": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "比": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "较": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "数": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "据": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "图": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "表": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "简": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "准": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 37,
+      "bbox": [
+        350,
+        450,
+        150,
+        150
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "暴风雨",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "确": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "郎": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "梭": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "筐": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "缘": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "媒": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "聘": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "嫁": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "娶": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "鹊": {
+      "status": "WEAK",
+      "book": "1211001101241",
+      "page": 103,
+      "bbox": [
+        750,
+        300,
+        150,
+        150
+      ],
+      "conf": 0.45,
+      "kind": "en",
+      "obj": "乌鸦",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "银": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "汉": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 36,
+      "bbox": [
+        740,
+        600,
+        50,
+        50
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "白菜",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "疆": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "域": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "旗": {
+      "status": "WEAK",
+      "book": "1211001101241",
+      "page": 10,
+      "bbox": [
+        50,
+        200,
+        400,
+        400
+      ],
+      "conf": 0.45,
+      "kind": "en",
+      "obj": "五星红旗",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "徽": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "严": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "愿": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "捐": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "躯": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "报": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "国": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 8,
+      "bbox": [
+        850,
+        650,
+        60,
+        60
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "猴子",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "英": {
+      "status": "EXCLUSIVE",
+      "book": "1211001301241",
+      "page": 68,
+      "bbox": [
+        770,
+        460,
+        50,
+        50
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "蒲公英",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "烈": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "趣": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "逗": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "耍": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "闹": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "惹": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "祸": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 99,
+      "bbox": [
+        300,
+        400,
+        200,
+        200
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "猴子",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "闯": {
+      "status": "CONTESTED",
+      "book": "1211001301241",
+      "page": 97,
+      "bbox": [
+        50,
+        200,
+        150,
+        150
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "门",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "荡": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "蹦": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "窜": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "瞒": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "偷": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "曹": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "操": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "备": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 5,
+      "bbox": [
+        600,
+        250,
+        150,
+        150
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "人",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "羽": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "亮": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "瑜": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "忌": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "谋": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "略": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "计": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "策": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "疑": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "描": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "绘": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "刻": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "画": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "神": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "态": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "止": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "貌": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "韵": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "眸": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "唇": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "洲": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "际": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "洋": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "港": {
+      "status": "EXCLUSIVE",
+      "book": "1211001301241",
+      "page": 85,
+      "bbox": [
+        200,
+        300,
+        50,
+        50
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "香港",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "湾": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "屿": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "礁": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "漠": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "驼": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "舶": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "艇": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "帆": {
+      "status": "MISS",
+      "grade": 5,
+      "hasPhoto": false
+    },
+    "滋": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "润": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "孕": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "育": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "繁": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "衍": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "枯": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "萎": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "凋": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "零": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "萌": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "茂": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "帜": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "号": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "角": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "征": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "途": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "艰": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "险": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "牺": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "牲": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "雄": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "魄": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "魂": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "娜": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "渔": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "魁": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "梧": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "遭": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "遇": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "煎": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "熬": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "忧": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "虑": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "裹": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "哉": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "乎": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "矣": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "焉": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "兮": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "咏": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "吟": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "赋": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "序": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "跋": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "铭": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "箴": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "饺": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "摊": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "贩": {
+      "status": "WEAK",
+      "book": "1211001301241",
+      "page": 15,
+      "bbox": [
+        60,
+        180,
+        120,
+        160
+      ],
+      "conf": 0.45,
+      "kind": "en",
+      "obj": "农民",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "货": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "锣": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "鼓": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "鞭": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 110,
+      "bbox": [
+        850,
+        250,
+        70,
+        70
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "鞭炮",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "炮": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "联": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "幅": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "粥": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "蒜": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "鲁": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "滨": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 32,
+      "bbox": [
+        450,
+        300,
+        80,
+        80
+      ],
+      "conf": 1,
+      "kind": "direct",
+      "obj": "鼓",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "逊": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "漂": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "荒": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "蛮": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "峻": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "搏": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "帐": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "篷": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "筏": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "存": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "挚": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "眷": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "恋": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "惦": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "聊": {
+      "status": "CONTESTED",
+      "book": "1211001101241",
+      "page": 76,
+      "bbox": [
+        500,
+        700,
+        100,
+        100
+      ],
+      "conf": 0.7,
+      "kind": "word",
+      "obj": "聊天",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "慰": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "藉": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "绪": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "牵": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "挂": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "思": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "深": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "毕": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "赠": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "留": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "珍": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "展": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "望": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "未": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "程": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "锦": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "棒": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "迈": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    },
+    "翔": {
+      "status": "MISS",
+      "grade": 6,
+      "hasPhoto": false
+    }
+  },
+  "clusters": [
+    {
+      "key": "1211001101241#1",
+      "book": "1211001101241",
+      "page": 1,
+      "bbox": [
+        600,
+        300,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "美",
+      "zs": [
+        "风",
+        "美"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#3",
+      "book": "1211001101241",
+      "page": 3,
+      "bbox": [
+        500,
+        420,
+        100,
+        40
+      ],
+      "status": "CONTESTED",
+      "owner": "街",
+      "zs": [
+        "育",
+        "言",
+        "龙",
+        "寺",
+        "庙",
+        "汉",
+        "一",
+        "年",
+        "惜",
+        "珍",
+        "上",
+        "街"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#5",
+      "book": "1211001101241",
+      "page": 5,
+      "bbox": [
+        600,
+        250,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "备",
+      "zs": [
+        "人",
+        "书",
+        "备"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#6",
+      "book": "1211001101241",
+      "page": 6,
+      "bbox": [
+        300,
+        250,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "人",
+      "zs": [
+        "舟",
+        "帆",
+        "人",
+        "雪"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#7",
+      "book": "1211001101241",
+      "page": 7,
+      "bbox": [
+        500,
+        300,
+        120,
+        120
+      ],
+      "status": "CONTESTED",
+      "owner": "暖",
+      "zs": [
+        "天",
+        "夏",
+        "明",
+        "暖",
+        "月",
+        "暗",
+        "宵",
+        "饼",
+        "赏",
+        "亮",
+        "雀",
+        "鸡",
+        "禽"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#8",
+      "book": "1211001101241",
+      "page": 8,
+      "bbox": [
+        300,
+        250,
+        400,
+        400
+      ],
+      "status": "CONTESTED",
+      "owner": "墙",
+      "zs": [
+        "校",
+        "旗",
+        "国",
+        "帜",
+        "锦",
+        "长",
+        "墙",
+        "城"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#9",
+      "book": "1211001101241",
+      "page": 9,
+      "bbox": [
+        300,
+        400,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "雅",
+      "zs": [
+        "冠",
+        "雅"
+      ],
+      "maxConf": 0.45
+    },
+    {
+      "key": "1211001101241#10",
+      "book": "1211001101241",
+      "page": 10,
+      "bbox": [
+        50,
+        200,
+        400,
+        400
+      ],
+      "status": "WEAK",
+      "owner": "旗",
+      "zs": [
+        "旗"
+      ],
+      "maxConf": 0.45
+    },
+    {
+      "key": "1211001101241#11",
+      "book": "1211001101241",
+      "page": 11,
+      "bbox": [
+        50,
+        150,
+        400,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "二",
+      "zs": [
+        "江",
+        "河",
+        "岸",
+        "长",
+        "二",
+        "梨",
+        "黄"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#12",
+      "book": "1211001101241",
+      "page": 12,
+      "bbox": [
+        900,
+        250,
+        40,
+        40
+      ],
+      "status": "CONTESTED",
+      "owner": "暖",
+      "zs": [
+        "天",
+        "夏",
+        "明",
+        "暖",
+        "花",
+        "美",
+        "野",
+        "荷",
+        "萎"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#13",
+      "book": "1211001101241",
+      "page": 13,
+      "bbox": [
+        75,
+        250,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "籍",
+      "zs": [
+        "书",
+        "本",
+        "籍",
+        "阅",
+        "典",
+        "写",
+        "箴"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#14",
+      "book": "1211001101241",
+      "page": 14,
+      "bbox": [
+        500,
+        300,
+        200,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "地",
+      "zs": [
+        "天",
+        "地",
+        "人",
+        "禾",
+        "野",
+        "你",
+        "我",
+        "他"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#15",
+      "book": "1211001101241",
+      "page": 15,
+      "bbox": [
+        900,
+        600,
+        50,
+        50
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "人",
+      "zs": [
+        "人"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#16",
+      "book": "1211001101241",
+      "page": 16,
+      "bbox": [
+        180,
+        200,
+        60,
+        60
+      ],
+      "status": "CONTESTED",
+      "owner": "下",
+      "zs": [
+        "上",
+        "下"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#19",
+      "book": "1211001101241",
+      "page": 19,
+      "bbox": [
+        50,
+        200,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "热",
+      "zs": [
+        "天",
+        "日",
+        "夏",
+        "明",
+        "暖",
+        "月",
+        "暗",
+        "宵",
+        "饼",
+        "赏",
+        "山",
+        "岭",
+        "峰",
+        "崩",
+        "峻",
+        "江",
+        "河",
+        "岸",
+        "长",
+        "水",
+        "热",
+        "冷",
+        "湖",
+        "波",
+        "泉",
+        "溪",
+        "蛇",
+        "瀑",
+        "潮",
+        "榭",
+        "洋",
+        "火",
+        "沸",
+        "箭",
+        "烈",
+        "熬"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#22",
+      "book": "1211001101241",
+      "page": 22,
+      "bbox": [
+        650,
+        550,
+        30,
+        30
+      ],
+      "status": "CONTESTED",
+      "owner": "热",
+      "zs": [
+        "水",
+        "热",
+        "冷",
+        "河",
+        "湖",
+        "波",
+        "泉",
+        "溪",
+        "蛇",
+        "瀑",
+        "潮",
+        "榭",
+        "洋"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#23",
+      "book": "1211001101241",
+      "page": 23,
+      "bbox": [
+        800,
+        600,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "籍",
+      "zs": [
+        "书",
+        "本",
+        "籍",
+        "阅",
+        "典"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#24",
+      "book": "1211001101241",
+      "page": 24,
+      "bbox": [
+        600,
+        500,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "喜",
+      "zs": [
+        "短",
+        "喜",
+        "鹊",
+        "鸡",
+        "禽",
+        "鸭",
+        "梨",
+        "鱼",
+        "锦"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#25",
+      "book": "1211001101241",
+      "page": 25,
+      "bbox": [
+        470,
+        580,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "沙",
+      "zs": [
+        "书",
+        "本",
+        "籍",
+        "阅",
+        "典",
+        "沙"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#26",
+      "book": "1211001101241",
+      "page": 26,
+      "bbox": [
+        200,
+        400,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "禽",
+      "zs": [
+        "鸡",
+        "禽",
+        "天"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#27",
+      "book": "1211001101241",
+      "page": 27,
+      "bbox": [
+        300,
+        400,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "警",
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#28",
+      "book": "1211001101241",
+      "page": 28,
+      "bbox": [
+        500,
+        800,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "慢",
+      "zs": [
+        "慢",
+        "鱼"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#29",
+      "book": "1211001101241",
+      "page": 29,
+      "bbox": [
+        250,
+        180,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "家",
+        "房",
+        "院",
+        "棚",
+        "檐",
+        "眷"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#30",
+      "book": "1211001101241",
+      "page": 30,
+      "bbox": [
+        250,
+        500,
+        30,
+        40
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "八",
+      "zs": [
+        "八"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#31",
+      "book": "1211001101241",
+      "page": 31,
+      "bbox": [
+        580,
+        350,
+        40,
+        40
+      ],
+      "status": "CONTESTED",
+      "owner": "爸",
+      "zs": [
+        "爸",
+        "妈"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#32",
+      "book": "1211001101241",
+      "page": 32,
+      "bbox": [
+        450,
+        300,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "滨",
+      "zs": [
+        "雨",
+        "岸",
+        "亭",
+        "滨",
+        "锣",
+        "鼓"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#33",
+      "book": "1211001101241",
+      "page": 33,
+      "bbox": [
+        800,
+        300,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "兔",
+      "zs": [
+        "兔",
+        "白"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#34",
+      "book": "1211001101241",
+      "page": 34,
+      "bbox": [
+        200,
+        500,
+        50,
+        50
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "九",
+      "zs": [
+        "九"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#35",
+      "book": "1211001101241",
+      "page": 35,
+      "bbox": [
+        50,
+        250,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "地",
+      "zs": [
+        "笔",
+        "地",
+        "图",
+        "疆"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#36",
+      "book": "1211001101241",
+      "page": 36,
+      "bbox": [
+        740,
+        600,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "汉",
+      "zs": [
+        "菜",
+        "白",
+        "龙",
+        "寺",
+        "庙",
+        "汉",
+        "筐"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#37",
+      "book": "1211001101241",
+      "page": 37,
+      "bbox": [
+        770,
+        900,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "汉",
+      "zs": [
+        "菜",
+        "白",
+        "龙",
+        "寺",
+        "庙",
+        "汉"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#39",
+      "book": "1211001101241",
+      "page": 39,
+      "bbox": [
+        450,
+        250,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "美",
+      "zs": [
+        "花",
+        "美",
+        "野",
+        "荷",
+        "莲",
+        "瑜",
+        "萎"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#40",
+      "book": "1211001101241",
+      "page": 40,
+      "bbox": [
+        250,
+        350,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "一",
+        "言",
+        "气",
+        "惦",
+        "聊",
+        "瓜",
+        "桌",
+        "灯",
+        "擦",
+        "表"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#41",
+      "book": "1211001101241",
+      "page": 41,
+      "bbox": [
+        600,
+        700,
+        200,
+        200
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "鸡",
+      "zs": [
+        "鸡"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#42",
+      "book": "1211001101241",
+      "page": 42,
+      "bbox": [
+        400,
+        350,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "虫",
+        "黑"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#43",
+      "book": "1211001101241",
+      "page": 43,
+      "bbox": [
+        860,
+        300,
+        40,
+        40
+      ],
+      "status": "CONTESTED",
+      "owner": "错",
+      "zs": [
+        "错",
+        "石",
+        "桥",
+        "鹊"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#44",
+      "book": "1211001101241",
+      "page": 44,
+      "bbox": [
+        600,
+        250,
+        120,
+        120
+      ],
+      "status": "CONTESTED",
+      "owner": "长",
+      "zs": [
+        "长",
+        "鹿"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#45",
+      "book": "1211001101241",
+      "page": 45,
+      "bbox": [
+        350,
+        250,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "籍",
+      "zs": [
+        "桌",
+        "书",
+        "本",
+        "籍",
+        "阅",
+        "典"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#46",
+      "book": "1211001101241",
+      "page": 46,
+      "bbox": [
+        260,
+        220,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "家",
+        "房",
+        "院",
+        "棚",
+        "檐",
+        "眷"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#49",
+      "book": "1211001101241",
+      "page": 49,
+      "bbox": [
+        600,
+        450,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "鸡",
+      "zs": [
+        "鸡",
+        "鱼"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#50",
+      "book": "1211001101241",
+      "page": 50,
+      "bbox": [
+        200,
+        300,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "仙",
+      "zs": [
+        "仙",
+        "马",
+        "荡",
+        "鱼"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#51",
+      "book": "1211001101241",
+      "page": 51,
+      "bbox": [
+        350,
+        450,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "美",
+      "zs": [
+        "花",
+        "美",
+        "野",
+        "荷",
+        "萎",
+        "书",
+        "本",
+        "籍",
+        "阅",
+        "典"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#52",
+      "book": "1211001101241",
+      "page": 52,
+      "bbox": [
+        150,
+        300,
+        90,
+        90
+      ],
+      "status": "CONTESTED",
+      "owner": "蔬",
+      "zs": [
+        "菜",
+        "白",
+        "龙",
+        "寺",
+        "庙",
+        "汉",
+        "蔬",
+        "火",
+        "鸭",
+        "梨",
+        "瓜",
+        "水",
+        "果"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#53",
+      "book": "1211001101241",
+      "page": 53,
+      "bbox": [
+        450,
+        500,
+        60,
+        60
+      ],
+      "status": "CONTESTED",
+      "owner": "禽",
+      "zs": [
+        "鸟",
+        "雀",
+        "禽",
+        "鹊",
+        "牛",
+        "畜"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#54",
+      "book": "1211001101241",
+      "page": 54,
+      "bbox": [
+        500,
+        300,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "热",
+      "zs": [
+        "石",
+        "桥",
+        "鹊",
+        "水",
+        "热",
+        "冷",
+        "河",
+        "湖",
+        "波",
+        "泉",
+        "溪",
+        "蛇",
+        "瀑",
+        "潮",
+        "榭",
+        "洋",
+        "柳",
+        "春",
+        "花",
+        "桃",
+        "野",
+        "莲",
+        "菊"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#55",
+      "book": "1211001101241",
+      "page": 55,
+      "bbox": [
+        500,
+        200,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#56",
+      "book": "1211001101241",
+      "page": 56,
+      "bbox": [
+        450,
+        250,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "院",
+      "zs": [
+        "春",
+        "花",
+        "野",
+        "莲",
+        "菊",
+        "梅",
+        "家",
+        "房",
+        "院",
+        "棚",
+        "檐",
+        "眷",
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#59",
+      "book": "1211001101241",
+      "page": 59,
+      "bbox": [
+        350,
+        650,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "禽",
+      "zs": [
+        "鱼",
+        "鸟",
+        "雀",
+        "禽",
+        "鹊"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#61",
+      "book": "1211001101241",
+      "page": 61,
+      "bbox": [
+        900,
+        200,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "冰",
+      "zs": [
+        "冰",
+        "桌",
+        "灯",
+        "擦",
+        "表"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#63",
+      "book": "1211001101241",
+      "page": 63,
+      "bbox": [
+        150,
+        200,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "藤",
+      "zs": [
+        "秋",
+        "树",
+        "叶",
+        "绿",
+        "荷",
+        "藤",
+        "幸",
+        "桑",
+        "枯",
+        "凋",
+        "人",
+        "雪"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#65",
+      "book": "1211001101241",
+      "page": 65,
+      "bbox": [
+        50,
+        200,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "禽",
+      "zs": [
+        "鸟",
+        "雀",
+        "禽",
+        "鹊"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#66",
+      "book": "1211001101241",
+      "page": 66,
+      "bbox": [
+        830,
+        480,
+        130,
+        130
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "松",
+      "zs": [
+        "松"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#68",
+      "book": "1211001101241",
+      "page": 68,
+      "bbox": [
+        600,
+        700,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "藤",
+      "zs": [
+        "秋",
+        "树",
+        "叶",
+        "绿",
+        "荷",
+        "莲",
+        "藤",
+        "幸",
+        "桑",
+        "瑜",
+        "枯",
+        "凋",
+        "鱼"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#69",
+      "book": "1211001101241",
+      "page": 69,
+      "bbox": [
+        200,
+        300,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "美",
+      "zs": [
+        "花",
+        "美",
+        "野",
+        "荷",
+        "莲",
+        "瑜",
+        "萎",
+        "秋",
+        "树",
+        "叶",
+        "绿",
+        "藤",
+        "幸",
+        "桑",
+        "枯",
+        "凋"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#71",
+      "book": "1211001101241",
+      "page": 71,
+      "bbox": [
+        450,
+        300,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "忠",
+      "zs": [
+        "鸡",
+        "鸭",
+        "梨",
+        "马",
+        "荡",
+        "狗",
+        "忠"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#72",
+      "book": "1211001101241",
+      "page": 72,
+      "bbox": [
+        500,
+        300,
+        400,
+        400
+      ],
+      "status": "CONTESTED",
+      "owner": "收",
+      "zs": [
+        "鸟",
+        "雀",
+        "禽",
+        "鹊",
+        "秋",
+        "树",
+        "叶",
+        "绿",
+        "荷",
+        "莲",
+        "藤",
+        "幸",
+        "桑",
+        "瑜",
+        "枯",
+        "凋",
+        "田",
+        "目",
+        "米",
+        "吃",
+        "收",
+        "谷",
+        "原",
+        "粽",
+        "淘",
+        "麻",
+        "粥"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#73",
+      "book": "1211001101241",
+      "page": 73,
+      "bbox": [
+        200,
+        150,
+        300,
+        300
+      ],
+      "status": "CONTESTED",
+      "owner": "冷",
+      "zs": [
+        "人",
+        "雪",
+        "冠",
+        "雅",
+        "手",
+        "冷"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#75",
+      "book": "1211001101241",
+      "page": 75,
+      "bbox": [
+        250,
+        350,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "擦",
+      "zs": [
+        "桌",
+        "灯",
+        "擦",
+        "表",
+        "椅"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#76",
+      "book": "1211001101241",
+      "page": 76,
+      "bbox": [
+        500,
+        700,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "聊",
+      "zs": [
+        "我",
+        "天",
+        "聊"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#78",
+      "book": "1211001101241",
+      "page": 78,
+      "bbox": [
+        250,
+        300,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "秘",
+      "zs": [
+        "虎",
+        "爸",
+        "爷",
+        "奶",
+        "秘",
+        "孝",
+        "郎",
+        "妈",
+        "教",
+        "冠",
+        "孕",
+        "娜",
+        "狗",
+        "忠"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#80",
+      "book": "1211001101241",
+      "page": 80,
+      "bbox": [
+        300,
+        600,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#82",
+      "book": "1211001101241",
+      "page": 82,
+      "bbox": [
+        250,
+        650,
+        70,
+        70
+      ],
+      "status": "CONTESTED",
+      "owner": "规",
+      "zs": [
+        "长",
+        "规",
+        "矩",
+        "测",
+        "书",
+        "本",
+        "籍",
+        "阅",
+        "典",
+        "笔",
+        "描"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#84",
+      "book": "1211001101241",
+      "page": 84,
+      "bbox": [
+        50,
+        300,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "问",
+      "zs": [
+        "旗",
+        "心",
+        "一",
+        "二",
+        "校",
+        "问",
+        "果",
+        "枣",
+        "红",
+        "圆",
+        "福",
+        "止",
+        "帜",
+        "乎",
+        "联",
+        "锦"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#89",
+      "book": "1211001101241",
+      "page": 89,
+      "bbox": [
+        900,
+        600,
+        60,
+        60
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "花",
+      "zs": [
+        "花"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#91",
+      "book": "1211001101241",
+      "page": 91,
+      "bbox": [
+        250,
+        400,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "暗",
+      "zs": [
+        "星",
+        "宙",
+        "汉",
+        "月",
+        "暗",
+        "宵",
+        "饼",
+        "赏",
+        "亮"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#92",
+      "book": "1211001101241",
+      "page": 92,
+      "bbox": [
+        500,
+        250,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "影",
+      "zs": [
+        "影",
+        "架"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#94",
+      "book": "1211001101241",
+      "page": 94,
+      "bbox": [
+        450,
+        500,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "籍",
+      "zs": [
+        "笔",
+        "书",
+        "本",
+        "籍",
+        "阅",
+        "典"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#95",
+      "book": "1211001101241",
+      "page": 95,
+      "bbox": [
+        460,
+        200,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "助",
+      "zs": [
+        "手",
+        "说",
+        "洗",
+        "助",
+        "慈",
+        "敬",
+        "举",
+        "愿",
+        "慰",
+        "牵",
+        "思"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#97",
+      "book": "1211001101241",
+      "page": 97,
+      "bbox": [
+        150,
+        250,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "书",
+        "校",
+        "捐"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#98",
+      "book": "1211001101241",
+      "page": 98,
+      "bbox": [
+        300,
+        700,
+        250,
+        250
+      ],
+      "status": "CONTESTED",
+      "owner": "架",
+      "zs": [
+        "书",
+        "架",
+        "黑"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#99",
+      "book": "1211001101241",
+      "page": 99,
+      "bbox": [
+        300,
+        400,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "祸",
+      "zs": [
+        "猴",
+        "祸"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#100",
+      "book": "1211001101241",
+      "page": 100,
+      "bbox": [
+        70,
+        300,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "月",
+        "暗",
+        "宵",
+        "饼",
+        "赏",
+        "亮"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#101",
+      "book": "1211001101241",
+      "page": 101,
+      "bbox": [
+        560,
+        480,
+        160,
+        160
+      ],
+      "status": "CONTESTED",
+      "owner": "祸",
+      "zs": [
+        "猴",
+        "祸",
+        "兔",
+        "松"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#102",
+      "book": "1211001101241",
+      "page": 102,
+      "bbox": [
+        900,
+        130,
+        180,
+        180
+      ],
+      "status": "CONTESTED",
+      "owner": "禽",
+      "zs": [
+        "鸡",
+        "禽",
+        "鸭",
+        "梨",
+        "雀"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#103",
+      "book": "1211001101241",
+      "page": 103,
+      "bbox": [
+        750,
+        300,
+        150,
+        150
+      ],
+      "status": "WEAK",
+      "owner": "鹊",
+      "zs": [
+        "鹊"
+      ],
+      "maxConf": 0.45
+    },
+    {
+      "key": "1211001101241#105",
+      "book": "1211001101241",
+      "page": 105,
+      "bbox": [
+        500,
+        600,
+        50,
+        50
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "雨",
+      "zs": [
+        "雨"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#106",
+      "book": "1211001101241",
+      "page": 106,
+      "bbox": [
+        900,
+        800,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "地",
+      "zs": [
+        "花",
+        "美",
+        "野",
+        "荷",
+        "萎",
+        "地",
+        "草",
+        "棚"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001101241#109",
+      "book": "1211001101241",
+      "page": 109,
+      "bbox": [
+        50,
+        200,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "院",
+      "zs": [
+        "瓜",
+        "家",
+        "房",
+        "院",
+        "棚",
+        "檐",
+        "眷"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#110",
+      "book": "1211001101241",
+      "page": 110,
+      "bbox": [
+        850,
+        250,
+        70,
+        70
+      ],
+      "status": "CONTESTED",
+      "owner": "鞭",
+      "zs": [
+        "灯",
+        "鞭",
+        "炮"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001101241#117",
+      "book": "1211001101241",
+      "page": 117,
+      "bbox": [
+        900,
+        550,
+        950,
+        580
+      ],
+      "status": "CONTESTED",
+      "owner": "雅",
+      "zs": [
+        "育",
+        "雅",
+        "电"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#1",
+      "book": "1211001301241",
+      "page": 1,
+      "bbox": [
+        770,
+        490,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "火",
+      "zs": [
+        "火",
+        "玩"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#3",
+      "book": "1211001301241",
+      "page": 3,
+      "bbox": [
+        500,
+        400,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "惜",
+      "zs": [
+        "龙",
+        "寺",
+        "庙",
+        "汉",
+        "三",
+        "年",
+        "惜",
+        "珍",
+        "一",
+        "上"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#7",
+      "book": "1211001301241",
+      "page": 7,
+      "bbox": [
+        300,
+        250,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "美",
+      "zs": [
+        "花",
+        "美",
+        "野",
+        "荷",
+        "萎",
+        "牛",
+        "蜗"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#8",
+      "book": "1211001301241",
+      "page": 8,
+      "bbox": [
+        850,
+        650,
+        60,
+        60
+      ],
+      "status": "CONTESTED",
+      "owner": "国",
+      "zs": [
+        "校",
+        "旗",
+        "国",
+        "帜",
+        "锦",
+        "猴",
+        "祸"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#9",
+      "book": "1211001301241",
+      "page": 9,
+      "bbox": [
+        200,
+        300,
+        400,
+        400
+      ],
+      "status": "CONTESTED",
+      "owner": "课",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "课"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#13",
+      "book": "1211001301241",
+      "page": 13,
+      "bbox": [
+        820,
+        450,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "书",
+      "zs": [
+        "书",
+        "桌",
+        "椅"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#14",
+      "book": "1211001301241",
+      "page": 14,
+      "bbox": [
+        790,
+        180,
+        40,
+        40
+      ],
+      "status": "CONTESTED",
+      "owner": "籍",
+      "zs": [
+        "书",
+        "本",
+        "籍",
+        "阅",
+        "典"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#15",
+      "book": "1211001301241",
+      "page": 15,
+      "bbox": [
+        60,
+        180,
+        120,
+        160
+      ],
+      "status": "WEAK",
+      "owner": "贩",
+      "zs": [
+        "贩"
+      ],
+      "maxConf": 0.45
+    },
+    {
+      "key": "1211001301241#16",
+      "book": "1211001301241",
+      "page": 16,
+      "bbox": [
+        200,
+        300,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "头",
+      "zs": [
+        "头",
+        "笑"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#18",
+      "book": "1211001301241",
+      "page": 18,
+      "bbox": [
+        500,
+        600,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "牛",
+        "畜"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#19",
+      "book": "1211001301241",
+      "page": 19,
+      "bbox": [
+        300,
+        500,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "秋",
+        "叶",
+        "绿",
+        "荷",
+        "藤",
+        "幸",
+        "桑",
+        "枯",
+        "凋"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#20",
+      "book": "1211001301241",
+      "page": 20,
+      "bbox": [
+        450,
+        300,
+        60,
+        60
+      ],
+      "status": "CONTESTED",
+      "owner": "地",
+      "zs": [
+        "湖",
+        "洞",
+        "地",
+        "山",
+        "菜",
+        "豆",
+        "绿",
+        "晨"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#22",
+      "book": "1211001301241",
+      "page": 22,
+      "bbox": [
+        470,
+        400,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "道",
+      "zs": [
+        "水",
+        "道",
+        "秋",
+        "树",
+        "叶",
+        "绿",
+        "荷",
+        "藤",
+        "幸",
+        "桑",
+        "枯",
+        "凋",
+        "天",
+        "蓝"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#24",
+      "book": "1211001301241",
+      "page": 24,
+      "bbox": [
+        350,
+        400,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "道",
+      "zs": [
+        "天",
+        "水",
+        "道",
+        "早",
+        "午",
+        "晨"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#25",
+      "book": "1211001301241",
+      "page": 25,
+      "bbox": [
+        890,
+        550,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "杏",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "银",
+        "茂",
+        "梧",
+        "花",
+        "菊"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#26",
+      "book": "1211001301241",
+      "page": 26,
+      "bbox": [
+        600,
+        700,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "杏",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "柏",
+        "柳"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#27",
+      "book": "1211001301241",
+      "page": 27,
+      "bbox": [
+        710,
+        500,
+        40,
+        40
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "种",
+        "莲",
+        "鸟",
+        "雀",
+        "禽",
+        "鹊"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#28",
+      "book": "1211001301241",
+      "page": 28,
+      "bbox": [
+        900,
+        300,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "茎",
+      "zs": [
+        "树",
+        "叶",
+        "茎"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#29",
+      "book": "1211001301241",
+      "page": 29,
+      "bbox": [
+        200,
+        300,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "藤",
+      "zs": [
+        "鸟",
+        "雀",
+        "禽",
+        "鹊",
+        "秋",
+        "树",
+        "叶",
+        "绿",
+        "荷",
+        "藤",
+        "幸",
+        "桑",
+        "枯",
+        "凋"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#30",
+      "book": "1211001301241",
+      "page": 30,
+      "bbox": [
+        300,
+        250,
+        200,
+        200
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "日",
+      "zs": [
+        "日"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#32",
+      "book": "1211001301241",
+      "page": 32,
+      "bbox": [
+        530,
+        380,
+        40,
+        40
+      ],
+      "status": "CONTESTED",
+      "owner": "端",
+      "zs": [
+        "端",
+        "舟",
+        "龙",
+        "篷",
+        "灯"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#33",
+      "book": "1211001301241",
+      "page": 33,
+      "bbox": [
+        300,
+        400,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "家",
+        "房",
+        "院",
+        "棚",
+        "檐",
+        "眷"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#34",
+      "book": "1211001301241",
+      "page": 34,
+      "bbox": [
+        500,
+        700,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "院",
+      "zs": [
+        "虎",
+        "爸",
+        "爷",
+        "奶",
+        "家",
+        "房",
+        "院",
+        "秘",
+        "孝",
+        "棚",
+        "檐",
+        "眷",
+        "兔",
+        "白"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#35",
+      "book": "1211001301241",
+      "page": 35,
+      "bbox": [
+        350,
+        550,
+        60,
+        60
+      ],
+      "status": "CONTESTED",
+      "owner": "院",
+      "zs": [
+        "虎",
+        "爸",
+        "爷",
+        "奶",
+        "家",
+        "房",
+        "院",
+        "秘",
+        "孝",
+        "棚",
+        "檐",
+        "眷",
+        "猫",
+        "鸡"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#37",
+      "book": "1211001301241",
+      "page": 37,
+      "bbox": [
+        350,
+        450,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "准",
+      "zs": [
+        "风",
+        "雨",
+        "准",
+        "备"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#38",
+      "book": "1211001301241",
+      "page": 38,
+      "bbox": [
+        890,
+        600,
+        100,
+        100
+      ],
+      "status": "WEAK",
+      "owner": "慢",
+      "zs": [
+        "慢"
+      ],
+      "maxConf": 0.45
+    },
+    {
+      "key": "1211001301241#39",
+      "book": "1211001301241",
+      "page": 39,
+      "bbox": [
+        890,
+        780,
+        100,
+        100
+      ],
+      "status": "WEAK",
+      "owner": "慢",
+      "zs": [
+        "慢"
+      ],
+      "maxConf": 0.45
+    },
+    {
+      "key": "1211001301241#40",
+      "book": "1211001301241",
+      "page": 40,
+      "bbox": [
+        470,
+        80,
+        30,
+        30
+      ],
+      "status": "CONTESTED",
+      "owner": "下",
+      "zs": [
+        "背",
+        "上",
+        "下",
+        "箭"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#41",
+      "book": "1211001301241",
+      "page": 41,
+      "bbox": [
+        200,
+        300,
+        40,
+        40
+      ],
+      "status": "CONTESTED",
+      "owner": "测",
+      "zs": [
+        "测",
+        "原"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#43",
+      "book": "1211001301241",
+      "page": 43,
+      "bbox": [
+        540,
+        500,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "忠",
+      "zs": [
+        "狗",
+        "忠",
+        "鸡",
+        "禽"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#44",
+      "book": "1211001301241",
+      "page": 44,
+      "bbox": [
+        300,
+        700,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "寓",
+      "zs": [
+        "狗",
+        "忠",
+        "狐",
+        "狸",
+        "寓"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#46",
+      "book": "1211001301241",
+      "page": 46,
+      "bbox": [
+        470,
+        200,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "忠",
+      "zs": [
+        "狗",
+        "忠"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#48",
+      "book": "1211001301241",
+      "page": 48,
+      "bbox": [
+        450,
+        350,
+        120,
+        120
+      ],
+      "status": "CONTESTED",
+      "owner": "书",
+      "zs": [
+        "饼",
+        "书",
+        "桌"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#51",
+      "book": "1211001301241",
+      "page": 51,
+      "bbox": [
+        800,
+        700,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "美",
+      "zs": [
+        "花",
+        "美",
+        "野",
+        "荷",
+        "萎",
+        "书",
+        "本",
+        "籍",
+        "阅",
+        "典"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#55",
+      "book": "1211001301241",
+      "page": 55,
+      "bbox": [
+        600,
+        700,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "头",
+      "zs": [
+        "头",
+        "红",
+        "草",
+        "牛",
+        "黄"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#56",
+      "book": "1211001301241",
+      "page": 56,
+      "bbox": [
+        150,
+        200,
+        300,
+        300
+      ],
+      "status": "CONTESTED",
+      "owner": "畜",
+      "zs": [
+        "牛",
+        "畜"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#58",
+      "book": "1211001301241",
+      "page": 58,
+      "bbox": [
+        350,
+        450,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "雕",
+      "zs": [
+        "石",
+        "头",
+        "雕",
+        "珍"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#59",
+      "book": "1211001301241",
+      "page": 59,
+      "bbox": [
+        960,
+        140,
+        70,
+        70
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "奶",
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#64",
+      "book": "1211001301241",
+      "page": 64,
+      "bbox": [
+        870,
+        580,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "孝",
+      "zs": [
+        "人",
+        "爸",
+        "爷",
+        "草",
+        "喝",
+        "孝",
+        "郎"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#65",
+      "book": "1211001301241",
+      "page": 65,
+      "bbox": [
+        300,
+        250,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "暗",
+      "zs": [
+        "月",
+        "暗",
+        "宵",
+        "饼",
+        "赏",
+        "亮",
+        "星",
+        "魔"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#66",
+      "book": "1211001301241",
+      "page": 66,
+      "bbox": [
+        900,
+        600,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "禽",
+      "zs": [
+        "鸟",
+        "雀",
+        "禽",
+        "鹊"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#68",
+      "book": "1211001301241",
+      "page": 68,
+      "bbox": [
+        770,
+        460,
+        50,
+        50
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "英",
+      "zs": [
+        "英"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#70",
+      "book": "1211001301241",
+      "page": 70,
+      "bbox": [
+        180,
+        300,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "地",
+      "zs": [
+        "地",
+        "草",
+        "端",
+        "舟",
+        "龙",
+        "棚",
+        "篷"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#71",
+      "book": "1211001301241",
+      "page": 71,
+      "bbox": [
+        500,
+        600,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "家",
+        "房",
+        "院",
+        "棚",
+        "檐",
+        "眷"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#73",
+      "book": "1211001301241",
+      "page": 73,
+      "bbox": [
+        450,
+        300,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "忠",
+      "zs": [
+        "火",
+        "狗",
+        "忠"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#74",
+      "book": "1211001301241",
+      "page": 74,
+      "bbox": [
+        880,
+        570,
+        120,
+        120
+      ],
+      "status": "CONTESTED",
+      "owner": "杨",
+      "zs": [
+        "杨",
+        "梅"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#76",
+      "book": "1211001301241",
+      "page": 76,
+      "bbox": [
+        710,
+        520,
+        60,
+        60
+      ],
+      "status": "CONTESTED",
+      "owner": "慢",
+      "zs": [
+        "海",
+        "慢"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#77",
+      "book": "1211001301241",
+      "page": 77,
+      "bbox": [
+        200,
+        250,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "鱼",
+      "zs": [
+        "鱼",
+        "鸟",
+        "海"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#78",
+      "book": "1211001301241",
+      "page": 78,
+      "bbox": [
+        150,
+        250,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "慢",
+      "zs": [
+        "鱼",
+        "海",
+        "慢"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#79",
+      "book": "1211001301241",
+      "page": 79,
+      "bbox": [
+        400,
+        200,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "海",
+      "zs": [
+        "海",
+        "舟",
+        "帆"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#82",
+      "book": "1211001301241",
+      "page": 82,
+      "bbox": [
+        500,
+        250,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "柏",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "雪"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#83",
+      "book": "1211001301241",
+      "page": 83,
+      "bbox": [
+        600,
+        800,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "秋",
+        "叶",
+        "绿",
+        "荷",
+        "藤",
+        "幸",
+        "桑",
+        "枯",
+        "凋"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#84",
+      "book": "1211001301241",
+      "page": 84,
+      "bbox": [
+        790,
+        400,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "城",
+      "zs": [
+        "港",
+        "城"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#85",
+      "book": "1211001301241",
+      "page": 85,
+      "bbox": [
+        200,
+        300,
+        50,
+        50
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "港",
+      "zs": [
+        "港"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#86",
+      "book": "1211001301241",
+      "page": 86,
+      "bbox": [
+        250,
+        500,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "果",
+        "红",
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#88",
+      "book": "1211001301241",
+      "page": 88,
+      "bbox": [
+        600,
+        500,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "热",
+      "zs": [
+        "山",
+        "岭",
+        "峰",
+        "崩",
+        "峻",
+        "水",
+        "热",
+        "冷",
+        "河",
+        "湖",
+        "波",
+        "泉",
+        "溪",
+        "蛇",
+        "瀑",
+        "潮",
+        "榭",
+        "洋"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#89",
+      "book": "1211001301241",
+      "page": 89,
+      "bbox": [
+        350,
+        250,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "藤",
+      "zs": [
+        "秋",
+        "树",
+        "叶",
+        "绿",
+        "荷",
+        "藤",
+        "幸",
+        "桑",
+        "枯",
+        "凋",
+        "露"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#91",
+      "book": "1211001301241",
+      "page": 91,
+      "bbox": [
+        440,
+        300,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "湖",
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#93",
+      "book": "1211001301241",
+      "page": 93,
+      "bbox": [
+        400,
+        150,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧",
+        "石",
+        "头",
+        "雕",
+        "珍"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#94",
+      "book": "1211001301241",
+      "page": 94,
+      "bbox": [
+        580,
+        250,
+        200,
+        200
+      ],
+      "status": "EXCLUSIVE",
+      "owner": "瀑",
+      "zs": [
+        "瀑"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#97",
+      "book": "1211001301241",
+      "page": 97,
+      "bbox": [
+        50,
+        200,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "闯",
+      "zs": [
+        "门",
+        "关",
+        "闯",
+        "书",
+        "校",
+        "捐"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#100",
+      "book": "1211001301241",
+      "page": 100,
+      "bbox": [
+        500,
+        600,
+        80,
+        80
+      ],
+      "status": "CONTESTED",
+      "owner": "美",
+      "zs": [
+        "花",
+        "美",
+        "野",
+        "荷",
+        "莲",
+        "瑜",
+        "萎",
+        "秋",
+        "树",
+        "叶",
+        "绿",
+        "藤",
+        "幸",
+        "桑",
+        "枯",
+        "凋"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#101",
+      "book": "1211001301241",
+      "page": 101,
+      "bbox": [
+        350,
+        250,
+        150,
+        150
+      ],
+      "status": "CONTESTED",
+      "owner": "帮",
+      "zs": [
+        "我",
+        "手",
+        "虎",
+        "拿",
+        "秒",
+        "帮",
+        "忙",
+        "巧",
+        "誓",
+        "举",
+        "箴"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#102",
+      "book": "1211001301241",
+      "page": 102,
+      "bbox": [
+        800,
+        350,
+        100,
+        100
+      ],
+      "status": "CONTESTED",
+      "owner": "雕",
+      "zs": [
+        "糖",
+        "石",
+        "头",
+        "雕",
+        "珍"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#103",
+      "book": "1211001301241",
+      "page": 103,
+      "bbox": [
+        800,
+        250,
+        120,
+        120
+      ],
+      "status": "CONTESTED",
+      "owner": "种",
+      "zs": [
+        "灯",
+        "耳",
+        "树",
+        "梨",
+        "种",
+        "森",
+        "林",
+        "杨",
+        "松",
+        "竹",
+        "笆",
+        "茂",
+        "梧"
+      ],
+      "maxConf": 1
+    },
+    {
+      "key": "1211001301241#106",
+      "book": "1211001301241",
+      "page": 106,
+      "bbox": [
+        500,
+        710,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "柄",
+      "zs": [
+        "手",
+        "柄"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#109",
+      "book": "1211001301241",
+      "page": 109,
+      "bbox": [
+        770,
+        300,
+        60,
+        60
+      ],
+      "status": "CONTESTED",
+      "owner": "面",
+      "zs": [
+        "米",
+        "面",
+        "粥"
+      ],
+      "maxConf": 0.45
+    },
+    {
+      "key": "1211001301241#112",
+      "book": "1211001301241",
+      "page": 112,
+      "bbox": [
+        50,
+        150,
+        200,
+        200
+      ],
+      "status": "CONTESTED",
+      "owner": "书",
+      "zs": [
+        "书",
+        "桌",
+        "猫"
+      ],
+      "maxConf": 0.7
+    },
+    {
+      "key": "1211001301241#124",
+      "book": "1211001301241",
+      "page": 124,
+      "bbox": [
+        200,
+        300,
+        50,
+        50
+      ],
+      "status": "CONTESTED",
+      "owner": "言",
+      "zs": [
+        "言",
+        "龙",
+        "寺",
+        "庙",
+        "汉"
+      ],
+      "maxConf": 0.45
+    }
+  ]
+}

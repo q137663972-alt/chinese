@@ -25,6 +25,8 @@ const OUT_SIZE = 384;
 fs.mkdirSync(IMG, { recursive: true });
 fs.mkdirSync(TMP, { recursive: true });
 
+import { buildPrompt } from './prompt.mjs';
+
 const ARGV = process.argv.slice(2);
 const arg = (k, d) => {
   const i = ARGV.indexOf(k);
@@ -35,11 +37,8 @@ const CHARS = arg('--chars', '') ? [...arg('--chars', '')] : null;
 const REQ = Number(arg('--size', '512'));
 const MODEL = arg('--model', 'flux');
 
-/* 画风（用户已确认 v1 写实插画）。可用环境变量 PIC_STYLE 覆盖做试验 */
-const STYLE = process.env.PIC_STYLE ||
-  "children's primary school Chinese textbook illustration style, cute flat cartoon, simple lovely shapes, soft bright colors, flat with slight shading, clean light background";
-const COMP = 'square composition, single clear subject centered, filling over 60 percent of the frame, uncluttered';
-const BAN = 'absolutely no text, no chinese characters, no pinyin, no letters, no numbers, no watermark, no caption, no speech bubble';
+/* 画风模板统一放在 tools/prompt.mjs，和智谱那条路共用一份，避免两批图风格分裂。
+   试验新画风：PIC_STYLE="..." node tools/gen-pics.mjs --chars 雪街镜 */
 
 const scenes = JSON.parse(fs.readFileSync(SCENES, 'utf8'));
 const hex = (z) => 'u' + z.codePointAt(0).toString(16);
@@ -62,7 +61,17 @@ const gradeOf = (() => {
 
 let list = Object.keys(scenes);
 if (CHARS) list = CHARS.filter((z) => scenes[z]);
-if (!CHARS) list.sort((a, b) => gradeOf(a) - gradeOf(b));
+/* 排队优先级：①字卡式且无真图（答案直接印在图上，最致命）②其余无真图；同级按年级升序。
+   之前只按年级排，结果「插画式缺图」和「字卡式缺图」混在一起出 —— 而后者才是孩子
+   一眼就能看到答案、等于题白出的那种。 */
+const CARDS_SET = new Set(
+  (new Function('window', fs.readFileSync(path.join(ROOT, 'js', 'pics.js'), 'utf8') + '\n;return window.PIC_CARDS || [];')({})) || [],
+);
+if (!CHARS) list.sort((a, b) => {
+  const pa = (CARDS_SET.has(a) ? 0 : 100) + gradeOf(a);
+  const pb = (CARDS_SET.has(b) ? 0 : 100) + gradeOf(b);
+  return pa - pb;
+});
 if (LIMIT) list = list.slice(0, LIMIT);
 
 /* 断点续传：已存在且体积 >= 3KB 视为完成 */
@@ -74,7 +83,7 @@ console.log(`待生成 ${todo.length} 张（已完成 ${list.length - todo.lengt
 
 async function fetchOne(z, seed) {
   const subject = scenes[z].subject;
-  const prompt = `${STYLE}. Scene: ${subject}. ${COMP}. ${BAN}`;
+  const prompt = buildPrompt(scenes[z].subject);
   const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) +
     `?width=${REQ}&height=${REQ}&nologo=true&enhance=false&model=${MODEL}&seed=${seed}`;
   const ctl = new AbortController();

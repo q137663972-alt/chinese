@@ -18,3 +18,6 @@ content/
 hot/
 page/
 tmp/
+
+# v1 画风样张备份（不参与构建）
+img_v1/

@@ -1,10 +1,12 @@
 /* ===================== 电视 / 遥控器（D-pad）适配 =====================
  * 仅在 TV 模式下启用；手机、平板、桌面浏览器完全不受影响。
  *
- * 判定顺序（v3.0 起以原生桥为准）：
- *   1. boot.js 从 AndroidDevice.isTV() 拿到的结果（window.__dev.tv）—— 最准
- *   2. URL 上带 #tv —— 调试用
+ * 判定顺序：
+ *   1. URL 上带 #tv —— 调试开关，永远最优先（无 TV 设备时在浏览器里模拟 TV 全靠它）
+ *   2. boot.js 从 AndroidDevice.isTV() 拿到的结果（window.__dev.tv）—— 真机最准
  *   3. UA 正则 —— 浏览器里预览时的兜底
+ * （#tv 必须排在 __dev.tv 前面：boot.js 在浏览器里也会把 __dev.tv 初始化成 false，
+ *   若先判它，#tv 永远轮不到 —— 之前 body.tv 在浏览器里加不上就是这个原因。）
  *
  * 焦点泛化：不再依赖写死的一串 class。新增玩法只要元素带 onclick 或
  * [data-tv-focus]，就会被自动纳入遥控器导航 —— 否则热更下发的新玩法
@@ -14,8 +16,8 @@
   var DEV = window.__dev || {};
 
   function detectTV() {
+    if (location.hash.indexOf("tv") >= 0) return true;       // 调试开关，最优先
     if (typeof DEV.tv === "boolean") return DEV.tv;          // 原生桥说了算
-    if (location.hash.indexOf("tv") >= 0) return true;
     try {
       if (/tv|googletv|android tv|aftenmab?|aft|smarttv|smart-tv|appletv|crkey|fugu|shield android tv|mi tv|fire tv|hisense|tcl/i.test(navigator.userAgent)) return true;
     } catch (e) {}

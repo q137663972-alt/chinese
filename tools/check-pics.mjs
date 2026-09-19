@@ -21,6 +21,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -39,7 +40,12 @@ const win = {};
   Object.assign(win, fn(win));
 }
 const PICS = win.PICS || {};
+const PHOTOS = win.PIC_PHOTOS || {};
 const CARDS = win.PIC_CARDS || [];
+
+/* 孩子实际看到的图：有真图用真图，没有才回退 SVG。
+   撞车必须按这个判 —— 两个字 SVG 相同但各自有真图时，屏幕上是两张不同的图，不算死题。 */
+const imgKey = (z) => (PHOTOS[z] ? 'p:' + PHOTOS[z] : PICS[z]);
 
 /* ── 2. 载入单元数据 ─────────────────────────── */
 // data-c{N}.js 是 IIFE：命中 window.CP.setGrade 就交给它，否则 push 进 window.GRADES
@@ -68,8 +74,8 @@ for (const u of units) {
   const seen = new Map();
   for (const it of u.w) {
     const z = it.z;
-    if (!PICS[z]) { missing.push(`G${u.g} ${u.book}·${u.unit}: ${z}`); continue; }
-    const svg = PICS[z];
+    if (!imgKey(z)) { missing.push(`G${u.g} ${u.book}·${u.unit}: ${z}`); continue; }
+    const svg = imgKey(z);
     if (seen.has(svg)) {
       collisions.push(`G${u.g} ${u.book}·${u.unit}: ${seen.get(svg)} = ${z}`);
       byGrade[u.g] = (byGrade[u.g] || 0) + 1;
@@ -81,30 +87,41 @@ for (const u of units) {
 
 /* 全库重复组（跨单元不致命，仅提示） */
 const groups = new Map();
-for (const [z, svg] of Object.entries(PICS)) {
-  if (!groups.has(svg)) groups.set(svg, []);
-  groups.get(svg).push(z);
+for (const z of Object.keys(PICS)) {
+  const k = imgKey(z);
+  if (!groups.has(k)) groups.set(k, []);
+  groups.get(k).push(z);
 }
 const dupGroups = [...groups.values()].filter((a) => a.length > 1);
 
 /* ── 3.5 字卡式 SVG 统计 ──────────────────────
    SVG 里带 <text> = 该图把汉字/拼音直接画了出来。
-   看图识字显示这种图 = 把答案摆出来，必须逐步全部换成插画。 */
-const cardChars = Object.keys(PICS).filter((z) => /<text[\s/>]/.test(PICS[z]));
+   看图识字显示这种图 = 把答案摆出来，必须逐步全部换成插画。
+   有真图的字不算 —— 屏幕上显示的是照片，SVG 只是兜底。 */
+const cardChars = Object.keys(PICS).filter((z) => !PHOTOS[z] && /<text[\s/>]/.test(PICS[z]));
 const drawChars = Object.keys(PICS).length - cardChars.length;
 
-/* ── 3.6 载入 games.js 出题逻辑做真实模拟 ────── */
+/* ── 3.6 载入 games.js 出题逻辑做真实模拟 ──────
+   必须跑【完整】games.js：文件顶部 registerGame({…start: startListen})
+   引用的函数都定义在文件后部，靠的是函数声明提升 —— 只有整个文件一起执行才成立。
+   旧版按 marker 截断源码，把提升链切断了，直接 ReferenceError。 */
 const STATE = { gi: 0 };
 const GAMES = (() => {
   const gsrc = fs.readFileSync(path.join(JS, 'games.js'), 'utf8');
-  const cut = gsrc.indexOf('/* 本单元里是否存在与 w 同音');
-  const head = gsrc.slice(0, cut > 0 ? cut : gsrc.length);
   const asrc = fs.readFileSync(path.join(JS, 'app.js'), 'utf8');
   const shuf = (asrc.match(/function shuffle\(a\)\{[\s\S]*?\n\}/) || [''])[0];
   if (!shuf) throw new Error('app.js 里找不到 shuffle()');
-  const fn = new Function('window', 'DATA', 'state', 'shuffle',
-    head + '\n' + shuf + '\n;return {picDistractors,confuseWith,CONFUSE_MAP,CONFUSE_GROUPS,ABSTRACT,buildRoundsPic};');
-  return fn({ PICS }, { grades }, STATE);
+  /* vm 沙箱里 window 必须就是全局对象本身：
+     games.js 里 window.registerGame = … 是属性赋值，而后面是裸调用 registerGame(…)，
+     只有 window === globalThis 时这俩才指向同一个东西。 */
+  const ctx = { PICS, console, DATA: { grades }, state: STATE };
+  ctx.window = ctx;
+  vm.createContext(ctx);
+  vm.runInContext(
+    shuf + '\n' + gsrc + '\n;var __out = { picDistractors, confuseWith, CONFUSE_MAP, CONFUSE_GROUPS, ABSTRACT, buildRoundsPic };',
+    ctx,
+  );
+  return ctx.__out;
 })();
 const { picDistractors, confuseWith, CONFUSE_MAP, CONFUSE_GROUPS, ABSTRACT } = GAMES;
 
@@ -131,11 +148,11 @@ for (let gi = 0; gi < grades.length; gi++) {
             const inUnit = zs.filter((z) => (u.w || []).some((x) => x.z === z)).length;
             sim.borrow += zs.length - inUnit;
             for (const z of zs) {
-              if (z !== c.z && (confuseWith(c.z, z) || PICS[c.z] === PICS[z])) sim.vsCorrect++;
+              if (z !== c.z && (confuseWith(c.z, z) || imgKey(c.z) === imgKey(z))) sim.vsCorrect++;
             }
             for (let i = 0; i < zs.length; i++) {
               for (let j = i + 1; j < zs.length; j++) {
-                if (confuseWith(zs[i], zs[j]) || (PICS[zs[i]] && PICS[zs[i]] === PICS[zs[j]])) sim.pairwise++;
+                if (confuseWith(zs[i], zs[j]) || (imgKey(zs[i]) && imgKey(zs[i]) === imgKey(zs[j]))) sim.pairwise++;
               }
             }
           }

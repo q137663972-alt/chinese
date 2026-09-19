@@ -245,9 +245,11 @@ function head( Cur, total, replay ){
  * 都缺失时回退纯大字卡（防御用，正常不会触发）。
  *
  * 图片来源按顺序试（window.PIC_BASES）：
- *   1. https://local.hot/img/   资源包热更下来的图（离线可用，主力来源）
- *   2. img/                     APK 内置 assets 里的图
- *   3. 远程 CDN                  还没装资源包时的兜底
+ *   1. https://local.hot/img/   资源包热更下来的图（最新，优先级最高）
+ *   2. img/                     APK 内置 assets / 仓库自带 —— 没装资源包也能离线看到图
+ *   3. 远程 CDN                 最后兜底
+ * 顺序很重要：内置图必须排在资源包之后，否则热更下来的新图会被内置旧图盖住；
+ * 但也要排在 CDN 之前，否则首次安装又没网时一项都拿不到，只能退回 SVG。
  * 任何一个都取不到 → __picErr 换下一个 → 全挂了就地换回 SVG，绝不出现破图。 */
 window.PIC_BASES = window.PIC_BASES || [
   "https://local.hot/img/",
@@ -268,16 +270,19 @@ window.__picErr = function (img) {
   if (svg && img.parentNode) img.parentNode.innerHTML = svg;
   else img.style.visibility = "hidden";
 };
+/* 只返回外层 .big-pic 的【内层】内容 —— 外层 div 由各调用点自己包。
+   旧版这里自己包了一层 div.big-pic，调用点又包一层，套两层导致
+   尺寸/阴影叠加不一致（同一道题，图片加载成功和失败渲染尺寸还不一样）。 */
 function picHTML(z){
   var ph = window.PIC_PHOTOS && window.PIC_PHOTOS[z];
   if(ph){
-    return '<div class="big-pic"><img src="' + (window.PIC_BASES || ["img/"])[0] + ph +
+    return '<img src="' + (window.PIC_BASES || ["https://local.hot/img/"])[0] + ph +
            '" data-z="' + z + '" data-bi="0" alt="' + z +
-           '" onerror="window.__picErr&&window.__picErr(this)"></div>';
+           '" onerror="window.__picErr&&window.__picErr(this)">';
   }
   var svg = window.PICS && window.PICS[z];
-  if(svg) return '<div class="big-pic">' + svg + '</div>';
-  return '<div class="big-pic big-pic--char">' + z + '</div>';
+  if(svg) return svg;
+  return '<span class="pic-char">' + z + '</span>';
 }
 
 function optZi(list, fn){

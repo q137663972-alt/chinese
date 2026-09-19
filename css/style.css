@@ -65,6 +65,8 @@ body{
 .big-pic svg{width:100%;height:100%;display:block}
 .big-pic img{width:100%;height:100%;display:block;object-fit:contain}
 .big-pic--char{font-size:88px;font-weight:800;font-family:"KaiTi","STKaiti","楷体",serif;color:var(--ink,#37474f)}
+/* picHTML() 改为只吐内层后，无图兜底的纯大字挂在内层 span 上（与 .big-pic--char 同款样式） */
+.big-pic .pic-char{font-size:88px;font-weight:800;font-family:"KaiTi","STKaiti","楷体",serif;color:var(--ink,#37474f);line-height:1}
 .big-word{text-align:center;font-size:34px;font-weight:800;letter-spacing:1px;margin:6px 0}
 .prompt{text-align:center;color:var(--sub);font-size:15px;margin-bottom:12px}
 .options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
