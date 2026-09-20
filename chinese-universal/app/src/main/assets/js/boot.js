@@ -83,8 +83,6 @@
     "cn/js/games.js",
     "cn/js/game-battle.js",
     "cn/js/app.js",
-    "cn/js/tv-tune.js",
-    "cn/js/tv.js",
     "cn/js/update.js"
   ];
   var BUILTIN_MATH = [
@@ -97,7 +95,6 @@
     "math/js/praise.js",
     "math/js/games.js",
     "math/js/app.js",
-    "math/js/tv.js",
     "math/js/update.js"
   ];
   var BUILTIN_EN = [
@@ -108,10 +105,17 @@
     "en/js/praise.js",
     "en/js/games.js",
     "en/js/app.js",
-    "en/js/tv.js",
     "en/js/update.js"
   ];
   var BUILTIN = { cn: BUILTIN_CN, math: BUILTIN_MATH, en: BUILTIN_EN };
+
+  /* 共享层：三科都要用、且内容完全相同的一组文件，放在学科自己的文件**之后**加载。
+     为什么不在各科目录里各放一份：遥控器逻辑一旦三分叉，就会出现
+     「语文修好了、数学还是坏的」这种鬼故事，而过几个月没人记得当初分了几份。
+     为什么必须排最后：js/tv.js 启动时会包装 window.render ——
+     那是各学科 app.js 的顶层变量，tv.js 得先看见它才包得住。
+     ★ tv-tune.js 必须在 tv.js 之前：applyScale 要从 window.TV_TUNE 读调参表。 */
+  var SHARED_JS = ["js/tv-tune.js", "js/tv.js"];
 
   /* 宿主层自己的可热更 js：选学科页用它，学科页用不到。 */
   var HOST_JS = ["js/subject.js"];
@@ -311,6 +315,14 @@
         log("games from pack: " + m.games.length);
       }
     }
+    /* 然后接共享层（遥控器 + 电视调参）：同样的 hot 替换逻辑 */
+    for (i = 0; i < SHARED_JS.length; i++) {
+      p = SHARED_JS[i];
+      if (seen[p]) continue;
+      seen[p] = 1;
+      out.push({ name: p, url: hotMap[p] ? ("https://local.hot/" + p) : p, hot: !!hotMap[p] });
+    }
+
     /* 资源包里新增的、BUILTIN 没有的非玩法文件（例如新的工具模块）追加到末尾。
        ★ 只认本学科目录 + 只认 js ——
          - css 由 applyHotCss 走 <link> 注入；图片/音频/字体是二进制。

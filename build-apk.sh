@@ -42,17 +42,21 @@ done
 # 完整性校验：boot.js 清单上的每个文件都必须真的躺在 assets 里。
 # 少了任何一个，启动都是 404 → 哨兵超时 → 回滚 → 无限重启的黑屏循环，
 # 而且只在装着资源包的旧机上复现，开发机上怎么跑都正常。
-node -e '
-const fs=require("fs"),path=require("path");
-const A=process.argv[1];
-const src=fs.readFileSync(A+"/js/boot.js","utf8");
-const bad=[];
-for(const m of src.matchAll(/var\s+(?:BUILTIN_(?:CN|MATH|EN)|SHARED_JS|HOST_JS)\s*=\s*\[([\s\S]*?)\]/g))
-  for(const q of m[1].matchAll(/"([^"]+)"/g))
-    if(!fs.existsSync(path.join(A,q[1]))) bad.push(q[1]);
-if(bad.length){console.error("❌ assets 缺文件：\n  "+bad.join("\n  "));process.exit(1);}
-console.log("   assets 完整性校验通过");
-' "$ASSETS"
+# 解读规则统一走 tools/lib/boot-manifest.mjs（gen-pack / smoke 也用这一份），
+# 不在 bash 里再抄一遍正则 —— 抄漏一个变量就是「这次出包用的是旧清单」。
+ROOT_JS="$(command -v node)"
+# 没有 node 就别往后走了 —— 少做这一步校验，出问题的包就跟着一路走到用户机器上
+[ -n "$ROOT_JS" ] || { echo "❌ 找不到 node，无法做清单校验"; exit 1; }
+node --input-type=module -e '
+import fs from "node:fs";
+import path from "node:path";
+const A = process.argv[1];
+const { readBootManifest } = await import("file://" + process.argv[2] + "/tools/lib/boot-manifest.mjs");
+const M = readBootManifest(process.argv[2]);
+const bad = [...M.allDeclared()].filter((p) => !fs.existsSync(path.join(A, p)));
+if (bad.length) { console.error("❌ assets 缺文件：\n  " + bad.join("\n  ")); process.exit(1); }
+console.log("   assets 完整性校验通过（" + M.allDeclared().size + " 个文件）");
+' "$ASSETS" "$ROOT"
 
 echo "   宿主 $(ls "$ROOT"/js/*.js | wc -l) js / $(ls "$ROOT"/css/*.css | wc -l) css" \
      "| cn $(ls "$ROOT"/cn/js/*.js | wc -l) | math $(ls "$ROOT"/math/js/*.js | wc -l) | en $(ls "$ROOT"/en/js/*.js | wc -l)"

@@ -171,5 +171,14 @@
   /* 视图随时可能被重建（现在只渲染一次，留个钩子给以后的热更用） */
   window.__renderSubjectPicker = render;
 
+  /* ★ 返回键：学科选择页就是根页面，在这儿按返回 = 退出 App。
+     坑：原生 MainActivity.onKeyDown 问的是
+           (function(){ return window.tvBack ? window.tvBack() : true; })()
+         只有当返回值不是 "true" 才 finish()。而本页不加载 tv.js、
+         压根没有 window.tvBack —— 于是它永远得到 true，
+         表现就是「到了选学科这一屏，遥控器返回键完全没反应，杀进程才能退出」。
+         返回 false = 让原生去 finish()，与各科首页的语义保持一致。 */
+  window.tvBack = function () { return false; };
+
   render();
 })();
