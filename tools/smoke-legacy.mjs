@@ -158,6 +158,18 @@ const htmlOf = (w) => {
   return a ? a.innerHTML : "";
 };
 
+/* ===== 2.4.0 的 boot.js 判定"启动成功"用的原句，一字不改抄过来 =====
+ *     return typeof window.render === "function" && window.app && window.app.childNodes.length > 0;
+ * 它认的其实是**语文主程序**的两个顶层变量 —— 选学科页永远不会满足它，
+ * 桥接层加载那 18 个学科文件又是异步的。boot.js 冻结改不得，只能由热更侧先把该
+ * 挂的全局量挂上（see legacy/js/app.js 的 feedSentinel）。这一份判据必须留在测试里，
+ * 以后谁改了 boot.js 的判据，这条断言会第一时间红。 */
+function bootOk24(w) {
+  try {
+    return typeof w.render === "function" && !!w.app && w.app.childNodes.length > 0;
+  } catch (e) { return false; }
+}
+
 async function main() {
   console.log("══════════ 老 APK（2.4.x）三科桥接冒烟 ══════════");
 
@@ -177,7 +189,7 @@ async function main() {
   chk(cards === 3, "渲染出 3 张学科卡片", "实际 " + cards);
   chk(!/undefined/.test(h), "页面无 undefined");
   chk(typeof w.__setSubject === "function", "__setSubject 可用（换学科底座）");
-  chk(typeof w.__pickSubject === "function", "__pickSubject 可用（设置里的换学科）");
+  chk(typeof w.__pickSubject === "function", "__pickSubject 可用（首页那条换学科）");
 
   /* ★ 2026-09-20 现场事故（第三条）：进去能看到三张卡，三五秒后自己跳进语文。
      根因是老内置清单第一个 js/app.js（语文主程序）先跑完了，选学科页只是叠在上面，
@@ -203,9 +215,14 @@ async function main() {
   const h3b = htmlOf(w);
   chk(/subj-grid/.test(h3b), "选学科页骨架 .subj-grid 还在（没被学科首页替换）");
   chk(!/开始学习/.test(h3b), "页面上没有出现学科首页内容（≠ 自动跳进了某一科）");
-  chk(typeof w.render !== "function",
-      "未选学科时没有任何学科 App 被执行（window.render 不该存在）",
-      "实际 " + typeof w.render);
+  /* ★ 不能简单判 "render 不存在" —— 2026-09-21 起看门人为了让哨兵别熔断，
+       会主动挂一个占位 render。用 __bootPad 标记区分：
+         有标记 = 哨兵占位（可以），没有标记 = 某个学科的 App 真的在跑（事故）。 */
+  const rPad = w.render;
+  chk(typeof rPad !== "function" || rPad.__bootPad === true,
+      "未选学科时没有学科 App 被执行（只允许哨兵占位 render）",
+      "实际 " + (typeof rPad === "function"
+        ? (rPad.__bootPad ? "哨兵占位（OK）" : "学科 App 真的跑起来了！") : typeof rPad));
   chk(typeof w.state === "undefined",
       "未选学科时没有学科全局变量泄漏（window.state 不该存在）",
       "实际 " + typeof w.state);
@@ -261,8 +278,22 @@ async function main() {
     chk(h2.length > 200, "首页渲染出内容", "len=" + h2.length);
     chk(!/undefined/.test(h2), "页面无 undefined");
     chk(errs.length === 0, "运行期无未捕获异常", errs.slice(0, 2).join("; "));
-    chk(!!w2.document.getElementById("bridgeSwitchRow") ||
-        !!w2.document.querySelector("#settingsModal .set-row"), "设置里挂上了换学科入口");
+    /* ★ 2026-09-21：换学科入口从"设置弹层"搬到了"首页顶部一条"。
+       用户原话「选学科不要放设置，最好放首页显眼处」——
+       它必须在**不需要打开任何弹层**的情况下就已经在页面上。 */
+    const bar = w2.document.getElementById("subjectBar");
+    chk(!!bar, "首页（不用开设置）就挂着那条「换学科」（#subjectBar）",
+        "实际 " + (bar ? "有" : "没有"));
+    if (bar) {
+      /* 它必须在 #app 之前 —— 学科 App 的 render 会重建 #app，
+         条只有待在外面才不会被冲掉（≤围绕移动的履历就直接出现"入口消失"）。 */
+      const appEl = w2.document.getElementById("app");
+      const beforeApp = !!(appEl && bar.compareDocumentPosition(appEl) & 4);
+      chk(beforeApp, "这条挂在 #app 之外的前面（不会被学科 App 重绘冲掉）");
+      const btn2 = bar.querySelector("button");
+      const oc2 = btn2 ? String(btn2.getAttribute("onclick") || "") : "";
+      chk(/__pickSubject/.test(oc2), "条上的按钮真的绑到了 __pickSubject", oc2.slice(0, 80));
+    }
     /* 空壳失效（内置那份学科 App 没被顶掉）时会在这里暴露：同一段函数体挂两遍 */
     const dups = [...w2.__dupListeners.entries()].filter(([, n]) => n > 1);
     chk(dups.length === 0, "没有重复挂载的监听器（App 没被执行两遍）",
@@ -275,47 +306,69 @@ async function main() {
     chk(cardsLeft === 0, "学科首页没被选学科页盖掉", "残留 subj-card " + cardsLeft);
 
     /* ★★ 2026-09-20 现场事故（第四条）：「再进又只剩下语文，而且没有换学科选项」★★
-       用户一旦进了某一科就再也回不去 —— 因为换学科入口只在"未选学科"分支里挂过，
-       而这个入口在老 index.html 里本来就不存在（它调 window.__pickSubject，
-       那个函数只在新版 boot.js 里有；老设备跑的是内置老 boot.js，压根没有）。
-       断言：**已选学科**时，换学科入口必须仍然可用（函数在 + 设置弹层里有那一行）。 */
+       用户一旦进了某一科就再也回不去 —— 因为换学科入口旧版只在"未选学科"分支里挂过，
+       而入口调的 window.__pickSubject 只在新版 boot.js 里有；老设备跑的是内置老 boot.js。
+       2026-09-21 又改了一次：入口从设置弹层搬到**首页顶部**，同 checks 见上。
+       断言：**已选学科**时，__pickSubject 必须仍然可用，且首页那条必须真能按。 */
     chk(typeof w2.__pickSubject === "function",
         "已选学科时 __pickSubject 仍可用（回得去选择页）",
         "实际 " + typeof w2.__pickSubject);
-    /* 打开设置弹层，看「🔄 换学科」那一行是否会被插进去。
-       ★ 判据必须同时看"行存在"与"按钮能调通函数" —— 只判 /换学科/ 会假绿：
-         弹层里别处出现同名字样就够了（负向验证抓到的）。 */
-    const modal = w2.document.getElementById("settingsModal");
-    if (modal) {
-      modal.classList.remove("hidden");
-      modal.style.display = "block";
-      /* bridge.js 是 60ms 捕获阶段 + MutationObserver 双路补的，等一拍 */
-      await sleep(250);
-      const row = w2.document.getElementById("bridgeSwitchRow");
-      chk(!!row, "已选学科时设置面板里插入了「换学科」那一行（#bridgeSwitchRow）",
-          "实际 " + (row ? "有" : "没有"));
-      if (row) {
-        const btn = row.querySelector("button");
-        const oc = btn ? String(btn.getAttribute("onclick") || "") : "";
-        chk(/__pickSubject/.test(oc),
-            "那一行的按钮真的绑到了 __pickSubject（不是个死按钮）", oc.slice(0, 80));
-        /* ★ 光看 onclick 字符串不够 —— 它是纯文本，函数不存在也照样写着。
-           也不能靠 location.reload（jsdom 里它是只读的，测不出来）。
-           用**真实可观察的副作用**判：换学科 = 清掉 app_subject 标记。
-           清掉了 + 还调用了 reload（若环境允许）才算真按钮。 */
-        const before = w2.localStorage.getItem("app_subject");
-        let reloaded = false;
-        const origReload = w2.location.reload.bind(w2.location);
-        try { w2.location.reload = function () { reloaded = true; }; } catch (e) {}
-        try { w2.eval(oc); } catch (e) {}
-        const after = w2.localStorage.getItem("app_subject");
-        try { w2.location.reload = origReload; } catch (e) {}
-        chk(before === s && !after,
-            "真按下去会清掉学科标记（确实回到了选学科页的路径）",
-            "app_subject: " + JSON.stringify(before) + " → " + JSON.stringify(after) +
-            " / reload=" + reloaded);
-      }
+    /* ★ 光看 onclick 字符串不够 —— 它是纯文本，函数不存在也照样写着。
+       也不能靠 location.reload（jsdom 里它是只读的，测不出来）。
+       用**真实可观察的副作用**判：换学科 = 清掉 app_subject 标记。
+       清掉了 + 还调用了 reload（若环境允许）才算真按钮。 */
+    if (bar) {
+      const btn = bar.querySelector("button");
+      const oc = btn ? String(btn.getAttribute("onclick") || "") : "";
+      const before = w2.localStorage.getItem("app_subject");
+      let reloaded = false;
+      const origReload = w2.location.reload.bind(w2.location);
+      try { w2.location.reload = function () { reloaded = true; }; } catch (e) {}
+      try { w2.eval(oc); } catch (e) {}
+      const after = w2.localStorage.getItem("app_subject");
+      try { w2.location.reload = origReload; } catch (e) {}
+      chk(before === s && !after,
+          "真按下去会清掉学科标记（确实回到了选学科页的路径）",
+          "app_subject: " + JSON.stringify(before) + " → " + JSON.stringify(after) +
+          " / reload=" + reloaded);
+      /* 还原，别污染这个 window 后续的场景 */
+      try { w2.localStorage.setItem("app_subject", s); } catch (e) {}
     }
+  }
+
+  /* ---------- ③ 启动哨兵必须被喂饱（2026-09-21 熔断事故的根） ---------- */
+  console.log("\n──── ③ 启动哨兵（2.4.0 熔断事故） ────");
+  {
+    const ws = mkWindow("");
+    LEGACY_BUILTIN.forEach((p) => runInline(ws, OLD2NEW(p)));
+    await sleep(60);
+    chk(bootOk24(ws), "未选学科时，boot.js 的哨兵立刻判「已成功」（否则 1.5s 超时 → 熔断）",
+        "render=" + typeof ws.render +
+        " / app 子节点=" + (ws.app ? ws.app.childNodes.length : "无"));
+
+    const we = mkWindow("cn");
+    LEGACY_BUILTIN.forEach((p) => runInline(we, OLD2NEW(p)));
+    await sleep(60);
+    chk(bootOk24(we), "已选学科时哨兵也立刻通过（不等 18 个学科文件异步加载完）",
+        "render=" + typeof we.render);
+
+    /* ★ 负向对照：把看门人里那句 feedSentinel() 抠掉，上面两条必须重新变红。
+       手册纪律 —— 新断言不配负向对照，等于没写。 */
+    const gateSrc = fs.readFileSync(path.join(ROOT, "legacy/js/app.js"), "utf8");
+    const brokenSrc = gateSrc.replace(/\n\s*feedSentinel\(\);/,
+                                      "\n  /* 负向对照：故意删掉喂饱调用 */");
+    chk(brokenSrc !== gateSrc, "负向对照源码确实被改过（替换命中）");
+    const wb = mkWindow("");
+    LEGACY_BUILTIN.filter((p) => p !== "js/app.js")
+                  .forEach((p) => runInline(wb, OLD2NEW(p)));
+    try {
+      const s2 = wb.document.createElement("script");
+      s2.textContent = brokenSrc;
+      wb.document.body.appendChild(s2);
+    } catch (e) {}
+    await sleep(60);
+    chk(!bootOk24(wb), "负向对照：去掉喂饱调用后哨兵判 false（说明上两条不是白给）",
+        "render=" + typeof wb.render);
   }
 
   console.log("\n" + (FAILS.length ? "❌ 失败 " + FAILS.length + " 项" : "✅ 全部通过"));

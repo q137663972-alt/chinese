@@ -301,6 +301,12 @@
       setTimeout(function () { ensureFocus(true); }, 0);
       return r;
     };
+    try {
+      /* 把"这是哨兵占位"的标记透传下去（见 legacy/js/app.js 的 feedSentinel）：
+         老 APK 上 window.render 一开始只是个占位空函数，tv.js 包一层之后它就
+         变了个样子。标记留着，测试才能分辨"占位"和"学科 App 真的在跑"。 */
+      if (origRender && origRender.__bootPad) window.render.__bootPad = true;
+    } catch (e) {}
   }
   /* 重新触发入口：清掉标记再包一次。重复调用不会套两层包装。 */
   window.__tvRearmRender = function () {

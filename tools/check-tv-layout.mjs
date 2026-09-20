@@ -352,5 +352,70 @@ console.log("\n──── ⑧ 老机看门人会拦住自动跳学科 ──�
   }
 }
 
+/* ---------- ⑨ 老机启动哨兵必须被喂饱（否则热更会被永久熔断） ----------
+   2026-09-21 现场事故：热更成功一次 → 进语文后被旧包覆盖 → 从此再也更新不上。
+
+   链路（每一环都能在源码里点名）：
+     2.4.0 assets/js/boot.js 的 bootOk()
+         typeof window.render === "function" && window.app && window.app.childNodes.length > 0
+     —— 认的是**语文主程序**的两个顶层变量。选学科页永远不满足；桥接层加载那 18 个
+        学科文件又是异步的，机顶盒上稍慢就超了 T_SENTINEL=1500。
+     → watch() 判超时 → onFail() → MainActivity.markBad(build)
+     → markBad 里 rollback() 删掉 files/hot/ 退回内置（"被旧包覆盖"）
+     → markBad 累计 2 次：`if (f >= 2) ed.putBoolean(K_OFF, true)` —— 永久熔断，
+       readManifest 返回 null、bgUpdate 直接 return（"再也更新不上"）。
+
+   boot.js 冻结改不得，但 bootOk() 读的是全局量 —— 由热更侧提前挂上即可。
+   这条断言防的是：有人觉得"挂个假 render 不干净"把它删掉，于是又一次熔断，
+   而且这次连修复包都发不出去（新 build 也会被拉黑）。 */
+console.log("\n──── ⑨ 老机启动哨兵会被喂饱（防熔断） ────");
+{
+  const p = path.join(ROOT, "legacy/js/app.js");
+  if (fs.existsSync(p)) {
+    const src = stripComments(fs.readFileSync(p, "utf8"));
+    /* ★ 必须是**真的函数调用**，而且要在决定"新版宿主退场 / 已选学科放行"的那两个
+       return **之前** —— 排到后面就白挂了（第一次假通过就是这么来的）。 */
+    /* ★★ 判据必须带结尾分号 —— 只写 /feedSentinel\s*\(\s*\)/ 会被**函数定义**
+       本身命中（function feedSentinel() {），把整段删掉照样全绿。第二次假通过。 */
+    const CALL = /(^|[;{}\s])feedSentinel\s*\(\s*\)\s*;/;
+    const callAt = src.search(CALL);
+    chk(callAt > 0, "看门人里真的调用了 feedSentinel()（不是只有定义）");
+    if (callAt > 0) {
+      /* ★ 必须排在最早的分支出口之前 —— 拿 if (window.APP_SUBJECTS) return 当基准：
+         它若在这之后、或掉到"已选学科放行"的分支里，未选学科那一路就白挂了
+         （这正是现场「进语文后就熔断」的那条路径）。 */
+      const branchAt = src.search(/window\.APP_SUBJECTS/);
+      chk(branchAt < 0 || callAt < branchAt,
+          "喂饱调用排在所有分支出口之前（任何分支都执行得到）",
+          "callAt=" + callAt + " branchAt=" + branchAt);
+      /* 负向对照：把这行删掉后，
+         上面那条正则必须认不出来 —— 证明它命中的确实就是这行，不是别的巧合。 */
+      const broken = src.replace(CALL, " /*x*/ ");
+      chk(broken !== src && !CALL.test(broken),
+          "负向对照：删掉调用后断言会失效（说明这条不是白给）");
+    }
+    chk(/window\.app\s*=/.test(src), "哨兵要的 window.app 被赋上了");
+    chk(/window\.render\s*=/.test(src) && /__bootPad/.test(src),
+        "哨兵要的 window.render 是打了 __bootPad 标记的占位（可与学科那份区分）");
+    /* 逃生通道：喂饱之后白屏保护由自己负责，绝不能调 markBad（那是熔断开关） */
+    chk(!/markBad/.test(src), "看门人自己绝不调用 markBad（否则等于点了熔断开关）");
+    chk(/safe=1/.test(src), "真失败时逃生到 ?safe=1 走内置（保底不白屏）");
+  }
+  /* 学科切换入口放在首页、不放设置里 —— 老 Jimeng 结构里 #app 在最前 */
+  const bp = path.join(ROOT, "legacy/js/bridge.js");
+  if (fs.existsSync(bp)) {
+    const b = stripComments(fs.readFileSync(bp, "utf8"));
+    chk(/getElementById\("subjectBar"\)/.test(b) && /insertBefore/.test(b),
+        "bridge.js 把「换学科」条挂在 #app 之前（首页显眼处，不用开设置）");
+    chk(!/bridgeSwitchRow/.test(b), "不再往设置弹层里塞换学科（按用户要求）");
+  }
+  const cp = path.join(ROOT, "css/picker.css");
+  if (fs.existsSync(cp)) {
+    const c = fs.readFileSync(cp, "utf8");
+    chk(/#subjectBar/.test(c) && /\.sb-btn:focus/.test(c),
+        "picker.css 里有 #subjectBar 样式且按钮有焦点环（遥控器看得见）");
+  }
+}
+
 console.log("\n" + (FAILS.length ? "❌ 失败 " + FAILS.length + " 项" : "✅ 全部通过"));
 if (FAILS.length) { FAILS.forEach((f) => console.log("   · " + f)); process.exit(1); }

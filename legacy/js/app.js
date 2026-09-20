@@ -33,6 +33,94 @@
   function get(k) { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }
   function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
+  /* ==========================================================================
+   * ★★★ 第一优先：喂饱老 boot.js 的启动哨兵 ★★★
+   * --------------------------------------------------------------------------
+   * 【2026-09-21 现场事故：热更成功一次 → 进语文后又被旧包覆盖 → 从此再也更新不上】
+   *
+   * 2.4.0 的 boot.js 判定"启动成功"用的是这一句：
+   *     typeof window.render === "function" && window.app && window.app.childNodes.length > 0
+   *   —— 那是**语文主程序**的两个顶层变量。它对我们的做法一无所知：
+   *     · 选学科页：此刻一个学科文件都没加载，window.render 永远不会出现；
+   *     · 已选学科：那 18 个学科文件是 bridge.js **异步串行**加载的，
+   *       window.render 要等最后一个文件跑完才就位，机顶盒上稍慢就超过 1.5 秒。
+   *   于是哨兵**必定**超时 → markBad(build) → 原生 rollback() 把 files/hot/ 删掉、
+   *   退回内置 —— 就是看到的"被旧包覆盖"。而 markBad 累计到第 2 次，
+   *   MainActivity 里 `if (f >= 2) ed.putBoolean(K_OFF, true)` 会把热更**永久熔断**：
+   *   readManifest 直接返回 null，bgUpdate 直接 return —— 就是"新包再也更新不上"。
+   *
+   * 对策：boot.js 是冻结文件改不得，但 bootOk() 读的是**全局量** —— 提前挂上就行。
+   *   本文件是老内置清单的**第一个**脚本，没有任何东西比它更早执行，
+   *   所以挂在这里一定能赶在 boot.js 的 watch() 之前。
+   * ======================================================================== */
+  function feedSentinel() {
+    try {
+      var el = document.getElementById("app");
+      if (el) {
+        window.app = el;                 /* 学科 app.js 随后会再赋一次自己的，覆盖无害 */
+        if (!el.childNodes.length) {
+          var pad = document.createElement("span");
+          pad.setAttribute("data-boot-pad", "1");
+          pad.style.cssText = "display:none";       /* 看不见，但算 childNodes */
+          el.appendChild(pad);
+        }
+      }
+      /* 占位 render：tv.js 会包装它（无害），学科 app.js 会整个替换掉它。
+         ★ 打上 __bootPad 标记，用来区分「哨兵占位」与「学科 App 真的跑起来了」
+           （学科那份 render 没有这个标记，smoke 据此判）. */
+      if (typeof window.render !== "function") {
+        var padRender = function () {};
+        padRender.__bootPad = true;
+        window.render = padRender;
+      }
+    } catch (e) {}
+  }
+  feedSentinel();
+
+  /* 竞态兜底：学科 App 有可能先 app.innerHTML="" 清空再画，清空那一瞬
+     childNodes.length 就是 0。哨兵只判一次、理论上被我们挡在前面了，
+     但在它那 1500ms 的窗口里多守几次不花钱。 */
+  var __padN = 0;
+  var __padIv = setInterval(function () {
+    if (++__padN > 20) { clearInterval(__padIv); return; }      /* 守 2 秒 */
+    try {
+      var el = window.app || document.getElementById("app");
+      if (el && !el.childNodes.length) {
+        var pad = document.createElement("span");
+        pad.setAttribute("data-boot-pad", "1");
+        pad.style.cssText = "display:none";
+        el.appendChild(pad);
+      }
+      if (typeof window.render !== "function") {
+        var padRender2 = function () {};
+        padRender2.__bootPad = true;
+        window.render = padRender2;
+      }
+    } catch (e) {}
+  }, 100);
+
+  /* ---------------------------------------------------------------------------
+   * 哨兵喂饱了，白屏保护就由我自己接手 —— 不能因为怕熔断就放任白屏。
+   * ★ 逃生时绝不能调 markBad（那是熔断的开关）：直接跳 ?safe=1 走内置，
+   *   那条路径 MAN 为 null，boot.js 的 onFail 自己会 return，不留后患。
+   * ------------------------------------------------------------------------ */
+  var __wdT0 = Date.now();
+  var __wd = setInterval(function () {
+    var el = null, hasUI = false;
+    try {
+      el = document.getElementById("app");
+      hasUI = !!(el && (el.querySelector(".subj-grid") ||
+                        document.getElementById("subjectBar") ||
+                        (el.textContent || "").trim().length > 0));
+    } catch (e) {}
+    if (hasUI) { clearInterval(__wd); return; }
+    if (Date.now() - __wdT0 > 9000) {
+      clearInterval(__wd);
+      log("9 秒没有画出任何界面 → 逃生到内置");
+      try { location.href = "index.html?safe=1"; } catch (e) {}
+    }
+  }, 600);
+
   var KEY = "app_subject";
   var LAST = "app_subject_last";
   var HOT = "https://local.hot/";

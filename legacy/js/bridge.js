@@ -53,7 +53,7 @@
        所以这里加载完学科文件后还要再调一次 __tvRearmRender() 补包装。 */
   var SUBJECTS = {
     cn: {
-      key: "cn", dir: "cn", css: "cn/css/style.css",
+      key: "cn", dir: "cn", css: "cn/css/style.css", label: "语文", emoji: "📖",
       files: [
         "cn/js/cp.js",
         "cn/js/data-c1.js", "cn/js/data-c2.js", "cn/js/data-c3.js",
@@ -71,7 +71,7 @@
       ]
     },
     math: {
-      key: "math", dir: "math", css: "math/css/style.css",
+      key: "math", dir: "math", css: "math/css/style.css", label: "数学", emoji: "🔢",
       files: [
         "math/js/cp.js",
         "math/js/data-m1.js", "math/js/data-m2.js", "math/js/data-m3.js",
@@ -86,7 +86,7 @@
       ]
     },
     en: {
-      key: "en", dir: "en", css: "en/css/style.css",
+      key: "en", dir: "en", css: "en/css/style.css", label: "英语", emoji: "🔤",
       files: [
         "en/js/cp.js",
         "en/js/data-g1.js", "en/js/data-g2.js", "en/js/data-g3.js",
@@ -144,6 +144,9 @@
     }
     add("cssShell", HOT + "css/shell.css");
     if (subjCss) add("cssSub", HOT + subjCss);
+    /* 首页那条学科切换栏的样式在 picker.css 里 —— 学科页也必须把它带上，
+       不然条会掉成浏览器默认样式（手机上还行，电视上按钮小到看不见）。 */
+    add("cssPick", HOT + "css/picker.css");
   }
 
   /* ---------- 换学科入口 ----------
@@ -157,32 +160,35 @@
       try { location.reload(); } catch (e) {}
     };
   }
-  function injectSwitchRow() {
-    var card = document.querySelector("#settingsModal .modal-card");
-    if (!card || document.getElementById("bridgeSwitchRow")) return;
-    var row = document.createElement("div");
-    row.className = "set-row";
-    row.id = "bridgeSwitchRow";
-    row.innerHTML = '<label>学科</label><button class="btn ghost" style="width:auto;padding:8px 12px" ' +
-                    'onclick="window.__pickSubject&&window.__pickSubject()">🔄 换学科</button>';
-    var h3 = card.querySelector("h3");
-    if (h3 && h3.nextSibling) card.insertBefore(row, h3.nextSibling);
-    else card.appendChild(row);
+  /* ---------- 换学科入口：首页顶部一条，不放设置里 ----------
+     用户原话：「选学科不要放设置，最好放首页显眼处」。
+     老 index.html 的结构是 <div id="app"> 在最前，所以把条插在 #app **之前**。
+     为什么不插进 #app 里：学科 App 的 render 会重建 #app 的内容，条会被冲掉，
+     插在外面就不用每帧跟它抢位置。
+     ★ 电视上必须能被遥控器聚焦到 —— 用真 <button>，配大点击区与焦点环
+       （样式在 css/picker.css 的 #subjectBar 段）。 */
+  function mountSubjectBar(key) {
+    if (document.getElementById("subjectBar")) return null;
+    var s = SUBJECTS[key];
+    var bar = document.createElement("div");
+    bar.id = "subjectBar";
+    bar.setAttribute("data-subject-bar", "1");
+    bar.innerHTML =
+      '<span class="sb-cur">' + (s ? s.emoji + " " : "📚 ") +
+      '当前学科：<b>' + (s ? s.label : "未选择") + '</b></span>' +
+      '<button class="sb-btn" type="button" ' +
+      'onclick="window.__pickSubject&&window.__pickSubject()">🔄 换学科</button>';
+    var app = document.getElementById("app");
+    if (app && app.parentNode) app.parentNode.insertBefore(bar, app);
+    else document.body.insertBefore(bar, document.body.firstChild);
+    log("首页学科条已挂载：" + (s ? s.label : "未选择"));
+    return bar;
   }
-  injectSwitchRow();
-  /* 有的学科 App 会在自己的 render 里重建整个弹层，留个兜底再补几次。
-     ★ 从"只补一次"改成"周期补 + 打开设置时补"：现场出现过渡层被重建后
-       换学科那一行消失的情况（用户就只能杀进程重进，而重进会回到上次那一科，
-       看起来是"永远困在语文里"）。 */
-  setTimeout(injectSwitchRow, 1200);
-  setTimeout(injectSwitchRow, 3000);
-  document.addEventListener("click", function () { setTimeout(injectSwitchRow, 60); }, true);
-  if (window.MutationObserver) {
-    try {
-      new MutationObserver(function () { injectSwitchRow(); })
-        .observe(document.body, { childList: true, subtree: true });
-    } catch (e) {}
-  }
+
+  /* 兜底：万一有别的代码把整层 body 重建了，重挂一次。
+     幂等 —— #subjectBar 已存在时 mountSubjectBar 直接返回 null。 */
+  setTimeout(function () { mountSubjectBar(get(KEY)); }, 1200);
+  setTimeout(function () { mountSubjectBar(get(KEY)); }, 3000);
 
   /* ---------- 走分区 ----------
      ★ 选学科页复用新版那份 js/subject.js（同一个文件、同一套文案与遥控器逻辑），
@@ -232,12 +238,15 @@
   var subj = SUBJECTS[cur];
   window.APP_SUBJECT = cur;                 // 与新版宿主对齐，别让各科找不到上下文
   mountCss(subj.css);
+  /* 学科条**立刻**挂，不等 18 个学科文件加载完 ——
+     机顶盒上那一两秒里如果屏幕上什么都没有，用户会以为卡住了。 */
+  mountSubjectBar(cur);
   loadSeq(subj.files, function () {
     /* 学科 App 是 tv.js 跑完之后才加载的 —— window.render 此刻才第一次出现，
        必须补一次包装，否则机顶盒上每次切页焦点都不会复位。
        这也是为什么一开始就要求 app.js 排在 tv.js 之前、然后由这里兜底。 */
     try { if (window.__tvRearmRender) window.__tvRearmRender(); } catch (e) {}
-    injectSwitchRow();
+    mountSubjectBar(cur);
     /* App 自己可能已经渲染过一次（渲染完我还没包装），再渲染一次让焦点落到内容区 */
     try { if (typeof window.render === "function") window.render(); } catch (e) {}
     log("已加载学科 " + cur + "（" + subj.files.length + " 个文件）");

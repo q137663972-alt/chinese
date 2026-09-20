@@ -131,3 +131,65 @@
   .subj-card .s-body { padding: 0 0 0 6px; }
   .subj-card .s-go { display: block; }
 }
+
+/* ============================================== 首页顶部「换学科」条 ==============================================
+ * 用户要求：换学科不要藏在设置里，要在首页一眼看得到、遥控器一按就能到。
+ *
+ * 由 legacy/js/bridge.js 的 mountSubjectBar() 挂载，**插在 #app 之前**、普通文档流
+ * （不是悬浮层 —— 悬浮按钮在电视上经常抢焦点、也容易把内容盖住，吃过的亏不重来）。
+ *
+ * 安卓 8 红线照旧：只用 calc() + var(--s)，不用 clamp()/min()/max()/aspect-ratio。
+ * ============================================================================================================== */
+#subjectBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--card, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
+  box-sizing: border-box;
+}
+#subjectBar .sb-cur { font-size: 15px; color: var(--sub, #8a90a8); }
+#subjectBar .sb-cur b { font-size: 20px; color: #2f3350; margin-left: 4px; }
+#subjectBar .sb-btn {
+  font-size: 16px;
+  font-weight: 800;
+  padding: 10px 16px;
+  min-height: 48px;                /* 遥控器 / 手指都够按 */
+  border-radius: 14px;
+  border: 2px solid #d9dcff;
+  background: linear-gradient(90deg, #ffeff5, #f1ecff);
+  color: #6a4fd8;
+  cursor: pointer;
+  outline: none;
+}
+/* 焦点环：遥控器必看得出焦点落在哪 */
+#subjectBar .sb-btn:focus,
+#subjectBar .sb-btn.focused {
+  box-shadow: 0 0 0 4px rgba(155, 123, 255, .42);
+  border-color: #9b7bff;
+}
+
+@media (min-width: 560px) {
+  #subjectBar { padding: calc(12px * var(--s, 1)) calc(16px * var(--s, 1)); }
+  #subjectBar .sb-cur { font-size: calc(17px * var(--s, 1)); }
+  #subjectBar .sb-cur b { font-size: calc(24px * var(--s, 1)); }
+  #subjectBar .sb-btn {
+    font-size: calc(18px * var(--s, 1));
+    padding: calc(12px * var(--s, 1)) calc(22px * var(--s, 1));
+    min-height: calc(56px * var(--s, 1));
+    border-radius: calc(16px * var(--s, 1));
+  }
+}
+
+@media (min-width: 900px) {
+  #subjectBar { padding: calc(14px * var(--s, 1)) calc(22px * var(--s, 1)); }
+  #subjectBar .sb-cur { font-size: calc(19px * var(--s, 1)); }
+  #subjectBar .sb-cur b { font-size: calc(28px * var(--s, 1)); }
+  #subjectBar .sb-btn {
+    font-size: calc(21px * var(--s, 1));
+    padding: calc(14px * var(--s, 1)) calc(26px * var(--s, 1));
+    min-height: calc(64px * var(--s, 1));
+  }
+}
