@@ -728,6 +728,15 @@ public class MainActivity extends Activity {
             c.setInstanceFollowRedirects(true);       // release 下载地址是 302 到 CDN
             c.setConnectTimeout(15000);
             c.setReadTimeout(30000);
+            /* ★ 必须带这两个头，否则热更会被 CDN 缓存卡住（真踩过）：
+               jsDelivr 对 @gh-pages 按 12 小时 TTL 缓存，且 purge 接口会被限流。
+               设备一旦拿到「能解析但已过期」的旧清单，只会在心里认为「已是最新」，
+               静默放弃更新 —— 表现就是「改了线上，用户打开多少次都不变」。
+               带 no-cache 请求头让 CDN 回源校验，永远拿到最新清单。
+               URL 上的 ?t= 时间戳没用（CDN 按路径缓存，忽略查询串），只能靠请求头。 */
+            c.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0");
+            c.setRequestProperty("Pragma", "no-cache");
+            c.setUseCaches(false);
             c.connect();
             int code = c.getResponseCode();
             if (code >= 200 && code < 300) return c.getInputStream();
