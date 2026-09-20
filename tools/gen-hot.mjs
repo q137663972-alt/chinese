@@ -49,6 +49,44 @@ const pick = (re, name) => {
 };
 const APP = pick(/var\s+APP\s*=\s*"([^"]+)"/, "APP");
 const HOT_TOKEN = pick(/var\s+HOT_TOKEN\s*=\s*"([^"]+)"/, "HOT_TOKEN");
+
+/* ===================== 第 1 段：update.json → hot/update.js =====================
+ * 应用内一键升级的清单（各学科 update.js 会去取 base + "update.js"）。
+ * 这一段的生命周期比下面那套旧通道长得多：它是「告诉用户有新 APK」的唯一通道，
+ * 三合一之后照样必须产出 —— 删了它，用户就永远收不到 2.5.0 的升级提示。
+ * 放在最前面，保证就算下面的旧通道整段停用，它也一定会被写出来。
+ * ★ 清空输出目录必须发生在这里、且在写 update.js「之前」 ——
+ *   原来那句 rmSync 放在了「3. 生成」里，等于把自己刚写的 update.js 又删了，
+ *   表现是 CI 里 hot/update.js 凭空消失、用户收不到升级提示。 */
+fs.rmSync(OUT, { recursive: true, force: true });
+fs.mkdirSync(OUT, { recursive: true });
+const upPath = path.join(ROOT, "update.json");
+if (fs.existsSync(upPath)) {
+  const raw = fs.readFileSync(upPath, "utf8").trim();
+  JSON.parse(raw); // 格式不对就报错，别把坏 JSON 发上去
+  fs.writeFileSync(path.join(OUT, "update.js"), "window.APP_UPDATE=" + raw + ";\n");
+  console.log("✅ hot/update.js（应用内升级清单）");
+} else {
+  console.warn("⚠️  仓库里没有 update.json → 不产出 hot/update.js，老用户收不到升级提示");
+}
+
+/* ===================== 第 2 段：旧的内容热更通道 =====================
+ * v3.0 之前的那套「清单 + localStorage」热更。它需要 boot.js 里有一份**扁平的**
+ * BUILTIN 数组（var BUILTIN = [...]），因为它只能表达一个学科的线性加载顺序。
+ *
+ * 三合一之后 boot.js 变成了按学科分组的字典（var BUILTIN = {cn:[…],math:[…],en:[…]}），
+ * 这份扁平清单在物理上已经不存在了 —— 硬要维护就是拿双份事实来源骗自己。
+ * 所以这里检测到新版结构就整段跳过：不报错、不写 manifest.js，只留一句话说明。
+ *
+ * 影响面：只有 versionCode ≤ 6 那一代（还没有 AndroidHot 桥）的 APK 会读这套东西。
+ * 它们读不到就走内置版本继续玩，不会崩、不会白屏。 */
+if (!/var\s+BUILTIN\s*=\s*\[/.test(boot)) {
+  console.log("ℹ️  boot.js 已是三合一的分组结构 → 旧的 localStorage 内容通道停用（hot/manifest.js 不再产出）");
+  console.log("   现役通道是 tools/gen-pack.mjs 的资源包，别落下它。");
+  process.exit(0);
+}
+
+/* 走到这里说明 boot.js 还是单学科的扁平结构，按老逻辑继续 */
 const BUILTIN = JSON.parse(pick(/var\s+BUILTIN\s*=\s*(\[[\s\S]*?\])\s*;/, "BUILTIN"));
 const BIG = (boot.match(/var\s+BIG\s*=\s*(\[[\s\S]*?\])\s*;/)
   ? JSON.parse(boot.match(/var\s+BIG\s*=\s*(\[[\s\S]*?\])\s*;/)[1]) : []);
@@ -68,9 +106,8 @@ const shell = shellM[1].trim();
 if (shell.indexOf("js/boot.js") >= 0) fail("shell 片段里不能引用 js/boot.js（boot 在 shell 之外）");
 if (shell.indexOf("<script") >= 0) fail("shell 片段里不能有 <script>（脚本全部由 boot.js 按 BUILTIN 顺序注入）");
 
-/* ---------- 3. 生成 ---------- */
-fs.rmSync(OUT, { recursive: true, force: true });
-
+/* ---------- 3. 生成 ----------
+   （目录已在第 1 段清空并写入了 update.js，这里不要再 rmSync —— 见上面那条备注） */
 const put = (rel, text) => {
   const dst = path.join(OUT, rel);
   fs.mkdirSync(path.dirname(dst), { recursive: true });
@@ -116,14 +153,6 @@ const man = {
   files: files.map((f) => ({ p: f.p, h: f.h, s: f.s, n: f.n }))
 };
 fs.writeFileSync(path.join(OUT, "manifest.js"), "window.HOT_MANIFEST=" + JSON.stringify(man) + ";\n");
-
-/* update.json → hot/update.js（手写、入库） */
-const upPath = path.join(ROOT, "update.json");
-if (fs.existsSync(upPath)) {
-  const raw = fs.readFileSync(upPath, "utf8").trim();
-  JSON.parse(raw); // 格式不对就报错，别把坏 JSON 发上去
-  fs.writeFileSync(path.join(OUT, "update.js"), "window.APP_UPDATE=" + raw + ";\n");
-}
 
 /* ---------- 4. 报告 ---------- */
 const bytes = all.reduce((a, f) => a + f.bytes, 0);

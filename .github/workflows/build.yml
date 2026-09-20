@@ -107,7 +107,9 @@ jobs:
           mkdir -p page
           cp index.html page/
           cp -r css js page/
-          [ -d img ] && cp -r img page/   # 图片兜底源：热更包没装时 picHTML() 会回落到 https://.../chinese/img/
+          # 三科子目录必须带上：它们既是「图片兜底源」的来源（cn/img），
+          # 也是 unit/file-less 浏览器直接打开 index.html 时的学科代码来源。
+          for d in cn math en; do [ -d "$d" ] && cp -r "$d" page/; done
 
       - name: 生成热更包（旧通道，v2 及更早的 APK 还在读 hot/manifest.js）
         run: |
@@ -115,8 +117,11 @@ jobs:
           node tools/gen-hot.mjs --out page/hot \
             --base "https://${{ github.repository_owner }}.github.io/${REPO}/hot/"
 
+      # min_apk 不写死：默认取 build.gradle 的 versionCode。
+      # 三合一的资源包用子目录路径（cn/js/app.js…），老 boot.js 认不出来 ——
+      # 硬把它塞给老 APK 只会白下一份 1.7MB、然后被整份忽略。写死 3 等于明着浪费流量。
       - name: 生成资源包（v3.0 通道：任意格式 + 玩法热更）
-        run: node tools/gen-pack.mjs --out page/hot/pack --min-apk 3   # v3.0 起所有壳都有热更桥，未带桥的更老版本会自动忽略热更包
+        run: node tools/gen-pack.mjs --out page/hot/pack
 
       # 【双发，别删】boot.js 里 installPack 用的是「base + pk.name」，而 pk.name 是裸文件名：
       # 实际下载 URL 是 .../hot/code.zip，不是 .../hot/pack/code.zip。

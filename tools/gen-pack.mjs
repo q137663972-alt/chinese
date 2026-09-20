@@ -14,8 +14,8 @@
  * MANIFEST.json 放在 code.zip 里 —— 这样 hot/ 目录是「最后一个包装完」才完整的，
  * 中途退出不会让 App 读到一个只有一半的资源包。
  *
- * 玩法热更：任何 js/game-*.js 都会被自动扫描，从文件里的 registerGame({id:"…"})
- * 读出玩法 id，写进 MANIFEST.json 的 games 数组。boot.js 会在 games.js 之后
+ * 玩法热更：任何 <学科>/js/game-*.js 都会被自动扫描，从文件里的 registerGame({id:"…"})
+ * 读出玩法 id，写进 MANIFEST.json 的 games 数组。boot.js 会在本学科 games.js 之后
  * 逐个加载它们 —— 新增玩法不用出 APK。
  *
  * 用法：node tools/gen-pack.mjs [--out hot/pack] [--min-apk 3]
@@ -88,22 +88,44 @@ const walk = (dir, exts) => {
   return out;
 };
 
-/* 代码包：css + js（boot.js 是冻结文件，永远不能进热更包） */
+/* 学科目录。三科各自一个子目录，互不干涉 —— 这里必须和 js/boot.js 的 SUBJS 一致，
+   差一个字母就是「热更包装了文件、boot.js 却认不出来」的静默失效。 */
+const SUBJ_DIRS = ["cn", "math", "en"];
+
+/* 代码包：css + js（boot.js 是冻结文件，永远不能进热更包）
+   ★ 三科迁进子目录后，这里必须连子目录一起收：
+     css/         壳 + 电视样式（三科共用）
+     js/          宿主层（subject.js）
+     cn|math|en/  各科自己的 css 和 js
+   漏掉子目录的表现极其隐蔽 —— 资源包看起来是生成成功了（有 build、有 sha256、
+   能装进去），但那份学科 App 还是跑的内置版本，改了半天以为没生效。 */
 const codeFiles = [
   ...walk(path.join(ROOT, "css"), [".css"]),
   ...walk(path.join(ROOT, "js"), [".js"]).filter((f) => path.basename(f) !== "boot.js"),
+  ...SUBJ_DIRS.flatMap((d) => [
+    ...walk(path.join(ROOT, d, "css"), [".css"]),
+    ...walk(path.join(ROOT, d, "js"), [".js"]),
+  ]),
 ];
 /* 资源包：图片 / 音频 / 字体
  * ★ 这里必须排除 js/ 与 css/ —— 图片目录里混着的 js/css 会被打进 assets.zip，
  *   而 assets.zip 先装、code.zip 后装，原生侧是「整目录替换」：
  *   后装的 code.zip 会把先前解压出来的 js/*.js、css/*.css 一起覆盖掉（等于白装）。
  *   boot.js 是冻结文件，白装它更糟 —— 热更包里的这份会盖掉内置版。
- *   2026-09-20 修：原先 img/ 用了 .svg 扩展名白名单，图库里的 js/css 会漏进来。 */
+ *   2026-09-20 修：原先 img/ 用了 .svg 扩展名白名单，图库里的 js/css 会漏进来。
+ * 改用「只按扩展名白名单收」+ BANNED 二次过滤双保险，避免再一次踩同一种坑。 */
+const IMG_EXT = [".webp", ".png", ".jpg", ".jpeg", ".svg"];
+const MEDIA_EXT = [".mp3", ".m4a", ".ogg", ".woff2", ".woff", ".ttf"];
 const BANNED_IN_ASSETS = /\.(js|css|html|htm)$/i;
 const assetFiles = [
-  ...walk(path.join(ROOT, "img"), [".webp", ".png", ".jpg", ".svg"]),
-  ...walk(path.join(ROOT, "audio"), [".mp3", ".m4a", ".ogg"]),
-  ...walk(path.join(ROOT, "font"), [".woff2", ".woff", ".ttf"]),
+  ...walk(path.join(ROOT, "img"), IMG_EXT),
+  ...walk(path.join(ROOT, "audio"), MEDIA_EXT),
+  ...walk(path.join(ROOT, "font"), MEDIA_EXT),
+  ...SUBJ_DIRS.flatMap((d) => [
+    ...walk(path.join(ROOT, d, "img"), IMG_EXT),
+    ...walk(path.join(ROOT, d, "audio"), MEDIA_EXT),
+    ...walk(path.join(ROOT, d, "font"), MEDIA_EXT),
+  ]),
 ].filter((f) => !BANNED_IN_ASSETS.test(path.relative(ROOT, f).split(path.sep).join("/")));
 
 const rel = (f) => path.relative(ROOT, f).split(path.sep).join("/");
@@ -112,10 +134,34 @@ const assetPaths = assetFiles.map(rel).sort();
 
 if (!codePaths.length && !assetPaths.length) fail("没有任何可打包的文件");
 
-/* ---------- 2. 扫描玩法（js/game-*.js 里 registerGame 的 id） ---------- */
+/* ---------- 1.5 交叉校验：打了包的 js 必须都在 boot.js 的清单里 ----------
+ * 这是三科迁移时最容易出的一类静默故障：往子目录里加了个 data-x7.js、
+ * 忘了同步 boot.js 的 BUILTIN —— 资源包照样生成、照样装上、sha256 照样对得起，
+ * 但那个文件永远不会被注入，表现为「我改的东西怎么没生效」。
+ * 这里直接把 boot.js 里所有清单展开，逐个对照，少登记一个就报警。 */
+const declared = new Set();
+for (const m of bootSrc.matchAll(/var\s+(?:BUILTIN_(?:CN|MATH|EN)|HOST_JS)\s*=\s*\[([\s\S]*?)\]/g)) {
+  for (const q of m[1].matchAll(/"([^"]+)"/g)) declared.add(q[1]);
+}
+const undeclared = codePaths.filter((p) => /\.js$/.test(p) && !declared.has(p));
+if (undeclared.length) {
+  console.warn("⚠️  以下文件进了资源包、但不在 boot.js 的任何清单里，上线后不会被加载：");
+  undeclared.forEach((p) => console.warn("      " + p));
+  console.warn("      → 把它加进 js/boot.js 的 BUILTIN_* / HOST_JS 再打包");
+}
+const missing = [...declared].filter((p) => !codePaths.includes(p));
+if (missing.length) {
+  console.warn("⚠️  boot.js 清单里有、但这次没打进包（文件被删了？）—— 内置降级时会 404：");
+  missing.forEach((p) => console.warn("      " + p));
+}
+
+/* ---------- 2. 扫描玩法（各科 js/game-*.js 里 registerGame 的 id） ----------
+ * ★ 匹配必须用路径中间的形式：三科各有自己的 games.js 和 game-*.js，
+ *   老写法 /^js\/game-/ 在三合一后一个都匹配不上 —— 新玩法会静默消失，
+ *   MANIFEST 里的 games 数组永远是空的。 */
 const games = [];
 for (const p of codePaths) {
-  if (!/^js\/game-.+\.js$/.test(p)) continue;
+  if (!/\/js\/game-.+\.js$/.test(p)) continue;
   const src = fs.readFileSync(path.join(ROOT, p), "utf8");
   const ids = [...src.matchAll(/registerGame\(\s*\{[^}]*?id\s*:\s*["']([^"']+)["']/g)]
     .map((m) => m[1]);
@@ -179,10 +225,17 @@ if (assetPaths.length) {
 }
 
 const codeZip = path.join(OUT, "code." + build + ".zip");
-/* -X 去掉扩展属性；MANIFEST.json 必须在里面 */
-execFileSync("zip", ["-q", "-X", "-r", codeZip, "MANIFEST.json", "css", "js"], { cwd: TMP });
-/* code.zip 里不该出现 boot.js（冻结文件），兜底删掉 */
-try { execFileSync("zip", ["-q", "-d", codeZip, "js/boot.js"], { cwd: TMP }); } catch (e) {}
+/* -X 去掉扩展属性；MANIFEST.json 必须在里面。
+   三个学科子目录也要显式列出来 —— zip -r 只认命令行上给的目录。 */
+const zipArgs = ["-q", "-X", "-r", codeZip, "MANIFEST.json"];
+for (const d of ["css", "js", ...SUBJ_DIRS]) {
+  if (fs.existsSync(path.join(TMP, d))) zipArgs.push(d);
+}
+execFileSync("zip", zipArgs, { cwd: TMP });
+/* code.zip 里不该出现 boot.js（冻结文件），兜底删掉 —— 宿主层和各学科目录都要查一遍 */
+for (const d of ["js/boot.js", ...SUBJ_DIRS.map((s) => s + "/js/boot.js")]) {
+  try { execFileSync("zip", ["-q", "-d", codeZip, d], { cwd: TMP }); } catch (e) {}
+}
 packs.push({ name: path.basename(codeZip), sha256: sha256File(codeZip), size: fs.statSync(codeZip).size,
              count: codePaths.length + 1 });
 

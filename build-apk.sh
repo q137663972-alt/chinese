@@ -16,10 +16,46 @@ ANDROID_HOME="${ANDROID_HOME:-/opt/android-sdk}"
 BUILD_TOOLS="${BUILD_TOOLS:-$ANDROID_HOME/build-tools/34.0.0}"
 OUT="${OUT:-/workspace/apk/ChinesePlayground.apk}"
 
-echo "════ 1/4 同步 js → assets（防止两份代码脱节） ════"
-cp -f "$ROOT"/js/*.js "$ASSETS/js/"
+echo "════ 1/4 同步 Web 层 → assets（防止两份代码脱节） ════"
+# 先整个删干净再拷：三科迁移后 assets 里多出 cn/ math/ en/ 三个子目录，
+# 不删就要面对"上次残留的旧路径文件"这类幽灵故障 —— 它不会报错，
+# 只会在某些机型上被优先加载。
+rm -rf "$ASSETS/css" "$ASSETS/js" "$ASSETS/img" "$ASSETS/cn" "$ASSETS/math" "$ASSETS/en"
+mkdir -p "$ASSETS/css" "$ASSETS/js"
+
+cp -f "$ROOT/index.html" "$ASSETS/index.html"
 cp -f "$ROOT"/css/*.css "$ASSETS/css/"
-echo "   js $(ls "$ROOT"/js/*.js | wc -l) 个 / css $(ls "$ROOT"/css/*.css | wc -l) 个 → assets"
+cp -f "$ROOT"/js/*.js   "$ASSETS/js/"
+
+for d in cn math en; do
+  [ -d "$ROOT/$d" ] || { echo "❌ 缺 $ROOT/$d（三合一后缺一科）"; exit 1; }
+  mkdir -p "$ASSETS/$d/css" "$ASSETS/$d/js"
+  cp -f "$ROOT/$d"/css/*.css "$ASSETS/$d/css/" 2>/dev/null || true
+  cp -f "$ROOT/$d"/js/*.js   "$ASSETS/$d/js/"  2>/dev/null || true
+  # 图片至今只有语文有（看图识字 143 张 webp），写成通用循环，哪科有了自动带上
+  if ls "$ROOT/$d"/img/* >/dev/null 2>&1; then
+    mkdir -p "$ASSETS/$d/img"
+    cp -f "$ROOT/$d"/img/* "$ASSETS/$d/img/"
+  fi
+done
+
+# 完整性校验：boot.js 清单上的每个文件都必须真的躺在 assets 里。
+# 少了任何一个，启动都是 404 → 哨兵超时 → 回滚 → 无限重启的黑屏循环，
+# 而且只在装着资源包的旧机上复现，开发机上怎么跑都正常。
+node -e '
+const fs=require("fs"),path=require("path");
+const A=process.argv[1];
+const src=fs.readFileSync(A+"/js/boot.js","utf8");
+const bad=[];
+for(const m of src.matchAll(/var\s+(?:BUILTIN_(?:CN|MATH|EN)|HOST_JS)\s*=\s*\[([\s\S]*?)\]/g))
+  for(const q of m[1].matchAll(/"([^"]+)"/g))
+    if(!fs.existsSync(path.join(A,q[1]))) bad.push(q[1]);
+if(bad.length){console.error("❌ assets 缺文件：\n  "+bad.join("\n  "));process.exit(1);}
+console.log("   assets 完整性校验通过");
+' "$ASSETS"
+
+echo "   宿主 $(ls "$ROOT"/js/*.js | wc -l) js / $(ls "$ROOT"/css/*.css | wc -l) css" \
+     "| cn $(ls "$ROOT"/cn/js/*.js | wc -l) | math $(ls "$ROOT"/math/js/*.js | wc -l) | en $(ls "$ROOT"/en/js/*.js | wc -l)"
 
 echo "════ 2/4 Gradle 构建（unsigned） ════"
 cd "$SHELL_DIR"
