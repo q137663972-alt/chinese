@@ -25,6 +25,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { readBootManifest } from "./lib/boot-manifest.mjs";
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => {
@@ -36,18 +37,13 @@ const OUT = path.join(ROOT, String(opt("out", "hot/pack")));
 
 const fail = (m) => { console.error("❌ " + m); process.exit(1); };
 
-/* ---------- 配置：全部从 js/boot.js 读，避免两处维护 ---------- */
-const bootSrc = (() => {
-  const f = path.join(ROOT, "js/boot.js");
-  if (!fs.existsSync(f)) fail("找不到 js/boot.js");
-  return fs.readFileSync(f, "utf8");
-})();
-const pick = (name) => {
-  const m = bootSrc.match(new RegExp("var\\s+" + name + "\\s*=\\s*\"([^\"]+)\""));
-  return m ? m[1] : "";
-};
-const APP = pick("APP");
-const HOT_TOKEN = pick("HOT_TOKEN");
+/* ---------- 配置：全部从 js/boot.js 读，避免两处维护 ----------
+   抽取规则统一放在 tools/lib/boot-manifest.mjs —— gen-pack / build-apk / smoke
+   三处共用同一份解读，改格式只需改一处。 */
+const MANIFEST = readBootManifest(ROOT);
+const APP = MANIFEST.APP;
+const HOT_TOKEN = MANIFEST.HOT_TOKEN;
+const bootSrc = fs.readFileSync(path.join(ROOT, "js", "boot.js"), "utf8");
 if (!APP || !HOT_TOKEN) fail("js/boot.js 里读不到 APP / HOT_TOKEN");
 
 /* min_apk：默认取壳工程里的 versionCode（老 APK 装不上新包时再手工调低） */
@@ -139,10 +135,7 @@ if (!codePaths.length && !assetPaths.length) fail("没有任何可打包的文�
  * 忘了同步 boot.js 的 BUILTIN —— 资源包照样生成、照样装上、sha256 照样对得起，
  * 但那个文件永远不会被注入，表现为「我改的东西怎么没生效」。
  * 这里直接把 boot.js 里所有清单展开，逐个对照，少登记一个就报警。 */
-const declared = new Set();
-for (const m of bootSrc.matchAll(/var\s+(?:BUILTIN_(?:CN|MATH|EN)|SHARED_JS|HOST_JS)\s*=\s*\[([\s\S]*?)\]/g)) {
-  for (const q of m[1].matchAll(/"([^"]+)"/g)) declared.add(q[1]);
-}
+const declared = MANIFEST.allDeclared();
 const undeclared = codePaths.filter((p) => /\.js$/.test(p) && !declared.has(p));
 if (undeclared.length) {
   console.warn("⚠️  以下文件进了资源包、但不在 boot.js 的任何清单里，上线后不会被加载：");

@@ -125,11 +125,16 @@ function curUnit(){ return DATA.grades[state.gi].books[state.bi].u[state.ui]; }
 
 /* ===================== 渲染 ===================== */
 var app;
-function topbar(title, showBack){
+function topbar(title, showBack, extra){
+  /* extra：需要把顶栏右侧按钮点成别的行为时传 onclick 字符串，默认就是进热更自检。
+     🛠️ 必须排在 ⚙️ 之前 —— 焦点导航按「↑」从内容吸附到顶栏时落在第一个 gear 上，
+     也就是这个自检入口，一步就能选中。这是电视上唯一能触发更新的地方。 */
+  var extraOnclick = (typeof extra === "string") ? extra : "renderHotDiag()";
   return '<div class="topbar">' +
     (showBack ? '<button class="back" onclick="goBack()">←</button>' : '<div class="spacer"></div>') +
     '<div class="title">' + title + '</div>' +
-    '<button class="gear" onclick="openSettings()">⚙️</button>' +
+    '<button class="gear hot" title="热更自检" onclick="' + extraOnclick + '">🛠️</button>' +
+    '<button class="gear" title="设置" onclick="openSettings()">⚙️</button>' +
     '</div>';
 }
 function render(){
@@ -297,6 +302,87 @@ function tvBack(){
   return true;
 }
 window.tvBack = tvBack;
+
+/* ===================== 热更自检 =====================
+   电视上没有控制台，热更到底生效没生效、本机跑的是哪个包，
+   只能靠一个肉眼能看到的面板 —— 而且必须能用遥控器点到。
+   2.4.1 起入口从右下角飘浮圆钮搬进顶栏（遥控器选不中飘浮圆钮），
+   这里另留一个「点设置标题 3 次」的隐形入口，方便手机上也进得来。 */
+function renderHotDiag(){
+  /* 旧版拿 !!window.PRAISE 判断「已热更」是假的 —— PRAISE 是内置全局、恒为真，
+     结果永远显示「已热更」却拿不出任何本机信息。改成看实际来源 + 真玩法列表。 */
+  var localBuild = window.__HOT_BUILD || "";
+  var remoteBuild = window.__REMOTE_BUILD || "(未测试)";
+  var games = window.GAMES || [];
+  var ids = games.map(function (g) { return g.id; });
+  var base = window.HOT_BASE || "(未知)";
+  var source = localBuild ? ("热更包（build=" + localBuild + "）") : "内置版（无本地热更包）";
+  app.innerHTML = topbar("热更自检", true) +
+    '<div class="result-box" style="text-align:left;font-size:15px;line-height:2">' +
+      '本机运行来源：' + source + '<br>' +
+      '本地已装 build：' + (localBuild || "(无)") + '<br>' +
+      '远程最新 build：' + remoteBuild + '<br>' +
+      '玩法列表（window.GAMES 实际注册）：' + (ids.length ? ids.join("、") : "（空）") + '<br>' +
+      '玩法总数：' + ids.length + '<br>' +
+      '热更源：<span style="word-break:break-all">' + base + '</span><br>' +
+      '连通性：<span id="hotCon">未测试</span><br>' +
+      '<span style="color:var(--sub);font-size:13px">判读：本机运行来源=代码实际来自内置还是已装热更包；' +
+      '玩法列表=这次热更真正注册进来的玩法。新增玩法要在这里出现才算生效。</span>' +
+    '</div>' +
+    '<div class="row" style="margin-top:12px">' +
+      '<button class="btn ghost" onclick="hotTestConn()">🔌 测试连通</button>' +
+      '<button class="btn green" onclick="hotForceReload()">🔄 强制重新下载</button>' +
+    '</div>' +
+    '<button class="btn pink" style="margin-top:10px" onclick="state.view=\'home\';render()">返回</button>';
+}
+window.hotTestConn = function () {
+  var el = document.getElementById("hotCon");
+  if (el) el.textContent = "测试中…";
+  try {
+    if (!window.AndroidHot) { if (el) el.textContent = "❌ 浏览器预览无原生桥"; return; }
+    var url = (window.HOT_BASE || "") + "pack/manifest.json?t=" + Date.now();
+    window.AndroidHot.httpGet(url, "__hotDiag");
+  } catch (e) { if (el) el.textContent = "❌ 调用失败"; }
+};
+window.__hotDiag = function (txt) {
+  var el = document.getElementById("hotCon");
+  if (!el) return;
+  if (txt == null) { el.textContent = "❌ 拉取失败（手机够不到该地址）"; return; }
+  try {
+    var m = JSON.parse(txt);
+    window.__REMOTE_BUILD = m.build || "?";
+    el.textContent = "✅ 可达，线上 build=" + (m.build || "?");
+  } catch (e) { el.textContent = "⚠️ 返回了非预期内容"; }
+};
+window.hotForceReload = function () {
+  try {
+    if (!window.AndroidHot) { toast("浏览器预览无法下载"); return; }
+    window.AndroidHot.reset();
+    toast("已清除本地标记，请关闭 App 再重新打开以拉取内容");
+  } catch (e) { toast("操作失败"); }
+};
+/* 设置标题点 3 次的隐形入口：电视走顶栏 🛠️ 按钮，这个只是手机上的备用通道 */
+(function () {
+  var taps = 0, last = 0;
+  function hook() {
+    var h = document.querySelector("#settingsModal .modal-card h3");
+    if (!h || h.__diagHooked) return;
+    h.__diagHooked = true;
+    h.addEventListener("click", function () {
+      var now = Date.now();
+      if (now - last > 900) taps = 0;
+      last = now; taps++;
+      if (taps >= 3) { taps = 0; try { closeSettings(); renderHotDiag(); } catch (e) {} }
+    });
+  }
+  try {
+    document.addEventListener("click", function (e) {
+      var t = e.target;
+      if (t && t.classList && t.classList.contains("gear") && t.title === "设置") setTimeout(hook, 60);
+    }, true);
+    window.addEventListener("load", function () { setTimeout(hook, 300); });
+  } catch (e) {}
+})();
 
 /* ===================== 启动 ===================== */
 app = $("#app");
