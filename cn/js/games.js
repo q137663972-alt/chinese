@@ -258,20 +258,22 @@ function head( Cur, total, replay ){
  * 都缺失时回退纯大字卡（防御用，正常不会触发）。
  *
  * 图片来源按顺序试（window.PIC_BASES）：
- *   1. https://local.hot/img/   资源包热更下来的图（最新，优先级最高）
- *   2. img/                     APK 内置 assets / 仓库自带 —— 没装资源包也能离线看到图
- *   3. 远程 CDN                 最后兜底
+ *   1. https://local.hot/cn/img/  资源包热更下来的图（最新，优先级最高）
+ *   2. cn/img/                    APK 内置 assets / 仓库自带 —— 没装资源包也能离线看到图
+ *   3. 远程 CDN                   最后兜底
+ * ★ 路径必须带学科前缀 cn/：三合一迁移后图片统一放在 cn/img/ 下，
+ *   写成 img/ 会指向不存在的路径，看图识字会整片退回 SVG 占位图。
  * 顺序很重要：内置图必须排在资源包之后，否则热更下来的新图会被内置旧图盖住；
  * 但也要排在 CDN 之前，否则首次安装又没网时一项都拿不到，只能退回 SVG。
  * 任何一个都取不到 → __picErr 换下一个 → 全挂了就地换回 SVG，绝不出现破图。 */
 window.PIC_BASES = window.PIC_BASES || [
-  "https://local.hot/img/",
-  "img/",
-  "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@gh-pages/img/"
+  "https://local.hot/cn/img/",
+  "cn/img/",
+  "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@gh-pages/cn/img/"
 ];
 window.__picErr = function (img) {
   var z = img.getAttribute("data-z") || "";
-  var bases = window.PIC_BASES || ["img/"];
+  var bases = window.PIC_BASES || ["cn/img/"];
   var i = (parseInt(img.getAttribute("data-bi"), 10) || 0) + 1;
   var f = window.PIC_PHOTOS && window.PIC_PHOTOS[z];
   if (f && i < bases.length) {            // 换下一个源再试
@@ -298,7 +300,7 @@ function __picVer() {
 function picHTML(z){
   var ph = window.PIC_PHOTOS && window.PIC_PHOTOS[z];
   if(ph){
-    return '<img src="' + (window.PIC_BASES || ["https://local.hot/img/"])[0] + ph + __picVer() +
+    return '<img src="' + (window.PIC_BASES || ["https://local.hot/cn/img/"])[0] + ph + __picVer() +
            '" data-z="' + z + '" data-bi="0" alt="' + z +
            '" onerror="window.__picErr&&window.__picErr(this)">';
   }

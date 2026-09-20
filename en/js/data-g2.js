@@ -1,0 +1,21 @@
+(function(g){ window.CP && window.CP.setGrade ? window.CP.setGrade(g) : (window.GRADES = window.GRADES || []).push(g); })({
+  g:2,
+  books:[
+    { n:"二年级上册", u:[
+      { n:"Unit 1 My Family 家庭", w:[{e:"father",z:"父亲",k:"👨"},{e:"mother",z:"母亲",k:"👩"},{e:"brother",z:"兄弟",k:"👦"},{e:"sister",z:"姐妹",k:"👧"},{e:"grandmother",z:"祖母",k:"👵"},{e:"grandfather",z:"祖父",k:"👴"},{e:"who",z:"谁",k:"❓"},{e:"he",z:"他",k:"🙋‍♂️"},{e:"she",z:"她",k:"🙋‍♀️"}], s:[{e:"Who's he?",z:"他是谁？"},{e:"He is my father.",z:"他是我爸爸。"}] },
+      { n:"Unit 2 Boys and Girls 男孩女孩", w:[{e:"classmate",z:"同学",k:"🧑‍🤝‍🧑"},{e:"friend",z:"朋友",k:"👫"},{e:"woman",z:"女人",k:"👩"},{e:"girl",z:"女孩",k:"👧"},{e:"man",z:"男人",k:"👨"},{e:"boy",z:"男孩",k:"👦"},{e:"name",z:"名字",k:"✏️"},{e:"new",z:"新的",k:"🆕"}], s:[{e:"What's his name?",z:"他叫什么名字？"},{e:"His name is Panpan.",z:"他叫盼盼。"}] },
+      { n:"Unit 3 My Friends 朋友", w:[{e:"big",z:"大的",k:"🐘"},{e:"tall",z:"高的",k:"📏"},{e:"pretty",z:"漂亮的",k:"🌹"},{e:"thin",z:"瘦的",k:"🔘"},{e:"short",z:"矮的",k:"🔻"},{e:"handsome",z:"英俊的",k:"😎"},{e:"cute",z:"可爱的",k:"🐨"}], s:[{e:"What is he like?",z:"他长什么样？"},{e:"He is tall.",z:"他很高。"}] },
+      { n:"Unit 4 In the Community 在社区", w:[{e:"bookshop",z:"书店",k:"📖"},{e:"zoo",z:"动物园",k:"🦁"},{e:"school",z:"学校",k:"🏫"},{e:"hospital",z:"医院",k:"🏥"},{e:"supermarket",z:"超市",k:"🛒"},{e:"park",z:"公园",k:"🌳"},{e:"library",z:"图书馆",k:"📚"},{e:"shop",z:"商店",k:"🏪"}], s:[{e:"Where are you going?",z:"你要去哪？"},{e:"I'm going to the park.",z:"我去公园。"}] },
+      { n:"Unit 5 In the Park 公园", w:[{e:"grass",z:"草",k:"🌿"},{e:"boat",z:"小船",k:"🚣"},{e:"tree",z:"树",k:"🌳"},{e:"lake",z:"湖",k:"💧"},{e:"flower",z:"花",k:"🌸"},{e:"hill",z:"小山",k:"⛰️"},{e:"bee",z:"蜜蜂",k:"🐝"},{e:"butterfly",z:"蝴蝶",k:"🦋"}], s:[{e:"There is a lake in the park.",z:"公园里有一个湖。"},{e:"How beautiful!",z:"多美啊！"}] },
+      { n:"Unit 6 Happy Holidays 快乐的节日", w:[{e:"Christmas",z:"圣诞节",k:"🎄"},{e:"Father Christmas",z:"圣诞老人",k:"🎅"},{e:"card",z:"贺卡",k:"💌"},{e:"present",z:"礼物",k:"🎁"},{e:"New Year",z:"新年",k:"🎆"},{e:"happy",z:"快乐的",k:"😄"},{e:"merry",z:"愉快的",k:"😊"}], s:[{e:"Merry Christmas!",z:"圣诞快乐！"},{e:"Happy New Year!",z:"新年快乐！"}] }
+    ]},
+    { n:"二年级下册", u:[
+      { n:"Unit 1 Play Sports 运动", w:[{e:"play football",z:"踢足球",k:"⚽"},{e:"fly a kite",z:"放风筝",k:"🪁"},{e:"ride a bike",z:"骑自行车",k:"🚲"},{e:"make a model plane",z:"做飞机模型",k:"✈️"},{e:"swim",z:"游泳",k:"🏊"},{e:"make a snowman",z:"堆雪人",k:"⛄"},{e:"skate",z:"滑冰",k:"⛸️"},{e:"can",z:"能",k:"✅"}], s:[{e:"I can swim.",z:"我会游泳。"},{e:"Can you play football?",z:"你会踢足球吗？"}] },
+      { n:"Unit 2 Weather 天气", w:[{e:"rainy",z:"下雨的",k:"🌧️"},{e:"cloudy",z:"多云的",k:"☁️"},{e:"snowy",z:"下雪的",k:"❄️"},{e:"windy",z:"刮风的",k:"🌬️"},{e:"sunny",z:"晴朗的",k:"☀️"},{e:"umbrella",z:"雨伞",k:"☂️"},{e:"weather",z:"天气",k:"🌤️"}], s:[{e:"It's sunny today.",z:"今天晴朗。"},{e:"What's the weather like today?",z:"今天天气怎么样？"}] },
+      { n:"Unit 3 Season 季节", w:[{e:"spring",z:"春天",k:"🌸"},{e:"summer",z:"夏天",k:"☀️"},{e:"autumn",z:"秋天",k:"🍂"},{e:"winter",z:"冬天",k:"❄️"},{e:"hot",z:"炎热的",k:"🔥"},{e:"warm",z:"温暖的",k:"♨️"},{e:"cool",z:"凉爽的",k:"🍃"},{e:"cold",z:"寒冷的",k:"🥶"},{e:"season",z:"季节",k:"🗓️"}], s:[{e:"What's your favourite season?",z:"你最喜欢哪个季节？"},{e:"I like spring.",z:"我喜欢春天。"}] },
+      { n:"Unit 4 Numbers 11-50 数字 11-50", w:[{e:"eleven",z:"十一",k:"11"},{e:"twelve",z:"十二",k:"12"},{e:"thirteen",z:"十三",k:"13"},{e:"fourteen",z:"十四",k:"14"},{e:"fifteen",z:"十五",k:"15"},{e:"twenty",z:"二十",k:"20"},{e:"thirty",z:"三十",k:"30"},{e:"forty",z:"四十",k:"40"},{e:"fifty",z:"五十",k:"50"},{e:"o'clock",z:"…点钟",k:"🕐"}], s:[{e:"What time is it?",z:"几点了？"},{e:"It's seven o'clock.",z:"七点。"}] },
+      { n:"Unit 5 Daily Routine 日常作息", w:[{e:"get up",z:"起床",k:"⏰"},{e:"eat breakfast",z:"吃早饭",k:"🍳"},{e:"go to school",z:"上学",k:"🎒"},{e:"eat lunch",z:"吃午饭",k:"🍱"},{e:"go home",z:"回家",k:"🏠"},{e:"eat dinner",z:"吃晚饭",k:"🍽️"},{e:"go to bed",z:"上床睡觉",k:"🛏️"},{e:"every day",z:"每天",k:"📅"}], s:[{e:"When do you get up?",z:"你什么时候起床？"},{e:"I get up at 7.",z:"我七点起床。"}] },
+      { n:"Unit 6 Days of the Week 一周七天", w:[{e:"Monday",z:"星期一",k:"📚"},{e:"Tuesday",z:"星期二",k:"🔵"},{e:"Wednesday",z:"星期三",k:"🟡"},{e:"Thursday",z:"星期四",k:"🟢"},{e:"Friday",z:"星期五",k:"🎉"},{e:"Saturday",z:"星期六",k:"🛍️"},{e:"Sunday",z:"星期日",k:"🌞"},{e:"weekend",z:"周末",k:"🏖️"}], s:[{e:"What day is today?",z:"今天星期几？"},{e:"Today is Monday.",z:"今天星期一。"}] }
+    ]}
+  ]
+});
