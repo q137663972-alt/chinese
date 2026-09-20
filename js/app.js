@@ -316,7 +316,7 @@ function renderHotDiag(){
       '本机运行来源：' + source + '<br>' +
       '本地已装 build：' + (localBuild || "(无)") + '<br>' +
       '远程最新 build：' + remoteBuild + '<br>' +
-      '看图识字是否进玩法列表：' + (hasPicture ? '❌ 仍在（id=picture 已注册，删除未生效）' : '✅ 已移除（window.GAMES 无 picture）') + '<br>' +
+      '看图识字（id=picture）：' + (hasPicture ? '✅ 已在玩法列表（window.GAMES 含 picture）' : '➖ 不在玩法列表（已下线或未生效）') + '<br>' +
       '知识圈玩法：' + (hasBattle ? '✅ 已在玩法列表' : '❌ 未出现') + '<br>' +
       '热更源：<span style="word-break:break-all">' + base + '</span><br>' +
       '连通性：<span id="hotCon">未测试</span><br>' +
