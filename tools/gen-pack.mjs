@@ -163,21 +163,27 @@ for (const p of codePaths) {
 
 const packs = [];
 
+/* ★ zip 文件名必须带 build 指纹（手册硬约束）：
+   固定名 + CDN 缓存 = 灾难 —— 边缘节点拿到旧清单、却下载到新 zip，
+   sha256 对不上直接拒装；另一部分边缘是新清单 + 新 zip 又能装。
+   表现为「同一时间、不同设备，有的更新了有的没有，还伴随装机失败」。
+   文件名带指纹后，每个 build 都是独立 URL：旧清单只会去取它自己那份，
+   新清单取新的那份，互不干扰，也顺便破了 CDN 缓存。 */
 if (assetPaths.length) {
-  const zip = path.join(OUT, "assets.zip");
+  const zip = path.join(OUT, "assets." + build + ".zip");
   /* 大资源直接从仓库目录打包，不复制一份，省一次 3MB 的读写 */
   execFileSync("zip", ["-q", "-X", "-r", zip,
     ...assetPaths.map((p) => p)], { cwd: ROOT });
-  packs.push({ name: "assets.zip", sha256: sha256File(zip), size: fs.statSync(zip).size,
+  packs.push({ name: path.basename(zip), sha256: sha256File(zip), size: fs.statSync(zip).size,
                count: assetPaths.length });
 }
 
-const codeZip = path.join(OUT, "code.zip");
+const codeZip = path.join(OUT, "code." + build + ".zip");
 /* -X 去掉扩展属性；MANIFEST.json 必须在里面 */
 execFileSync("zip", ["-q", "-X", "-r", codeZip, "MANIFEST.json", "css", "js"], { cwd: TMP });
 /* code.zip 里不该出现 boot.js（冻结文件），兜底删掉 */
 try { execFileSync("zip", ["-q", "-d", codeZip, "js/boot.js"], { cwd: TMP }); } catch (e) {}
-packs.push({ name: "code.zip", sha256: sha256File(codeZip), size: fs.statSync(codeZip).size,
+packs.push({ name: path.basename(codeZip), sha256: sha256File(codeZip), size: fs.statSync(codeZip).size,
              count: codePaths.length + 1 });
 
 /* ---------- 5. 远程清单 ---------- */
