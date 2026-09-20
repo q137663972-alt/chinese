@@ -22,7 +22,7 @@ window.getGame = function (id) {
 
 /* 内置 14 种玩法（都是函数声明，会提升，所以写在定义之前也没问题） */
 registerGame({ id:"listen",    name:"听音选字",   icon:"🔊", desc:"听读音，选出那个字",   start: startListen });
-/* registerGame({ id:"picture",   name:"看图识字"  /* 2026-09-20 应要求下线（恢复：去掉注释即可） */,   icon:"👀", desc:"看图片，认出对应的字", start: startPicture });
+/* registerGame({ id:"picture",   name:"看图识字",   icon:"👀", desc:"看图片，认出对应的字", start: startPicture });  ← 2026-09-20 应要求下线（要恢复：去掉本行注释即可） */
 registerGame({ id:"pinyin",    name:"拼音配对",   icon:"🔤", desc:"读拼音，找出汉字",     start: startPinyin });
 registerGame({ id:"wordfill",  name:"组词填空",   icon:"📝", desc:"把词语补完整",         start: startWordFill });
 registerGame({ id:"eliminate", name:"生字消消乐", icon:"💥", desc:"字和词语配成一对消掉", start: startEliminate });
