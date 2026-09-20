@@ -148,3 +148,32 @@ jobs:
           publish_branch: gh-pages
           publish_dir: ./page
           force_orphan: true
+
+      # gh-pages 是「移动分支」，jsDelivr 对分支内容按 12 小时 TTL 缓存：
+      # 不主动清，发布后 cdn.jsdelivr.net 上还是旧文件。曾踩坑 ——
+      # 旧清单里的 min_apk=10 把 2.2.x(versionCode 7) 老设备的热更整条挡掉，
+      # 而客户端只在「网络失败」时才换源，拿到旧清单不换源 → 静默放弃热更。
+      - name: 清 jsDelivr 缓存并校验（清单 / 升级配置 / 资源包）
+        continue-on-error: true
+        run: |
+          REPO="${{ github.repository }}"
+          sleep 45        # 等 Pages 边缘把新文件发出去，否则清完立刻回源可能又抓到旧的
+          PATHS="hot/pack/manifest.json hot/update.js hot/manifest.js"
+          if [ -f page/hot/pack/manifest.json ]; then
+            PATHS="$PATHS $(node -e "const m=require('./page/hot/pack/manifest.json');(m.packs||[]).forEach(p=>console.log('hot/pack/'+p.name))" | tr '\n' ' ')"
+          fi
+          for p in $PATHS; do
+            echo "== purge $p"
+            curl -sS --max-time 30 "https://purge.jsdelivr.net/gh/$REPO@gh-pages/$p" || true
+            echo
+          done
+          # 校验：cdn 上的 build 必须等于刚生成的 build，不等于就再清一次（最多 3 轮）
+          WANT=$(node -e "console.log(require('./page/hot/pack/manifest.json').build)")
+          for i in 1 2 3; do
+            GOT=$(curl -sS --max-time 20 "https://cdn.jsdelivr.net/gh/$REPO@gh-pages/hot/pack/manifest.json" \
+                  | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).build)}catch(e){console.log('parse-err')}})")
+            echo "cdn build=$GOT  want=$WANT"
+            [ "$GOT" = "$WANT" ] && break
+            curl -sS --max-time 30 "https://purge.jsdelivr.net/gh/$REPO@gh-pages/hot/pack/manifest.json" || true
+            sleep 20
+          done
