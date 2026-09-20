@@ -273,6 +273,49 @@ async function main() {
     /* 选学科页不该在这儿 —— 它一旦盖上来，用户点了学科就被弹回选择页 */
     const cardsLeft = (h2.match(/subj-card/g) || []).length;
     chk(cardsLeft === 0, "学科首页没被选学科页盖掉", "残留 subj-card " + cardsLeft);
+
+    /* ★★ 2026-09-20 现场事故（第四条）：「再进又只剩下语文，而且没有换学科选项」★★
+       用户一旦进了某一科就再也回不去 —— 因为换学科入口只在"未选学科"分支里挂过，
+       而这个入口在老 index.html 里本来就不存在（它调 window.__pickSubject，
+       那个函数只在新版 boot.js 里有；老设备跑的是内置老 boot.js，压根没有）。
+       断言：**已选学科**时，换学科入口必须仍然可用（函数在 + 设置弹层里有那一行）。 */
+    chk(typeof w2.__pickSubject === "function",
+        "已选学科时 __pickSubject 仍可用（回得去选择页）",
+        "实际 " + typeof w2.__pickSubject);
+    /* 打开设置弹层，看「🔄 换学科」那一行是否会被插进去。
+       ★ 判据必须同时看"行存在"与"按钮能调通函数" —— 只判 /换学科/ 会假绿：
+         弹层里别处出现同名字样就够了（负向验证抓到的）。 */
+    const modal = w2.document.getElementById("settingsModal");
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.style.display = "block";
+      /* bridge.js 是 60ms 捕获阶段 + MutationObserver 双路补的，等一拍 */
+      await sleep(250);
+      const row = w2.document.getElementById("bridgeSwitchRow");
+      chk(!!row, "已选学科时设置面板里插入了「换学科」那一行（#bridgeSwitchRow）",
+          "实际 " + (row ? "有" : "没有"));
+      if (row) {
+        const btn = row.querySelector("button");
+        const oc = btn ? String(btn.getAttribute("onclick") || "") : "";
+        chk(/__pickSubject/.test(oc),
+            "那一行的按钮真的绑到了 __pickSubject（不是个死按钮）", oc.slice(0, 80));
+        /* ★ 光看 onclick 字符串不够 —— 它是纯文本，函数不存在也照样写着。
+           也不能靠 location.reload（jsdom 里它是只读的，测不出来）。
+           用**真实可观察的副作用**判：换学科 = 清掉 app_subject 标记。
+           清掉了 + 还调用了 reload（若环境允许）才算真按钮。 */
+        const before = w2.localStorage.getItem("app_subject");
+        let reloaded = false;
+        const origReload = w2.location.reload.bind(w2.location);
+        try { w2.location.reload = function () { reloaded = true; }; } catch (e) {}
+        try { w2.eval(oc); } catch (e) {}
+        const after = w2.localStorage.getItem("app_subject");
+        try { w2.location.reload = origReload; } catch (e) {}
+        chk(before === s && !after,
+            "真按下去会清掉学科标记（确实回到了选学科页的路径）",
+            "app_subject: " + JSON.stringify(before) + " → " + JSON.stringify(after) +
+            " / reload=" + reloaded);
+      }
+    }
   }
 
   console.log("\n" + (FAILS.length ? "❌ 失败 " + FAILS.length + " 项" : "✅ 全部通过"));

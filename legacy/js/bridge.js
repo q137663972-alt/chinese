@@ -148,11 +148,15 @@
 
   /* ---------- 换学科入口 ----------
      老版 index.html 的设置面板里没有「🔄 换学科」这一行，跑到这里补上。
-     同时挂到 window.__pickSubject —— 各科代码里约定俗成的就是这个名字。 */
-  window.__pickSubject = function () {
-    set(KEY, "");
-    try { location.reload(); } catch (e) {}
-  };
+     同时挂到 window.__pickSubject —— 各科代码里约定俗成的就是这个名字。
+     ★ 幂等：看门人（legacy/js/app.js）也会挂同一个函数，先到先得，不要互相覆盖
+       （两者语义一致：清掉 app_subject + reload）。 */
+  if (typeof window.__pickSubject !== "function") {
+    window.__pickSubject = function () {
+      set(KEY, "");
+      try { location.reload(); } catch (e) {}
+    };
+  }
   function injectSwitchRow() {
     var card = document.querySelector("#settingsModal .modal-card");
     if (!card || document.getElementById("bridgeSwitchRow")) return;
@@ -166,8 +170,19 @@
     else card.appendChild(row);
   }
   injectSwitchRow();
-  /* 有的学科 App 会在自己的 render 里重建整个弹层，留个兜底再补一次 */
+  /* 有的学科 App 会在自己的 render 里重建整个弹层，留个兜底再补几次。
+     ★ 从"只补一次"改成"周期补 + 打开设置时补"：现场出现过渡层被重建后
+       换学科那一行消失的情况（用户就只能杀进程重进，而重进会回到上次那一科，
+       看起来是"永远困在语文里"）。 */
   setTimeout(injectSwitchRow, 1200);
+  setTimeout(injectSwitchRow, 3000);
+  document.addEventListener("click", function () { setTimeout(injectSwitchRow, 60); }, true);
+  if (window.MutationObserver) {
+    try {
+      new MutationObserver(function () { injectSwitchRow(); })
+        .observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+  }
 
   /* ---------- 走分区 ----------
      ★ 选学科页复用新版那份 js/subject.js（同一个文件、同一套文案与遥控器逻辑），

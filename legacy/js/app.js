@@ -40,9 +40,29 @@
   /* 新版宿主在跑（有 APP_SUBJECTS）→ 不归我管，立刻退场 */
   if (window.APP_SUBJECTS) { log("新版宿主，退场"); return; }
 
+  /* ★★ 第一件事：无条件挂上「回选学科页」的全局函数 ★★
+     不管选没选过学科，都必须有这条路 —— 否则用户一旦进了某一科，
+     就再也回不去选择页（现场表现：「再进又只剩下语文，而且没有换学科选项」）。
+     挂在这里（而不是只在未选分支里）是因为本文件是老清单的第一个脚本，
+     任何分支都会执行到，是最可靠的落点。 */
+  window.__pickSubject = function () {
+    set(KEY, "");
+    try { location.hash = ""; } catch (e) {}
+    try { location.reload(); } catch (e) {}
+  };
+  /* 兼容旧名字（老 index.html / 旧设置面板里可能仍在调这个） */
+  if (typeof window.showSubjectPicker !== "function") {
+    window.showSubjectPicker = window.__pickSubject;
+  }
+
   var cur = get(KEY);
   var KNOWN = { cn: 1, math: 1, en: 1 };
-  if (cur && KNOWN[cur]) { log("已选学科 " + cur + "，放行给 bridge.js"); return; }
+  if (cur && KNOWN[cur]) {
+    /* 已选学科：放行给 bridge.js，但换学科入口必须确保可用（见上）。
+       bridge.js 会往设置弹层里插「🔄 换学科」那一行。 */
+    log("已选学科 " + cur + "，放行给 bridge.js");
+    return;
+  }
   if (cur) set(KEY, "");        /* 脏数据（老版本学科名 / 手滑写错）当没选过 */
 
   /* ===== 没选学科：由我负责把选学科页端出来，并且不让任何学科代码跑起来 ===== */
@@ -54,10 +74,6 @@
   window.__setSubject = function (k) {
     if (!KNOWN[k]) { log("未知学科 " + k); return; }
     set(KEY, k); set(LAST, k);
-    try { location.reload(); } catch (e) {}
-  };
-  window.__pickSubject = function () {
-    set(KEY, "");
     try { location.reload(); } catch (e) {}
   };
 
