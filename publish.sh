@@ -34,6 +34,22 @@ gh() {
       -c "user.email=${GH_USER}@users.noreply.github.com" "$@"
 }
 
+# 清 jsDelivr @gh-pages 缓存，避免设备卡在 12h 旧包（手册 §4.3 / 历史 §5 坑：
+# 发布后不 purge，设备从首选源 jsDelivr 拉到旧 manifest→指向已删除的 zip→404→热更失败）
+purge_cdn() {
+  local repo="$1"
+  curl -s -m 30 -X POST "https://purge.jsdelivr.net/" -H "Content-Type: application/json" \
+    -d "{\"path\":[\
+/gh/$GH_USER/$repo@gh-pages/hot/pack/manifest.json,\
+/gh/$GH_USER/$repo@gh-pages/hot/pack/code.zip,\
+/gh/$GH_USER/$repo@gh-pages/hot/pack/assets.zip,\
+/gh/$GH_USER/$repo@gh-pages/hot/js/games.js,\
+/gh/$GH_USER/$repo@gh-pages/hot/js/app.js\
+]}" >/dev/null 2>&1 \
+    && echo "   ✅ 已请求清 jsDelivr 缓存（异步，约数十秒生效）" \
+    || echo "   ⚠️ 清 jsDelivr 缓存请求未成功（可手动补 purge.jsdelivr.net）"
+}
+
 # 1. 构建并签名（SKIP_BUILD=1 时用已有 ./apk 里的包）
 if [ "${SKIP_BUILD:-0}" = "1" ]; then
   echo "跳过构建，使用 /workspace/apk 现有包"
@@ -89,6 +105,7 @@ publish() {
     for i in 1 2 3; do
       if gh push -q origin HEAD:gh-pages 2>/tmp/pub-err-$repo; then
         echo "   ✅ 已推送 → https://${GH_USER}.github.io/${page}/apk/${apk}"
+        purge_cdn "$repo"
         exit 0
       fi
       echo "   第 $i 次推送失败，重试…"
