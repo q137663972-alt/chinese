@@ -118,6 +118,16 @@ jobs:
       - name: 生成资源包（v3.0 通道：任意格式 + 玩法热更）
         run: node tools/gen-pack.mjs --out page/hot/pack --min-apk 3   # v3.0 起所有壳都有热更桥，未带桥的更老版本会自动忽略热更包
 
+      # 【双发，别删】boot.js 里 installPack 用的是「base + pk.name」，而 pk.name 是裸文件名：
+      # 实际下载 URL 是 .../hot/code.zip，不是 .../hot/pack/code.zip。
+      # 只发 pack/ 子目录时，设备能读到 manifest 却在下载 zip 时 404 —— 表现为「热更一直装不上」。
+      # 所以 zip 必须在 hot/ 根和 hot/pack/ 各放一份（2.3.2 那次修复就是手工双发救回来的，这里固化进 CI）。
+      - name: 双发热更 zip 到 hot/ 根（老壳的 URL 不带 pack/ 前缀）
+        run: |
+          mkdir -p page/hot
+          for z in page/hot/pack/*.zip; do cp -f "$z" "page/hot/$(basename "$z")"; done
+          ls -la page/hot/*.zip
+
       - name: 下载已签名 APK（构建失败时跳过，不影响热更发布）
         uses: actions/download-artifact@v4
         continue-on-error: true

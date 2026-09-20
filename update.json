@@ -3,9 +3,9 @@
   "name": "2.4.0",
   "note": "三端合一（手机/平板/电视通用包，自动识别设备）：① 电视显示参数独立成可热更调参文件，机顶盒显示比例异常（偏大偏小/被裁边/档位判错）出热更包即可修好，不用重装；② 玩法可热更增减（新增 js/game-*.js 自动进清单，下架同理）；③ 电视物理分辨率分档 + 5% overscan 安全区；④ 遥控器方向键/确认键防抖与弹层焦点锁定。同签名，可直接覆盖安装",
   "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@4f89d9aeba95a1b421726ebfb59aee5b4ca63999/apk/ChinesePlayground.apk",
+  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@96a68c8f12124bb48f48f3744f3f60cf866bf9c4/apk/ChinesePlayground.apk",
   "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@4f89d9aeba95a1b421726ebfb59aee5b4ca63999/apk/ChinesePlayground.apk",
+  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@96a68c8f12124bb48f48f3744f3f60cf866bf9c4/apk/ChinesePlayground.apk",
   "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@4f89d9aeba95a1b421726ebfb59aee5b4ca63999/apk/ChinesePlayground.apk"
+  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@96a68c8f12124bb48f48f3744f3f60cf866bf9c4/apk/ChinesePlayground.apk"
 }
