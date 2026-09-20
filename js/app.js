@@ -122,12 +122,25 @@ function curUnit(){ return DATA.grades[state.gi].books[state.bi].u[state.ui]; }
 
 /* ===================== 渲染 ===================== */
 var app;
-function topbar(title, showBack){
+/* 顶栏右侧的第二个图标按钮：「热更自检」入口。
+   以前是 body 上一个 position:fixed 的飘浮圆钮（🛠️），电视上遥控器几乎选不中
+   —— 它离主内容太远，几何最近邻算出的分数永远排不到。放进顶栏后与 ⚙️ 同排，
+   方向键天然可以走到。手机上外观基本不变（仍是圆形小按钮）。
+   传 true 表示「是否显示热更自检入口」；传字符串则作为附加的 onclick。 */
+function topbar(title, showBack, extra){
+  var extraOnclick = (typeof extra === "string") ? extra : "renderHotDiag()";
   return '<div class="topbar">' +
     (showBack ? '<button class="back" onclick="goBack()">←</button>' : '<div class="spacer"></div>') +
     '<div class="title">' + title + '</div>' +
-    '<button class="gear" onclick="openSettings()">⚙️</button>' +
+    '<button class="gear hot" title="热更自检" onclick="' + extraOnclick + '">🛠️</button>' +
+    '<button class="gear" title="设置" onclick="openSettings()">⚙️</button>' +
     '</div>';
+}
+/* 首页在手机上把 🛠️ 藏起来（手机上长按/多次点设置标题也能进自检，界面更干净）；
+   电视上必须显示 —— 那里才是遥控器唯一走得通的入口。 */
+function homeTopbar(){
+  var isTV = !!(window.__isTV || (document.body && document.body.classList.contains("tv")));
+  return topbar("语文乐园", false, isTV ? "renderHotDiag()" : "openSettings()");
 }
 function render(){
   if(state.view === "home") return renderHome();
@@ -138,7 +151,7 @@ function render(){
 
 function renderHome(){
   app.innerHTML =
-    topbar("语文乐园", false) +
+    homeTopbar() +
     '<div class="hero">' +
       '<div class="mascot">🐼</div>' +
       '<h1>语文乐园</h1>' +
@@ -299,7 +312,9 @@ function tvBack(){
 }
 window.tvBack = tvBack;
 
-/* ===================== 热更自检 / 强制重新下载（可热更，不动冻结文件） ===================== */
+/* 「升级」入口 + 「热更自检」入口（可热更，不动冻结文件）。
+   2.4.1 起自检入口从飘浮圆钮搬进顶栏（电视上遥控器选不中飘浮圆钮，见 topbar 注释）。
+   这里保留一个「点标题 3 次」的隐形入口，方便手机上不开 UI 也能进自检。 */
 function renderHotDiag(){
   /* 注意：旧版用 !!window.PRAISE 判断「已热更」是假的——PRAISE 是内置全局、永远为真，
      会恒显「已热更」却无任何设备已装包信息。下面改用「本机实际跑的来源 + window.GAMES 真值」，
@@ -355,17 +370,28 @@ window.hotForceReload = function () {
     toast("已清除本地标记，请关闭 App 再重新打开以拉取内容");
   } catch (e) { toast("操作失败"); }
 };
+/* 旧版那个飘在右下角的 🛠️ 圆钮已移除（电视上遥控器选不中）。
+   为兼容「习惯找右下角」的手机用户，这里不放任何 UI，只在设置标题上留隐形入口：
+   点标题 3 次进自检。电视走顶栏按钮，不依赖它。 */
 (function () {
+  var taps = 0, last = 0;
+  function hook() {
+    var h = document.querySelector("#settingsModal .modal-card h3");
+    if (!h || h.__diagHooked) return;
+    h.__diagHooked = true;
+    h.addEventListener("click", function () {
+      var now = Date.now();
+      if (now - last > 900) taps = 0;
+      last = now; taps++;
+      if (taps >= 3) { taps = 0; try { closeSettings(); renderHotDiag(); } catch (e) {} }
+    });
+  }
   try {
-    if (document.getElementById("hotDiagBtn")) return;
-    var b = document.createElement("button");
-    b.id = "hotDiagBtn";
-    b.textContent = "🛠️";
-    b.title = "热更自检";
-    b.style.cssText = "position:fixed;right:8px;bottom:8px;z-index:9998;width:42px;height:42px;" +
-      "border-radius:50%;border:none;background:rgba(0,0,0,.16);font-size:20px;cursor:pointer";
-    b.onclick = function () { try { window.renderHotDiag(); } catch (e) {} };
-    document.body.appendChild(b);
+    document.addEventListener("click", function (e) {
+      var t = e.target;
+      if (t && t.classList && t.classList.contains("gear") && t.title === "设置") setTimeout(hook, 60);
+    }, true);
+    window.addEventListener("load", function () { setTimeout(hook, 300); });
   } catch (e) {}
 })();
 

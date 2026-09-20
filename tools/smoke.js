@@ -10,7 +10,9 @@
 const fs=require('fs'), path=require('path');
 const {JSDOM}=require('jsdom');
 const root=__dirname+'/..';
-const BUILTIN=["js/cp.js","js/data-c1.js","js/data-c2.js","js/data-c3.js","js/data-c4.js","js/data-c5.js","js/data-c6.js","js/strokes.js","js/data-poem.js","js/data-word.js","js/tts.js","js/praise.js","js/pics.js","js/games.js","js/game-battle.js","js/app.js","js/tv.js","js/update.js"];
+const BUILTIN=["js/cp.js","js/data-c1.js","js/data-c2.js","js/data-c3.js","js/data-c4.js","js/data-c5.js","js/data-c6.js","js/strokes.js","js/data-poem.js","js/data-word.js","js/tts.js","js/praise.js","js/pics.js","js/games.js","js/game-battle.js","js/app.js","js/tv-tune.js","js/tv.js","js/update.js"];
+/* ↑ 顺序必须与 js/boot.js 的 BUILTIN 一致（boot.js 是冻结文件、不在本测试范围内，
+   这里手抄一份）。tv-tune.js 必须在 tv.js 之前，否则 applyScale 读不到调参表。 */
 const dom=new JSDOM(fs.readFileSync(root+'/index.html','utf8').replace('<script src="js/boot.js"></script>',''),{runScripts:'dangerously',pretendToBeVisual:true,url:'http://local.test/index.html'});
 const w=dom.window;
 // 模拟 TV + 无 speechSynthesis
@@ -156,6 +158,57 @@ console.log('\n=== battle exit regression ===');
       await checkView('game:' + gid);
     }
     console.log('  各界面焦点落在顶栏按钮: ' + (onGear ? '❌ ' + onGear + '/' + checked : '✅ 0/' + checked));
+
+    /* ②a-2 顶栏方向键可达性（2.4.1 修「遥控器点不到热更按钮」）：
+       home 页从左到右应依次经过 ←(或占位) / 🛠️ 热更 / ⚙️ 设置；
+       逐个按 → 必须能走到 🛠️，这是用户唯一能进的更新入口。
+       原来 🛠️ 是 body 上的飘浮圆钮，这条断言会失败 —— 正是要防的回归。 */
+    try {
+      w.state.view = 'home'; w.render(); await sleep(60);
+      const gears = [...doc.querySelectorAll('#app .topbar .gear')];
+      const hot = doc.querySelector('#app .topbar .gear.hot');
+      console.log('  顶栏按钮数（应为 2：🛠️ + ⚙️）: ' + gears.length);
+      if (!hot) {
+        console.log('  ❌ 顶栏没有 🛠️ 热更入口');
+      } else {
+        /* 两个方向都要能走到：① 从内容按「上」直接吸附顶栏；
+           ② 到顶栏后按「←」在顶栏内部横向移动。 */
+        const seen = [];
+        let reach = false;
+        const dump = (tag, a) => seen.push(tag + (a ? (a.className || a.tagName) : 'null'));
+        /* jsdom 不做布局：getBoundingClientRect 全返回 0，方向键最近邻会退化成
+           「挑第一个」，焦点回归会假通过（2.4.1 排查「遥控器点不到热更按钮」时踩过）。
+           这里给三个关键角色铺一层最小可信的几何：顶栏横条在上、🛠️/⚙️ 在顶栏右侧、
+           内容按钮在中部。只服务焦点测试，不追求真实布局精度。 */
+        const _rect = w.Element.prototype.getBoundingClientRect;
+        w.Element.prototype.getBoundingClientRect = function () {
+          const cl = (this.classList && this.classList) || null;
+          if (cl && cl.contains('topbar')) return { left: 0, top: 0, right: 1200, bottom: 60, width: 1200, height: 60, x: 0, y: 0 };
+          if (cl && cl.contains('gear')) {
+            const isHot = cl.contains('hot');
+            return { left: isHot ? 1000 : 1080, top: 8, right: isHot ? 1080 : 1152, bottom: 52, width: 80, height: 44, x: 0, y: 0 };
+          }
+          if (this.tagName === 'BUTTON') return { left: 400, top: 300, right: 800, bottom: 360, width: 400, height: 60, x: 0, y: 0 };
+          return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 };
+        };
+        req = (key) => ({
+          dispatch: () => { w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key, bubbles: true })); },
+        });        for (let i = 0; i < 3 && !reach; i++) {
+          req('ArrowUp').dispatch();
+          await sleep(30);
+          const a = act(); dump('↑', a);
+          if (a === hot) reach = true;
+        }
+        for (let i = 0; i < 4 && !reach; i++) {
+          req('ArrowLeft').dispatch();
+          await sleep(30);
+          const a = act(); dump('←', a);
+          if (a === hot) reach = true;
+        }
+        w.Element.prototype.getBoundingClientRect = _rect;
+        console.log('  方向键走到 🛠️ 热更入口: ' + (reach ? '✅ 可以' : '❌ 走不到 → ' + seen.join(' / ')));
+      }
+    } catch (e) { console.log('  顶栏可达性检查异常: ' + e.message); }
 
     // ②b 真实路径：在设置里改完 → 按返回关掉 → 再进下一个界面。
     //    旧 bug 就出在这条路上：关掉弹层后 activeElement 还留在弹层残留节点里，

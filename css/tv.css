@@ -78,6 +78,19 @@ body.tv .topbar .title {
 }
 body.tv .topbar .spacer { width: 52px; width: calc(52px * var(--s, 1)); }
 
+/* 顶栏的「热更自检」入口（以前是右下角一个飘在页面上的 🛠️ 圆钮）。
+   电视上那个位置在遥控器导航里几乎选不中 —— 圆钮被 body 直接持有、
+   离主内容很远，几何最近邻算法算出的分数永远排不到，用户按遍方向键也摸不到。
+   （用户原话：「TV版遥控器是点不到更新的这个锤子的」。）
+   修法：把入口从「飘浮按钮」改成「顶栏里的普通按钮」，与 ⚙️ 同排同尺寸，
+   焦点顺序天然接在顶栏之后，方向键一定能走到；文字用「🛠️ 热更」加大命中面积。 */
+body.tv .topbar .gear.hot {
+  width: auto; width: calc(86px * var(--s, 1)); height: 52px; height: calc(52px * var(--s, 1));
+  padding: 0 10px; padding: 0 calc(10px * var(--s, 1));
+  font-size: 20px; font-size: calc(20px * var(--s, 1));
+  white-space: nowrap;
+}
+
 /* ------------------------------------------------------------ 3. 首页 */
 body.tv .hero { padding: 2vh 10px 1vh; }
 body.tv .mascot { font-size: 90px; font-size: calc(90px * var(--s, 1)); }

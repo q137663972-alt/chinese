@@ -193,6 +193,48 @@
     var r0 = cur.getBoundingClientRect();
     var cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
     var best = null, bestScore = Infinity;
+
+    /* 左右键的「同排优先」：方向键默认取几何最近邻，
+       但顶栏按钮（← / 标题 / 🛠️ / ⚙️）与主内容不在同一水平带，
+       纯距离算分时，同一排的相邻按钮可能输给下方更靠左的大卡片 ——
+       表现就是「想去顶栏的热更/设置按钮，按左右却总在下面几排跳」。
+       这里给同一水平带的元素一个显著加权，保证左右键先走完同一排。
+       只影响左右键，上下键逻辑不变。 */
+    var hRow = Math.max(24, r0.height * 0.9);
+    var sameRowBoost = (dir === "left" || dir === "right") ? 0.35 : 1;
+
+    /* 【上下键补丁 · 2.4.1】顶栏（← / 🛠️ / ⚙️）在最上方，从主内容按「上」时
+       最近邻会先跳到紧贴顶栏的大卡片，用户要连按好几次才够得着顶栏 ——
+       机上表现就是「热更/设置按钮在顶上够不到」。
+       这里只在「还没跨过顶栏」的前提下让上键优先吸附顶栏：
+       当前元素在顶栏下沿以下、且存在横向重叠的顶栏按钮时，直接把焦点交给它。
+       横向不重叠的（例如左下角按钮）不受影响，仍按就近原则走。 */
+    if (dir === "up") {
+      var bars = $all("#app .topbar");
+      for (var bi = 0; bi < bars.length; bi++) {
+        var bar = bars[bi];
+        if (bar.offsetParent === null) continue;
+        var br = bar.getBoundingClientRect();
+        if (r0.top < br.bottom - 2) continue;        // 已经在顶栏里/之上了
+        var cands = $all(".gear, .back", bar).filter(function (el) {
+          if (el.offsetParent === null || el === cur) return false;
+          var cr = el.getBoundingClientRect();
+          return cr.left < r0.right && cr.right > r0.left;   // 横向有重叠
+        });
+        if (cands.length) {
+          /* 多个候选时取横向最接近的（例如从右下方按上 → 先够到 ⚙️ 而不是 🛠️） */
+          var pick = cands[0], pd = Infinity;
+          cands.forEach(function (el) {
+            var cr = el.getBoundingClientRect();
+            var d = Math.abs((cr.left + cr.width / 2) - cx);
+            if (d < pd) { pd = d; pick = el; }
+          });
+          focusAt(pick);
+          return;
+        }
+      }
+    }
+
     list.forEach(function (el) {
       if (el === cur) return;
       var r = el.getBoundingClientRect();
@@ -203,7 +245,7 @@
       if (!inDir) return;
       var primary = (dir === "left" || dir === "right") ? Math.abs(dx) : Math.abs(dy);
       var cross = (dir === "left" || dir === "right") ? Math.abs(dy) : Math.abs(dx);
-      var score = primary + cross * 2.2;
+      var score = primary + cross * 2.2 * (Math.abs(dy) <= hRow ? sameRowBoost : 1);
       if (score < bestScore) { bestScore = score; best = el; }
     });
     if (best) focusAt(best);
