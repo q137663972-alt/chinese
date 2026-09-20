@@ -44,6 +44,7 @@
     "js/games.js",
     "js/game-battle.js",
     "js/app.js",
+    "js/tv-tune.js",
     "js/tv.js",
     "js/update.js"
   ];

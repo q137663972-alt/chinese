@@ -156,20 +156,32 @@
      on Android TV」）。这里乘以 devicePixelRatio 还原物理分辨率再分档 ——
      与 Android TV 官方按物理档位给 dp 资源的做法一致。 */
   function applyScale() {
-    var dpr = window.devicePixelRatio || 1;
+    /* 全部取值都过 num()：tv-tune.js 缺失、字段写错、热更包没下发，
+       都只是退回内置默认显示，绝不白屏也不会 NaN。 */
+    var T = (typeof window.TV_TUNE === "object" && window.TV_TUNE) || {};
+    function num(v, d) { return (typeof v === "number" && isFinite(v)) ? v : d; }
+
+    var dpr = T.dprFix === false ? 1 : (window.devicePixelRatio || 1);
     var vw = (window.innerWidth || 0) * dpr, vh = (window.innerHeight || 0) * dpr;
     var w = Math.max(vw, window.screen ? (window.screen.width || 0) * dpr : 0);
     var h = Math.max(vh, window.screen ? (window.screen.height || 0) * dpr : 0);
-    var s = 1.2;
-    if (w >= 3000 || h >= 1700) s = 2.2;        // 4K
-    else if (w >= 2300 || h >= 1300) s = 1.8;   // 2K
-    else if (w >= 1700 || h >= 950) s = 1.5;    // 1080p
-    else if (w >= 1100 || h >= 620) s = 1.25;   // 720p
+
+    var DEF_TIERS = [[3000, 1700, 2.2], [2300, 1300, 1.8], [1700, 950, 1.5], [1100, 620, 1.25]];
+    var tiers = (T.tiers && T.tiers.length) ? T.tiers : DEF_TIERS;
+    var s = num(T.base, 1.2);
+    for (var i = 0; i < tiers.length; i++) {
+      var t = tiers[i] || [];
+      if (w >= num(t[0], Infinity) || h >= num(t[1], Infinity)) { s = num(t[2], s); break; }
+    }
+    var force = num(T.forceScale, 0);
+    if (force > 0) s = force; else s = s * num(T.scaleK, 1);
+    s = Math.min(Math.max(s, num(T.minScale, 0.7)), num(T.maxScale, 3));
+
     var st = document.documentElement.style;
     st.setProperty("--s", String(s));
     var vhp = (window.innerHeight || 720);
-    st.setProperty("--tian", Math.round(Math.min(340 * s, vhp * 0.42)) + "px");
-    st.setProperty("--pic", Math.round(Math.min(260 * s, vhp * 0.34)) + "px");
+    st.setProperty("--tian", Math.round(Math.min(num(T.tianK, 340) * s, vhp * num(T.tianMaxVh, 0.42))) + "px");
+    st.setProperty("--pic", Math.round(Math.min(num(T.picK, 260) * s, vhp * num(T.picMaxVh, 0.34))) + "px");
   }
 
   // 方向键：几何最近邻（主轴距离 + 垂直偏移惩罚）

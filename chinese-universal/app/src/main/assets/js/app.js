@@ -19,7 +19,7 @@ setGrades();
 /* ===================== 状态 & 进度 ===================== */
 var MODES = [
   { id:"listen",    name:"听音选字",   icon:"🔊", desc:"听读音，选出那个字" },
-  { id:"picture",   name:"看图识字",   icon:"👀", desc:"看图片，认出对应的字" },
+  /* 2026-09-20 应要求下线「看图识字」：同步根 js/games.js 的 registerGame 注释，避免 MODES 兜底清单里仍暴露该玩法 */
   { id:"pinyin",    name:"拼音配对",   icon:"🔤", desc:"读拼音，找出汉字" },
   { id:"wordfill",  name:"组词填空",   icon:"📝", desc:"把词语补完整" },
   { id:"eliminate", name:"生字消消乐", icon:"💥", desc:"字和词语配成一对消掉" },
@@ -301,17 +301,27 @@ window.tvBack = tvBack;
 
 /* ===================== 热更自检 / 强制重新下载（可热更，不动冻结文件） ===================== */
 function renderHotDiag(){
-  var hot = !!window.PRAISE;
-  var hasBattle = (window.GAMES || []).some(function (g) { return g.id === "battle"; });
+  /* 注意：旧版用 !!window.PRAISE 判断「已热更」是假的——PRAISE 是内置全局、永远为真，
+     会恒显「已热更」却无任何设备已装包信息。下面改用「本机实际跑的来源 + window.GAMES 真值」，
+     一眼看清设备到底在用哪个包、看图识字到底删没删掉。 */
+  var localBuild = window.__HOT_BUILD || "";
+  var remoteBuild = window.__REMOTE_BUILD || "(未测试)";
+  var games = window.GAMES || [];
+  var hasBattle = games.some(function (g) { return g.id === "battle"; });
+  var hasPicture = games.some(function (g) { return g.id === "picture"; });
   var base = window.HOT_BASE || "(未知)";
+  var source = localBuild ? ("热更包（build=" + localBuild + "）") : "内置版（无本地热更包）";
   app.innerHTML = topbar("热更自检", true) +
     '<div class="result-box" style="text-align:left;font-size:15px;line-height:2">' +
-      '当前内容：' + (hot ? '✅ 已热更（特效/语音可用）' : '❌ 内置版（没拉到热更包）') + '<br>' +
+      '本机运行来源：' + source + '<br>' +
+      '本地已装 build：' + (localBuild || "(无)") + '<br>' +
+      '远程最新 build：' + remoteBuild + '<br>' +
+      '看图识字是否进玩法列表：' + (hasPicture ? '❌ 仍在（id=picture 已注册，删除未生效）' : '✅ 已移除（window.GAMES 无 picture）') + '<br>' +
       '知识圈玩法：' + (hasBattle ? '✅ 已在玩法列表' : '❌ 未出现') + '<br>' +
       '热更源：<span style="word-break:break-all">' + base + '</span><br>' +
       '连通性：<span id="hotCon">未测试</span><br>' +
-      '<span style="color:var(--sub);font-size:13px">若显示「没拉到热更包」，多半是手机够不到 ' +
-      'github.io（大陆网络常受限）。点「强制重新下载」可清除本地黑名单后重试。</span>' +
+      '<span style="color:var(--sub);font-size:13px">判读：本机运行来源=本地已装包；看图识字是否进列表=' +
+      'window.GAMES 实际注册结果。两者结合即知设备真实状态，不再被假「已热更」误导。</span>' +
     '</div>' +
     '<div class="row" style="margin-top:12px">' +
       '<button class="btn ghost" onclick="hotTestConn()">🔌 测试连通</button>' +
@@ -334,6 +344,7 @@ window.__hotDiag = function (txt) {
   if (txt == null) { el.textContent = "❌ 拉取失败（手机够不到该地址）"; return; }
   try {
     var m = JSON.parse(txt);
+    window.__REMOTE_BUILD = m.build || "?";
     el.textContent = "✅ 可达，线上 build=" + (m.build || "?");
   } catch (e) { el.textContent = "⚠️ 返回了非预期内容"; }
 };
