@@ -179,6 +179,69 @@ async function main() {
   chk(typeof w.__setSubject === "function", "__setSubject 可用（换学科底座）");
   chk(typeof w.__pickSubject === "function", "__pickSubject 可用（设置里的换学科）");
 
+  /* ★ 2026-09-20 现场事故（第三条）：进去能看到三张卡，三五秒后自己跳进语文。
+     根因是老内置清单第一个 js/app.js（语文主程序）先跑完了，选学科页只是叠在上面，
+     被语文的定时器/二次渲染翻回去。
+     修法：资源包把根级 js/app.js 换成「看门人」—— 没选学科就渲染选学科页并收工，
+     一个学科文件都不加载。
+     ★ 断言：等一段时间（足够语文的延迟渲染/定时器发作），选学科页必须还在。
+       把看门人改回纯空壳，这一条必红（负向验证过）。 */
+  await sleep(1500);
+  const h3 = htmlOf(w);
+  chk((h3.match(/subj-card/g) || []).length === 3,
+      "静置 1.5 秒后选学科页仍在（没被学科代码顶掉）",
+      "残留 " + (h3.match(/subj-card/g) || []).length + " 张卡");
+  /* ★★ 这条才是本次事故的真靶子（负向验证过：空壳必红）★★
+     老 boot.js 的追加规则会把资源包里所有"新的" js/*.js 塞到队尾，
+     但**顶掉同路径的那几个（含 js/app.js）不在追加之列** —— 它们是被"覆盖"的。
+     真正会跑起来的是 bridge.js；而 bridge.js 在"未选学科"分支里
+     绝不能去加载任何一科的 app.js。这里直接盯着"哪个学科文件被执行了"：
+       · 看门人失效（改回空壳）时的症状是——语文那一套从别处跑起来、渲染出语文首页，
+         把选学科页翻掉。所以断言必须能区分"页面上是哪一屏"。
+       · 判据用 .subj-grid（选学科页独有）与各科首页独有的 class。
+     同时断言 window.render：它是三科 app.js 的顶层函数，任何一科跑过都会留下它。 */
+  const h3b = htmlOf(w);
+  chk(/subj-grid/.test(h3b), "选学科页骨架 .subj-grid 还在（没被学科首页替换）");
+  chk(!/开始学习/.test(h3b), "页面上没有出现学科首页内容（≠ 自动跳进了某一科）");
+  chk(typeof w.render !== "function",
+      "未选学科时没有任何学科 App 被执行（window.render 不该存在）",
+      "实际 " + typeof w.render);
+  chk(typeof w.state === "undefined",
+      "未选学科时没有学科全局变量泄漏（window.state 不该存在）",
+      "实际 " + typeof w.state);
+
+  /* ★★ 本组的"负向对照"必须在同一段里现做，不能只靠改文件 ★★
+     上面那些断言为什么在"看门人改回空壳"时依然全绿？因为这份冒烟把
+     老内置清单里的 js/app.js 映射到了 legacy/js/app.js —— 而 legacy/js/app.js
+     本身就是看门人，语文那一套**从来没被注进来过**，所以测不出"空壳会怎样"。
+     真实老设备上，boot.js 内置清单里的 js/app.js 是原版语文主程序，
+     它会被资源包同路径覆盖成"资源包里的那一份"。所以要模拟的是：
+       「资源包没有顶掉它时 / 顶成空壳时」会发生什么。
+     这里直接把原版语文 app.js（内置资产）注进来复现事故 —— 它必须能把
+     选学科页翻掉，这样才证明"看门人"这件事是有意义的、不是自我安慰。 */
+  {
+    const wBad = mkWindow("");
+    LEGACY_BUILTIN.forEach((p) => {
+      /* 这一路的 js/app.js 故意用"内置原版"（cn/js/app.js），
+         也就是"资源包没顶掉它"的那种现场状态 */
+      const target = p === "js/app.js" ? "cn/js/app.js" : OLD2NEW(p);
+      runInline(wBad, target);
+    });
+    runInline(wBad, "legacy/js/bridge.js");
+    runInline(wBad, "js/subject.js");
+    await sleep(1200);
+    const hBad = htmlOf(wBad);
+    const cardsBad = (hBad.match(/subj-card/g) || []).length;
+    console.log("     ↳ 负向对照（内置原版语文 app.js 未被顶掉）：" +
+                "subj-card " + cardsBad + " 张 / render=" + typeof wBad.render);
+    /* 这一条不是"要求通过"，而是要求"必须确认到破坏性" ——
+       如果连原版语文 app.js 都翻不掉选学科页，说明我们的复刻不真实，
+       那么上面那几条绿色断言也就没有说服力。 */
+    chk(cardsBad !== 3 || typeof wBad.render === "function",
+        "负向对照成立：内置原版语文跑起来确实能破坏选学科页（证明看门人必要）",
+        "subj-card " + cardsBad + " / render=" + typeof wBad.render);
+  }
+
   /* ---------- ② 选了数学 → 应当加载数学那一套 ---------- */
   for (const s of ["cn", "math", "en"]) {
     console.log("\n──── ② 已选学科 " + s + " ────");

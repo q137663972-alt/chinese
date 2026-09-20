@@ -1,0 +1,133 @@
+/* =====================================================================
+ * 学习乐园 · 选学科页专用样式（三科共用）· css/picker.css
+ * ---------------------------------------------------------------------
+ * 2026-09-20 新增。以前选学科页的样式寄生在 css/shell.css 里，
+ * 带来两个问题，所以单独拆出来一份：
+ *
+ *   ① 【机顶盒上太小】手机/浏览器上 body 没有 .tv，于是永远走
+ *      「基础值 14px / 20px」那条 —— 而机顶盒报告的是"物理分辨率下的 CSS 视口"
+ *      （1080p 盒子 = 960×540 CSS px，比很多手机还窄），基础值在这类屏上偏小，
+ *      遥控器焦点又不容易看出落在哪张卡。这里改成按视口宽度自适应放大。
+ *
+ *   ② 【改一次要动 shell.css】选学科页是"随时可能改文案/加科目"的页面，
+ *      单独一份文件改起来更安全，也不会牵连三科共用的壳样式。
+ *
+ * 【安卓 8 机顶盒红线】同 css/tv.css：一律不用 clamp()/min()/max()/aspect-ratio/
+ * inset/env() —— 老 WebView 会把整条声明丢掉。这里只用：
+ *   · 媒体查询（Chrome 早就支持）
+ *   · calc() + CSS 变量（Chrome 49+）
+ *   · 固定的两条宽度断点，不做数学函数
+ *
+ * 【加载顺序】shell.css → picker.css → 学科 style.css → tv.css
+ * 本文件在学科样式之前、tv.css 之后加载（tv.css 的 body.tv 规则优先级最高）。
+ * ===================================================================== */
+
+/* ---------------------------------------------------------------- 基础（手机） */
+.subj-head { text-align: center; padding: 26px 12px 12px; }
+.subj-head .logo { font-size: 60px; line-height: 1; }
+.subj-head h1 {
+  font-size: 30px; margin: 10px 0 6px;
+  background: linear-gradient(90deg, var(--pink, #ff8fb1), var(--purple, #9b7bff));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.subj-head p { color: var(--sub, #8a90a8); margin: 0; font-size: 15px; }
+
+.subj-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 14px;
+  gap: 14px;
+  margin-top: 18px;
+}
+.subj-card {
+  display: flex; align-items: center;
+  border-radius: 20px;
+  padding: 18px 16px;
+  min-height: 92px;              /* 遥控器焦点目标够大 */
+  box-sizing: border-box;
+  outline: none;
+}
+.subj-card .s-emoji { font-size: 46px; line-height: 1; flex: 0 0 auto; }
+.subj-card .s-body { flex: 1; min-width: 0; padding-left: 6px; }
+.subj-card .s-name { font-weight: 800; font-size: 22px; }
+.subj-card .s-desc { color: var(--sub, #8a90a8); font-size: 14px; margin-top: 4px; line-height: 1.4; }
+.subj-card .s-go { font-size: 24px; color: var(--purple, #9b7bff); flex: 0 0 auto; }
+.subj-card.cn   { border-color: #ffd9e1; }
+.subj-card.math { border-color: #cdeaff; }
+.subj-card.en   { border-color: #e2d8ff; }
+
+/* 焦点环：遥控器/键盘焦点必须一眼看出来 */
+.subj-card:focus,
+.subj-card.focused {
+  box-shadow: 0 0 0 4px rgba(155, 123, 255, .38);
+  transform: translateY(-2px);
+}
+
+.subj-tip  { text-align: center; color: var(--sub, #8a90a8); font-size: 14px; margin-top: 18px; line-height: 1.6; }
+.subj-foot { text-align: center; color: var(--sub, #8a90a8); font-size: 13px; margin-top: 18px; }
+
+/* ---------------------------------------------------------------- 按视口宽度放大
+ * 机顶盒的 CSS 视口窄（1080p = 960×540），但屏幕物理尺寸大、离得远；
+ * 平板同理想法。这里不做分辨率的数学判断，只用「视口有多宽」这一个朴素信号：
+ *   ≥900px（1080p 及以上机顶盒 / 横屏平板）→ 基础字号 20px 起
+ *   ≥560px（大屏手机横屏 / 720p 盒子）      → 基础字号 17px 起
+ * 全部走 calc(基础 × var(--s, 1))；--s 由 js/tv.js 写入（手机上是 1，等于没缩放）。 */
+@media (min-width: 560px) {
+  .subj-head { padding: 30px 12px 14px; }
+  .subj-head .logo { font-size: calc(66px * var(--s, 1)); }
+  .subj-head h1 { font-size: calc(34px * var(--s, 1)); }
+  .subj-head p { font-size: calc(17px * var(--s, 1)); }
+  .subj-grid {
+    grid-gap: calc(16px * var(--s, 1));
+    gap: calc(16px * var(--s, 1));
+    margin-top: calc(20px * var(--s, 1));
+  }
+  .subj-card {
+    border-radius: calc(22px * var(--s, 1));
+    padding: calc(20px * var(--s, 1)) calc(18px * var(--s, 1));
+    min-height: calc(96px * var(--s, 1));
+  }
+  .subj-card .s-emoji { font-size: calc(52px * var(--s, 1)); }
+  .subj-card .s-name  { font-size: calc(25px * var(--s, 1)); }
+  .subj-card .s-desc  { font-size: calc(16px * var(--s, 1)); margin-top: calc(5px * var(--s, 1)); }
+  .subj-card .s-go    { font-size: calc(27px * var(--s, 1)); }
+  .subj-tip  { font-size: calc(16px * var(--s, 1)); }
+  .subj-foot { font-size: calc(14px * var(--s, 1)); }
+}
+
+@media (min-width: 900px) {
+  .subj-head { padding: 34px 12px 16px; }
+  .subj-head .logo { font-size: calc(74px * var(--s, 1)); }
+  .subj-head h1 { font-size: calc(38px * var(--s, 1)); }
+  .subj-head p { font-size: calc(18px * var(--s, 1)); }
+  .subj-grid {
+    /* 宽屏下三张卡左右排开，一屏看全、遥控器左右移动更自然 */
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: calc(18px * var(--s, 1));
+    gap: calc(18px * var(--s, 1));
+    margin-top: calc(22px * var(--s, 1));
+  }
+  .subj-card {
+    flex-direction: column;
+    text-align: center;
+    border-radius: calc(26px * var(--s, 1));
+    padding: calc(26px * var(--s, 1)) calc(20px * var(--s, 1));
+    min-height: calc(210px * var(--s, 1));
+    justify-content: center;
+  }
+  .subj-card .s-body { padding: calc(10px * var(--s, 1)) 0 0; }
+  .subj-card .s-emoji { font-size: calc(64px * var(--s, 1)); }
+  .subj-card .s-name  { font-size: calc(28px * var(--s, 1)); }
+  .subj-card .s-desc  { font-size: calc(17px * var(--s, 1)); }
+  .subj-card .s-go    { display: none; }   /* 竖排卡片不需要那个 › */
+  .subj-tip  { font-size: calc(17px * var(--s, 1)); }
+  .subj-foot { font-size: calc(15px * var(--s, 1)); }
+}
+
+/* 竖屏窄屏手机上不排三列，避免卡片被压扁 */
+@media (min-width: 900px) and (orientation: portrait) {
+  .subj-grid { grid-template-columns: 1fr; }
+  .subj-card { flex-direction: row; text-align: left; min-height: calc(96px * var(--s, 1)); }
+  .subj-card .s-body { padding: 0 0 0 6px; }
+  .subj-card .s-go { display: block; }
+}

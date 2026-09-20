@@ -13,10 +13,25 @@
  * 两条合起来等于：**不出新 APK，也能让老 App 换一套加载行为。**
  * 改 boot.js 那条路是不许走的（手册 §0 铁律）—— 这次走的是这儿。
  *
+ * 【★ 2026-09-20 现场事故：老机上选学科页是"闪一下就没了"】
+ *   现象：进去能看到语文/数学/英语三张卡，三五秒后自动跳进语文。
+ *   根因：老 boot.js 的内置清单里**第一个**是 js/app.js，语文那一整套会先跑完
+ *         （它自己有"没选学科就默认语文"的逻辑），渲染出语文首页；
+ *         之后本文件才被注入，才轮到选学科页 —— 于是选学科页只是"覆盖"了一下，
+ *         而语文那边还在跑（自动进入、定时器、二次渲染都会把它翻回来）。
+ *   解法：**让语文那套根本不执行**。资源包把 js/app.js 换成的不是空壳，
+ *         而是一个"先判断有没有选过学科、没选就直接渲染选学科页并 return"的小文件
+ *         （见 legacy/js/app.js）。它排在第一位，于是页面上从来就没有语文跑起来过，
+ *         用户选完学科 reload 之后它才放行真正的学科文件。
+ *   附带好处：无论用户怎么退出重进，只要没选学科就一定会停在选择页 ——
+ *         这正是用户最初的要求（"进去能发现语文数学英语选项，不要自己跳走"）。
+ *
  * 【配套还必须有三个空壳】
- *   老的 boot.js 一定会先把语文那一整套注进来。为了不和后面加载的学科重复打架，
- *   资源包里同时顶掉了 js/app.js / js/games.js / js/game-battle.js / js/update.js
- *   （内容见同目录的几个空壳），真正干活的是本文件动态加载的那一份。
+ *   老的 boot.js 一定会先把语文那一整套注进来。资源包里同时顶掉了
+ *   js/app.js / js/games.js / js/game-battle.js / js/update.js 这四个根级路径：
+ *     · js/app.js    → 不再是空壳，是"选学科看门人"（见上）
+ *     · js/games.js / js/game-battle.js / js/update.js → 纯空壳
+ *   真正干活的是本文件动态加载的那一份学科文件。
  *   不然同一份 app.js 被执行两遍，连点击监听器都会挂两份 —— 按一下走两步。
  * ============================================================================== */
 (function () {
@@ -166,13 +181,35 @@
   var cur = get(KEY);
 
   if (!cur || !SUBJECTS[cur]) {
-    /* ===== 还没选：进选学科页 ===== */
+    /* ===== 还没选：必须停在选学科页 ===== */
     if (cur) set(KEY, "");          // 脏数据：写错学科名时别卡死在选择页
     mountCss(null);
     window.APP_SUBJECT = "";
-    loadSeq(["js/subject.js"], function () {
-      log("选学科页就绪");
-    });
+    log("未选学科 → 渲染选学科页（不加载任何学科）");
+
+    /* subject.js 可能已经被老 boot.js 里的看门人（覆盖掉的 js/app.js）加载过了。
+       这里直接调它的渲染函数，不再重复注入 —— 重复注入会 render() 两遍。 */
+    function paintPicker() {
+      if (typeof window.__renderSubjectPicker === "function") {
+        try { window.__renderSubjectPicker(); log("选学科页就绪（复用已加载的 subject.js）"); return true; }
+        catch (e) { log("renderSubjectPicker 失败 " + e); }
+      }
+      return false;
+    }
+    if (!paintPicker()) {
+      loadSeq(["js/subject.js"], function () { paintPicker(); });
+    }
+
+    /* ★ 兜底重绘：万一有别的脚本把 #app 覆盖了（学科遗留的定时器 / 二次 render），
+       把选学科页抢回来。只在"确实被覆盖"时才动手，不做无脑刷新。 */
+    var guard = 0;
+    var iv = setInterval(function () {
+      guard++;
+      var el = document.getElementById("app");
+      var ok = !!(el && el.querySelector(".subj-grid"));
+      if (!ok) { log("选学科页被覆盖，重绘第 " + guard + " 次"); paintPicker(); }
+      if (guard >= 20) clearInterval(iv);       // 最多守 20 秒，之后交给用户
+    }, 1000);
     return;
   }
 

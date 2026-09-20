@@ -113,26 +113,31 @@ const codeFiles = [
 /* ★ 老 APK 兼容层（2.4.x 及更早）。
    那一批 App 的 boot.js 清单写死是 js/app.js 这样的根级路径，boot.js 又热更不到 ——
    所以只能靠「同路径覆盖 + 追加注入」两条口子把它们接到三科上来：
-     · js/app.js / games.js / game-battle.js / update.js —— 覆盖成空壳，
-       挡住老 boot.js 先把语文那一整套注进来（否则同一份 app.js 跑两遍，监听器挂双份）；
+     · js/app.js —— 覆盖成「选学科看门人」（**不是空壳**）。
+       它是老清单的第一个脚本，位置决定了它能抢在所有学科代码之前判断：
+       没选过学科就直接渲染选学科页并收工，一个学科文件都不加载。
+       ★ 2026-09-20 现场事故：原先这里是纯空壳，结果老清单里的语文 app.js 先跑完了
+         —— 用户能看到三科卡片，三五秒后自己跳进语文（语文的定时器/二次渲染翻回来）。
+         空壳挡不住"语文已经跑起来"这件事，必须换成看门人。
+     · js/games.js / game-battle.js / update.js / data-*.js / cp.js / strokes.js /
+       pics.js / tts.js / praise.js —— 纯空壳，挡住老 boot.js 把语文那一整套注进来
+       （否则同一份 app.js 跑两遍，监听器挂双份、数据多解析一轮）。
      · js/bridge.js —— 老 boot.js 会无条件追加注入任何符合 ^js/.+\.js$ 的新文件，
        它进来之后自己动态加载真正的那一科。
    目标路径必须落在老布局的根级 js/ 下，写错一个字符这份兼容就静默失效。
    新版 App（2.5.0+）的清单里没有这些路径，对它们无害。
-   · 上面这些之外，老清单里的 cp.js / data-*.js / strokes.js / pics.js /
- *     tts.js / praise.js 也一并盖成空壳 —— 那一科的每一个文件都必须只被加载一次。
- *     内置那份一旦留在原位，就会被跑两遍：监听器挂双份、几 MB 的数据再多解析一轮，
- *     机顶盒上表现为启动明显变卡、点一下走两步。
- *     ★ 唯一的例外是共享层 js/tv.js 与 js/tv-tune.js：三科共用一份，
- *       必须留在老清单里由 boot.js 加载一次，绝不能让桥接层再加载第二遍。 */
+   ★ 唯一的例外是共享层 js/tv.js 与 js/tv-tune.js：三科共用一份，
+     必须留在老清单里由 boot.js 加载一次，绝不能让桥接层再加载第二遍。 */
 const LEGACY_STUBS = [
-  "app.js", "games.js", "game-battle.js", "update.js",
+  "games.js", "game-battle.js", "update.js",
   "cp.js", "tts.js", "praise.js",
   "data-c1.js", "data-c2.js", "data-c3.js", "data-c4.js", "data-c5.js", "data-c6.js",
   "data-poem.js", "data-word.js", "strokes.js", "pics.js",
 ];
 const LEGACY_MAP = [
   ["legacy/js/bridge.js", "js/bridge.js"],
+  /* 看门人：和空壳分开列，免得以后有人顺手把它挪进 STUBS 又变成"纯空壳" */
+  ["legacy/js/app.js", "js/app.js"],
   ...LEGACY_STUBS.map((n) => ["legacy/js/" + n, "js/" + n]),
 ].filter(([src]) => fs.existsSync(path.join(ROOT, src)));
 

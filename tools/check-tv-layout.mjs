@@ -252,5 +252,105 @@ console.log("\n──── ⑥ 分辨率分档不双重乘 dpr ────");
   }
 }
 
+/* ---------- ⑦ 选学科页在窄视口下必须放大 ----------
+   2026-09-20 现场事故（第二条）：1080p 机顶盒的 CSS 视口只有 960×540，
+   而选学科页原先寄居在 css/shell.css 里、只有"基础值"（字号 12~20px），
+   在这类屏上小到遥控器都看不清焦点。
+   规则：css/picker.css 必须存在，且必须带「按视口宽度放大的断点」。
+   ★ 不许用 clamp()/min()/max() 来做这个放大 —— 老 WebView 会整条丢弃，
+     必须用 @media 断点 + calc(基础 × var(--s))。 */
+console.log("\n──── ⑦ 选学科页在窄视口下会放大 ────");
+{
+  const pk = read("css/picker.css");
+  chk(!!pk, "css/picker.css 存在（选学科页有独立样式文件）");
+  if (pk) {
+    /* ★ 必须把 @media 的整行条件抠出来单独判，不能在整个文件里找 "min-width: 900px"。
+       踩过：最初写成 /@media[^{]*min-width\s*:\s*900px/，结果被
+         @media (min-width: 900px) and (orientation: portrait)
+       顶掉了 —— 那条只是"竖屏时退回单列"，不含任何放大规则，
+       负向测试（把放大断点整块删掉）依然全绿。假通过比不检查更危险。 */
+    function mediaConds(text, w) {
+      const out = [];
+      const re = new RegExp("@media([^{]*min-width\\s*:\\s*" + w + "px[^{]*)\\{", "g");
+      let m;
+      while ((m = re.exec(text))) out.push(m[1].replace(/\s+/g, " ").trim());
+      return out;
+    }
+    const c560 = mediaConds(pk, 560);
+    const c900 = mediaConds(pk, 900);
+    /* ≥560px：不许附加 orientation 之类的额外条件，否则不少设备会绕过 */
+    chk(c560.some((c) => !/orientation/.test(c)),
+        "有干净的 ≥560px 放大断点（720p 盒子 / 大屏横屏）", c560.join(" | "));
+    chk(c900.some((c) => !/orientation/.test(c)),
+        "有干净的 ≥900px 放大断点（1080p 及以上机顶盒 / 横平板）", c900.join(" | "));
+
+    /* ★ 光有断点不算数 —— 断点里的规则必须真的把尺寸写大。
+       取「干净的」（不带 orientation 的）那一段块来判；
+       否则会取到"竖屏退回单列"那个块，里面照样有 calc(×--s)，
+       于是把放大断点整块删掉也依然全绿（第二次假通过，负向测试抓出来的）。 */
+    function blockFor(text, w) {
+      const re = new RegExp("@media([^{]*min-width\\s*:\\s*" + w + "px[^{]*)\\{", "g");
+      let m;
+      while ((m = re.exec(text))) {
+        if (/orientation/.test(m[1])) continue;            // 跳过带额外条件的
+        let depth = 0;
+        const j = text.indexOf("{", m.index);
+        for (let k = j; k < text.length; k++) {
+          if (text[k] === "{") depth++;
+          else if (text[k] === "}") { depth--; if (depth === 0) return text.slice(j + 1, k); }
+        }
+      }
+      return "";
+    }
+    function hasGrow(block) {
+      if (!block) return false;
+      return /var\(\s*--s/.test(block) &&
+             /(font-size|min-height|padding)\s*:\s*[^;]*calc\(/.test(block) &&
+             /subj-card|subj-head/.test(block);
+    }
+    const b900 = blockFor(pk, 900);
+    const b560 = blockFor(pk, 560);
+    chk(hasGrow(b900), "≥900px 断点里真的有把卡片/标题放大的 calc(×--s) 规则");
+    chk(hasGrow(b560), "≥560px 断点里真的有把卡片/标题放大的 calc(×--s) 规则");
+
+    /* 反向：不许在 picker.css 里用红线函数（它就是为老盒子写的） */
+    const RED2 = [/\bclamp\s*\(/, /(?:^|[^-\w])min\s*\(/, /(?:^|[^-\w])max\s*\(/];
+    const badUse = RED2.some((re) => re.test(pk));
+    chk(!badUse, "picker.css 没有用 clamp()/min()/max()（老 WebView 会整条丢弃）");
+    /* 焦点环必须有 —— 遥控器焦点看不见等于选不中 */
+    chk(/:focus/.test(pk), "有 :focus 焦点环样式（否则遥控器不知道焦点在哪）");
+  }
+}
+
+/* ---------- ⑧ 老机看门人必须拦住"自动跳进语文" ----------
+   2026-09-20 现场事故（第三条）：老 APK 上进去能看到三科卡片，
+   三五秒后自己跳进语文。根因是老内置清单第一个 js/app.js（语文主程序）先跑完了，
+   选学科页只是叠在上面，被语文的定时器/二次渲染翻回去。
+   解法：资源包把根级 js/app.js 换成"看门人" —— 没选学科就渲染选学科页并收工，
+   一个学科文件都不加载。
+   这条断言防的是：有人嫌它麻烦又改回"纯空壳"。 */
+console.log("\n──── ⑧ 老机看门人会拦住自动跳学科 ────");
+{
+  const p = path.join(ROOT, "legacy/js/app.js");
+  chk(fs.existsSync(p), "legacy/js/app.js 存在（老机根级看门人）");
+  if (fs.existsSync(p)) {
+    const src = stripComments(fs.readFileSync(p, "utf8"));
+    chk(/app_subject/.test(src), "看门人读了 app_subject（据此判断有没有选过学科）");
+    chk(/window\.__renderSubjectPicker\s*\(/.test(src), "看门人会主动调用渲染函数");
+    chk(/return/.test(src), "未选学科时提前 return（不继续加载学科）");
+    /* 反向负控：它绝不能自己去加载 cn/js/app.js 那一套 */
+    chk(!/[^a-z]cn\/js\/app\.js/.test(src), "看门人自己不加载任何学科文件");
+  }
+  /* bridge.js 的守卫也要在：它必须能在"选学科页已被渲染"时复用而不是重来。
+     ★ 匹配带 window. 前缀且以 ( 结尾的真实调用 —— 最初只判 /__renderSubjectPicker/
+       这个标识符是否出现，结果把属性名整个改掉（window.__renderSubjectPickerXX()）
+       依然全绿：标识符还在字符串里。第三次假通过，一样是负向测试抓出来的。 */
+  const bp = path.join(ROOT, "legacy/js/bridge.js");
+  if (fs.existsSync(bp)) {
+    const b = stripComments(fs.readFileSync(bp, "utf8"));
+    chk(/window\.__renderSubjectPicker\s*\(/.test(b), "bridge.js 真的调用了渲染函数（复用，不重复注入）");
+  }
+}
+
 console.log("\n" + (FAILS.length ? "❌ 失败 " + FAILS.length + " 项" : "✅ 全部通过"));
 if (FAILS.length) { FAILS.forEach((f) => console.log("   · " + f)); process.exit(1); }
