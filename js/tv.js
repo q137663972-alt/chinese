@@ -272,6 +272,30 @@
     document.removeEventListener("click", unlockOnce, true);
   }
 
+  /* 包装 window.render。抽成函数有两个调用点：
+       ① init() —— 正常加载顺序下（App 先加载、tv.js 后加载）用；
+       ② window.__tvRearmRender() —— 桥接加载器动态加载学科 App 时用。
+     ★ 为什么必须有 ②：那一科的 app.js 是 tv.js 跑完之后才被 <script> 塞进来的，
+       此刻 window.render 才第一次出现。少了这一步，遥控器/机顶盒上每次切页都不会复位焦点 ——
+       表现是「进到新界面，光标还停在角落里的按钮上」。*/
+  function wrapRender() {
+    if (typeof window.render !== "function" || window.__tvRenderWrapped) return;
+    window.__tvRenderWrapped = true;
+    var origRender = window.render;
+    window.render = function () {
+      var r = origRender.apply(this, arguments);
+      lastFocus = null;                       // 旧焦点属于上一个页面，别再复用
+      setTimeout(function () { ensureFocus(true); }, 0);
+      return r;
+    };
+  }
+  /* 重新触发入口：清掉标记再包一次。重复调用不会套两层包装。 */
+  window.__tvRearmRender = function () {
+    window.__tvRenderWrapped = false;
+    wrapRender();
+    try { markFocusable(document); } catch (e) {}
+  };
+
   function init() {
     /* 告诉原生壳：遥控器按键由 WebView 里的 tv.js 接管了。
        MainActivity.dispatchKeyEvent 原本在 ACTION_UP 时自己再 click() 一次，
@@ -286,16 +310,7 @@
        不包装的话：切页时旧的 activeElement 可能还在（尤其刚从设置弹层出来），
        ensureFocus 一看「已经有焦点」就直接跳过 ——
        表现就是「进了新界面，光标还停在设置按钮上」。 */
-    if (typeof window.render === "function" && !window.__tvRenderWrapped) {
-      window.__tvRenderWrapped = true;
-      var origRender = window.render;
-      window.render = function () {
-        var r = origRender.apply(this, arguments);
-        lastFocus = null;                       // 旧焦点属于上一个页面，别再复用
-        setTimeout(function () { ensureFocus(true); }, 0);
-        return r;
-      };
-    }
+    wrapRender();
 
     /* 观察整个 body：#app 之外还有设置弹层、升级提示条。
        额外监听 class 变化 —— 弹层开关就是切一个 class，

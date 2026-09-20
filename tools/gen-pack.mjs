@@ -46,18 +46,22 @@ const HOT_TOKEN = MANIFEST.HOT_TOKEN;
 const bootSrc = fs.readFileSync(path.join(ROOT, "js", "boot.js"), "utf8");
 if (!APP || !HOT_TOKEN) fail("js/boot.js 里读不到 APP / HOT_TOKEN");
 
-/* min_apk：默认取壳工程里的 versionCode（老 APK 装不上新包时再手工调低） */
-function gradleVersionCode() {
-  for (const d of fs.readdirSync(ROOT, { withFileTypes: true })) {
-    if (!d.isDirectory() || !d.name.endsWith("-universal")) continue;
-    const g = path.join(ROOT, d.name, "app", "build.gradle");
-    if (!fs.existsSync(g)) continue;
-    const m = fs.readFileSync(g, "utf8").match(/versionCode\s+(\d+)/);
-    if (m) return parseInt(m[1], 10);
-  }
-  return 0;
+/* min_apk：门槛。boot.js 判据是 DEV.apk < m.min_apk 就直接作废整份包 ——
+   ★★ 历史事故（2026-09-20）★★
+   这里原先写死「默认取壳工程 versionCode」。三合一把 versionCode 提到 12，
+   于是下一份热更包的门槛自动变成 12，而用户机器上还是 apk=11：
+   11 < 12 → boot.js 判 "needs newer apk" → 整份包作废 → 页面停在内置版，
+   表现为「更新了却什么都没变」，然后被误判成「必须出新 APK」。
+   ★ 教训：热更包的门槛只能往下兼容，绝不能跟着新 APK 的 versionCode 自动抬升。
+     真有"低于某个版本必须换壳"的需求时，必须显式写 --min-apk N 并在提交里说明。 */
+const DEFAULT_MIN_APK = 3;
+const MIN_APK = parseInt(opt("min-apk", String(DEFAULT_MIN_APK)), 10);
+if (MIN_APK > DEFAULT_MIN_APK) {
+  console.warn(
+    "⚠️  min_apk=" + MIN_APK + "：versionCode 低于 " + MIN_APK + " 的设备会整份拒收这份包" +
+    "（boot.js：DEV.apk < m.min_apk）。确认这是刻意抬的门槛，别手滑。"
+  );
 }
-const MIN_APK = parseInt(opt("min-apk", String(gradleVersionCode())), 10);
 
 /* FNV-1a 双通道 32bit → 16 hex（与旧 gen-hot.mjs 保持一致，方便对照） */
 function fnv(s) {
@@ -95,6 +99,8 @@ const SUBJ_DIRS = ["cn", "math", "en"];
      cn|math|en/  各科自己的 css 和 js
    漏掉子目录的表现极其隐蔽 —— 资源包看起来是生成成功了（有 build、有 sha256、
    能装进去），但那份学科 App 还是跑的内置版本，改了半天以为没生效。 */
+const rel = (f) => path.relative(ROOT, f).split(path.sep).join("/");
+
 const codeFiles = [
   ...walk(path.join(ROOT, "css"), [".css"]),
   ...walk(path.join(ROOT, "js"), [".js"]).filter((f) => path.basename(f) !== "boot.js"),
@@ -103,6 +109,36 @@ const codeFiles = [
     ...walk(path.join(ROOT, d, "js"), [".js"]),
   ]),
 ];
+
+/* ★ 老 APK 兼容层（2.4.x 及更早）。
+   那一批 App 的 boot.js 清单写死是 js/app.js 这样的根级路径，boot.js 又热更不到 ——
+   所以只能靠「同路径覆盖 + 追加注入」两条口子把它们接到三科上来：
+     · js/app.js / games.js / game-battle.js / update.js —— 覆盖成空壳，
+       挡住老 boot.js 先把语文那一整套注进来（否则同一份 app.js 跑两遍，监听器挂双份）；
+     · js/bridge.js —— 老 boot.js 会无条件追加注入任何符合 ^js/.+\.js$ 的新文件，
+       它进来之后自己动态加载真正的那一科。
+   目标路径必须落在老布局的根级 js/ 下，写错一个字符这份兼容就静默失效。
+   新版 App（2.5.0+）的清单里没有这些路径，对它们无害。
+   · 上面这些之外，老清单里的 cp.js / data-*.js / strokes.js / pics.js /
+ *     tts.js / praise.js 也一并盖成空壳 —— 那一科的每一个文件都必须只被加载一次。
+ *     内置那份一旦留在原位，就会被跑两遍：监听器挂双份、几 MB 的数据再多解析一轮，
+ *     机顶盒上表现为启动明显变卡、点一下走两步。
+ *     ★ 唯一的例外是共享层 js/tv.js 与 js/tv-tune.js：三科共用一份，
+ *       必须留在老清单里由 boot.js 加载一次，绝不能让桥接层再加载第二遍。 */
+const LEGACY_STUBS = [
+  "app.js", "games.js", "game-battle.js", "update.js",
+  "cp.js", "tts.js", "praise.js",
+  "data-c1.js", "data-c2.js", "data-c3.js", "data-c4.js", "data-c5.js", "data-c6.js",
+  "data-poem.js", "data-word.js", "strokes.js", "pics.js",
+];
+const LEGACY_MAP = [
+  ["legacy/js/bridge.js", "js/bridge.js"],
+  ...LEGACY_STUBS.map((n) => ["legacy/js/" + n, "js/" + n]),
+].filter(([src]) => fs.existsSync(path.join(ROOT, src)));
+
+/* 资源包路径 → 实际要打包的仓库路径（正常情况下两者相同，兼容层除外） */
+const SRC_OF = new Map(codeFiles.map((f) => [rel(f), rel(f)]));
+for (const [src, dst] of LEGACY_MAP) SRC_OF.set(dst, src);
 /* 资源包：图片 / 音频 / 字体
  * ★ 这里必须排除 js/ 与 css/ —— 图片目录里混着的 js/css 会被打进 assets.zip，
  *   而 assets.zip 先装、code.zip 后装，原生侧是「整目录替换」：
@@ -124,8 +160,7 @@ const assetFiles = [
   ]),
 ].filter((f) => !BANNED_IN_ASSETS.test(path.relative(ROOT, f).split(path.sep).join("/")));
 
-const rel = (f) => path.relative(ROOT, f).split(path.sep).join("/");
-const codePaths = codeFiles.map(rel).sort();
+const codePaths = [...SRC_OF.keys()].sort();
 const assetPaths = assetFiles.map(rel).sort();
 
 if (!codePaths.length && !assetPaths.length) fail("没有任何可打包的文件");
@@ -136,6 +171,8 @@ if (!codePaths.length && !assetPaths.length) fail("没有任何可打包的文�
  * 但那个文件永远不会被注入，表现为「我改的东西怎么没生效」。
  * 这里直接把 boot.js 里所有清单展开，逐个对照，少登记一个就报警。 */
 const declared = MANIFEST.allDeclared();
+/* 老 APK 兼容层的目标路径不在新版 boot.js 的清单里（那是老布局用的）——豁免，别刷警告 */
+for (const [, dst] of LEGACY_MAP) declared.add(dst);
 const undeclared = codePaths.filter((p) => /\.js$/.test(p) && !declared.has(p));
 if (undeclared.length) {
   console.warn("⚠️  以下文件进了资源包、但不在 boot.js 的任何清单里，上线后不会被加载：");
@@ -153,9 +190,11 @@ if (missing.length) {
  *   老写法 /^js\/game-/ 在三合一后一个都匹配不上 —— 新玩法会静默消失，
  *   MANIFEST 里的 games 数组永远是空的。 */
 const games = [];
+const legacyDst = new Set(LEGACY_MAP.map(([, dst]) => dst));
 for (const p of codePaths) {
+  if (legacyDst.has(p)) continue;              // 兼容层是空壳，别去扫玩法 id 制造噪音
   if (!/\/js\/game-.+\.js$/.test(p)) continue;
-  const src = fs.readFileSync(path.join(ROOT, p), "utf8");
+  const src = fs.readFileSync(path.join(ROOT, SRC_OF.get(p) || p), "utf8");
   const ids = [...src.matchAll(/registerGame\(\s*\{[^}]*?id\s*:\s*["']([^"']+)["']/g)]
     .map((m) => m[1]);
   if (ids.length) games.push({ id: ids[0], file: p });
@@ -165,7 +204,7 @@ for (const p of codePaths) {
 /* ---------- 3. 生成 MANIFEST.json（打进 code.zip，与文件原子同源） ---------- */
 const entries = [];
 for (const p of [...codePaths, ...assetPaths]) {
-  const abs = path.join(ROOT, p);
+  const abs = path.join(ROOT, SRC_OF.get(p) || p);
   const buf = fs.readFileSync(abs);
   const isText = /\.(js|css|json|svg)$/.test(p);
   entries.push({ p, h: fnv(buf.toString("utf8")), n: isText ? buf.toString("utf8").length : buf.length, bytes: buf.length });
@@ -197,7 +236,7 @@ fs.writeFileSync(path.join(TMP, "MANIFEST.json"), JSON.stringify(manifest));
 for (const p of codePaths) {
   const dst = path.join(TMP, p);
   fs.mkdirSync(path.dirname(dst), { recursive: true });
-  fs.copyFileSync(path.join(ROOT, p), dst);
+  fs.copyFileSync(path.join(ROOT, SRC_OF.get(p) || p), dst);
 }
 
 const packs = [];

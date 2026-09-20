@@ -1,7 +1,7 @@
 {
-  "code": 12,
-  "name": "2.5.0",
-  "note": "一个 App 装下语数英三科：打开后先选学科（语文 / 数学 / 英语），随时可在设置里「🔄 换学科」，三科进度各自独立保存。① 三科共用同一套机顶盒遥控逻辑 —— 返回键能关设置、滑块里能走出来，不会再出现「卡住只能重启」；② 退出限时玩法会彻底清掉计时器，不再自动跳回题目；③ 玩法、界面、电视显示参数仍可热更，不用重装 App。同包名同签名，直接覆盖安装即可，数据不会丢",
+  "code": 11,
+  "name": "2.4.0",
+  "note": "语数英三科已经通过热更新下发到你这台机器上，不需要换 APK、不需要点任何按钮：打开后会先让你选学科（语文 / 数学 / 英语），之后也能在「设置」里用「🔄 换学科」随时切换，三科进度各自独立保存。玩法增减、界面样式、电视显示参数同样走热更。APK 只在极少数必须改壳的情况下才会出新版，功能更新一律走这条路。",
   "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
   "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@7e6bf652ede8665c1d484033ee43817e960703a6/apk/ChinesePlayground.apk",
   "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",

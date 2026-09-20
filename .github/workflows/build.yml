@@ -107,6 +107,13 @@ jobs:
       - name: Run smoke (picker / cn / math / en)
         run: node tools/smoke.mjs
 
+      # 老 APK（2.4.x）走的是另一条完全不同的加载路径：boot.js 冻结、清单写死，
+      # 全靠资源包里的桥接层 + 同路径空壳把三科接上来。tools/smoke.mjs 测的是新版宿主，
+      # 那条路径半点不覆盖 —— 桥接层一破，「更新了却还是只有语文」不会有任何一格变红。
+      # 这台 IFN（if and only if）的验证必须与上面那条并存，缺一不可。
+      - name: Run legacy bridge smoke (2.4.x → 三科)
+        run: node tools/smoke-legacy.mjs
+
   pages:
     name: Deploy H5 + 热更包 (GitHub Pages)
     needs: build
@@ -136,11 +143,24 @@ jobs:
           node tools/gen-hot.mjs --out page/hot \
             --base "https://${{ github.repository_owner }}.github.io/${REPO}/hot/"
 
-      # min_apk 不写死：默认取 build.gradle 的 versionCode。
-      # 三合一的资源包用子目录路径（cn/js/app.js…），老 boot.js 认不出来 ——
-      # 硬把它塞给老 APK 只会白下一份 1.7MB、然后被整份忽略。写死 3 等于明着浪费流量。
+      # 以前这段注释写的是「min_apk 默认取 build.gradle 的 versionCode，写死 3 浪费流量」——
+      # 那是错的，而且代价极大：见 tools/gen-pack.mjs 里 2026-09-20 那次事故。
+      # 门槛一抬，所有比它旧的机器就把整份包拒收，界面毫无变化，看起来像「热更失效」。
+      # 现在默认值固定为 3，需要抬高只能显式 --min-apk N。
       - name: 生成资源包（v3.0 通道：任意格式 + 玩法热更）
         run: node tools/gen-pack.mjs --out page/hot/pack
+
+      # 【守住老设备的命门】上面那步一旦又把 min_apk 抬到跟 versionCode 一样，
+      # 现场机器（versionCode 更低）会整份拒收 —— 症状是「明明有更新却什么都没变」。
+      # 让它在这里直接红，别等到用户截图才发现。
+      - name: 校验 min_apk 没把老设备挡在门外
+        run: |
+          M=$(node -e "console.log(require('./page/hot/pack/manifest.json').min_apk)")
+          echo "min_apk=$M"
+          if [ "$M" -gt 3 ]; then
+            echo "❌ min_apk=$M 会把 versionCode < $M 的设备整条热更挡掉（boot.js: DEV.apk < m.min_apk）"
+            exit 1
+          fi
 
       # 【双发，别删】boot.js 里 installPack 用的是「base + pk.name」，而 pk.name 是裸文件名：
       # 实际下载 URL 是 .../hot/code.zip，不是 .../hot/pack/code.zip。
