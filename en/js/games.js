@@ -699,6 +699,13 @@ function startChallenge(){
       <div class="feedback" id="fb"></div>`, "限时挑战");
   }
   function tick(){
+    /* ★ 自杀保护：界面已经不是本玩法了就停掉自己。
+       只在 goBack() 里 clearInterval 盖不全所有出口 —— 结算页的「🎮 换玩法 /
+       返回单元列表」这类按钮直接改 state.view 再 render()，压根不经过 goBack，
+       计时器会继续每秒跑、把界面重新抢回游戏里，表现就是「退出后自动跳回去」。 */
+    if (state.view !== "game" || state.mode !== "challenge") {
+      clearInterval(timer); window.__enTimer = null; return;
+    }
     left--;
     if(left <= 0){ endChallenge(); return; }
     var bar = $(".timer-bar");
@@ -723,6 +730,7 @@ function startChallenge(){
   };
   function endChallenge(){
     clearInterval(timer);
+    window.__enTimer = null;
     var rec = score > best;
     if(rec){ best = score; localStorage.setItem("el_best_challenge", String(best)); }
     setStars(state.gi, state.bi, state.ui, score >= 120 ? 3 : score >= 60 ? 2 : score > 0 ? 1 : 0);
@@ -746,9 +754,13 @@ function startChallenge(){
       </div>`;
     if (P && lv) setTimeout(function(){ P.fx(lv); }, 60);
   }
+  if (window.__enTimer) clearInterval(window.__enTimer);   // 重入时先掐掉上一轮
   q = nextQ();
   draw();
   timer = setInterval(tick, 1000);
+  /* ★ 必须挂到 window 上：只放在闭包变量里的话，goBack() 根本摸不到它，
+     退出玩法后计时器照跑，一秒后又把界面抢回游戏（用户反馈的「自动跳回去」）。 */
+  window.__enTimer = timer;
 }
 
 /* ===================== 玩法注册表（新增玩法支持热更） =====================

@@ -140,7 +140,7 @@ if (!codePaths.length && !assetPaths.length) fail("没有任何可打包的文�
  * 但那个文件永远不会被注入，表现为「我改的东西怎么没生效」。
  * 这里直接把 boot.js 里所有清单展开，逐个对照，少登记一个就报警。 */
 const declared = new Set();
-for (const m of bootSrc.matchAll(/var\s+(?:BUILTIN_(?:CN|MATH|EN)|HOST_JS)\s*=\s*\[([\s\S]*?)\]/g)) {
+for (const m of bootSrc.matchAll(/var\s+(?:BUILTIN_(?:CN|MATH|EN)|SHARED_JS|HOST_JS)\s*=\s*\[([\s\S]*?)\]/g)) {
   for (const q of m[1].matchAll(/"([^"]+)"/g)) declared.add(q[1]);
 }
 const undeclared = codePaths.filter((p) => /\.js$/.test(p) && !declared.has(p));

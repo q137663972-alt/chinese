@@ -93,6 +93,13 @@ function startOral(){
     bindReplay(q.say || q.q);
   }
   function tick(){
+    /* ★ 自杀保护：界面已经不是本玩法了就停掉自己。
+       只在 goBack() 里 clearInterval 盖不全所有出口 —— 结算页的「🎮 换玩法 /
+       返回单元列表」这类按钮直接改 state.view 再 render()，压根不经过 goBack，
+       计时器会继续每秒跑、把界面重新抢回游戏里，表现就是「退出后自动跳回去」。 */
+    if (state.view !== "game" || state.mode !== "oral") {
+      clearInterval(timer); window.__mathTimer = null; return;
+    }
     left--;
     if(left <= 0){ end(); return; }
     var bar = $(".timer-bar");
@@ -429,6 +436,13 @@ function startChallenge(){
     bindReplay(q.say || q.q);
   }
   function tick(){
+    /* ★ 自杀保护：界面已经不是本玩法了就停掉自己。
+       只在 goBack() 里 clearInterval 盖不全所有出口 —— 结算页的「🎮 换玩法 /
+       返回单元列表」这类按钮直接改 state.view 再 render()，压根不经过 goBack，
+       计时器会继续每秒跑、把界面重新抢回游戏里，表现就是「退出后自动跳回去」。 */
+    if (state.view !== "game" || state.mode !== "challenge") {
+      clearInterval(timer); window.__mathTimer = null; return;
+    }
     left--;
     if(left <= 0){ end(); return; }
     var bar = $(".timer-bar");

@@ -47,11 +47,19 @@ function exportProgress(){
   var box = document.getElementById("backupBox");
   box.value = progressJSON();
   box.classList.remove("hidden");
-  box.focus(); box.select();
-  try { box.setSelectionRange(0, 999999); } catch(e){}
-  var ok = false;
-  try { ok = document.execCommand("copy"); } catch(e){}
-  toast(ok ? "已复制 " + totalStars() + " 颗星的记录，粘贴到备忘录/微信收藏" : "请长按全选框内文本复制");
+  /* ★ 电视上绝对不能 focus 这个文本框：焦点一旦进了纯文本框，遥控器就出不来，
+       用户只能杀进程重开（2026-09-20 语文侧反馈的第二个问题，这里是同一个坑）。
+       TV 下不抢焦点，改为提示一句，焦点继续由共享的 js/tv.js 托管。 */
+  var isTV = !!(window.__isTV || (document.body && document.body.classList.contains("tv")));
+  if (isTV) {
+    toast("已生成备份文本，可用遥控器复制或从手机上获取更多方式");
+  } else {
+    box.focus(); box.select();
+    try { box.setSelectionRange(0, 999999); } catch(e){}
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch(e){}
+    toast(ok ? "已复制 " + totalStars() + " 颗星的记录，粘贴到备忘录/微信收藏" : "请长按全选框内文本复制");
+  }
 }
 function importProgress(){
   var box = document.getElementById("backupBox");
@@ -251,11 +259,32 @@ function startGame(mode){
 /* ===================== 设置 & 导航 ===================== */
 function openSettings(){ $("#settingsModal").classList.remove("hidden"); var b = document.getElementById("backupBox"); if (b) b.classList.add("hidden"); syncSettings(); }
 function closeSettings(){ $("#settingsModal").classList.add("hidden"); }
+/* 供遥控器返回键 / 原生返回键调用：关掉最上层的弹层（目前只有设置）。
+   关掉了返回 true（这次返回被弹层消费掉，不要再退页面），没有弹层返回 false。
+   共享的 js/tv.js 里 doBack() 第一步就找它 —— 哪一科没有它，
+   那个学科的电视版就会重现「设置关不掉、按返回只退菜单」。 */
+function closeTopLayer(){
+  var m = document.getElementById("settingsModal");
+  if (m && !m.classList.contains("hidden")) { closeSettings(); return true; }
+  return false;
+}
+window.closeTopLayer = closeTopLayer;
 function syncSettings(){
   $("#ttsSwitch").classList.toggle("on", settings.tts);
   $("#rateRange").value = settings.rate;
 }
 function goBack(){
+  /* ① 设置弹层开着 → 这次返回只用来关弹层，别动背后的页面 */
+  if (typeof window.closeTopLayer === "function") {
+    try { if (window.closeTopLayer()) return; } catch (e) {}
+  }
+  /* ② 玩法自己在跑 → 让它先收尾（清计时器、停朗读） */
+  if (typeof window.__gameExit === "function") {
+    try { if (window.__gameExit()) return; } catch (e) { window.__gameExit = null; }
+  }
+  /* ③ 兜底：英语的限时挑战把 id 挂在 window.__enTimer 上，这里必须掐掉 ——
+        不清的话退出后每秒还在 tick，一秒就把界面抢回游戏里。 */
+  if(window.__enTimer){ clearInterval(window.__enTimer); window.__enTimer = null; }
   if(state.view === "grades"){ state.view = "home"; render(); }
   else if(state.view === "units"){ state.view = "grades"; render(); }
   else if(state.view === "modes"){ state.view = "units"; render(); }

@@ -47,7 +47,7 @@ const fs=require("fs"),path=require("path");
 const A=process.argv[1];
 const src=fs.readFileSync(A+"/js/boot.js","utf8");
 const bad=[];
-for(const m of src.matchAll(/var\s+(?:BUILTIN_(?:CN|MATH|EN)|HOST_JS)\s*=\s*\[([\s\S]*?)\]/g))
+for(const m of src.matchAll(/var\s+(?:BUILTIN_(?:CN|MATH|EN)|SHARED_JS|HOST_JS)\s*=\s*\[([\s\S]*?)\]/g))
   for(const q of m[1].matchAll(/"([^"]+)"/g))
     if(!fs.existsSync(path.join(A,q[1]))) bad.push(q[1]);
 if(bad.length){console.error("❌ assets 缺文件：\n  "+bad.join("\n  "));process.exit(1);}
