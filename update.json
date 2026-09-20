@@ -1,11 +1,11 @@
 {
   "code": 11,
   "name": "2.4.0",
-  "note": "三端合一（手机/平板/电视通用包，自动识别设备）：① 电视显示参数独立成可热更调参文件，机顶盒显示比例异常（偏大偏小/被裁边/档位判错）出热更包即可修好，不用重装；② 玩法可热更增减（新增 js/game-*.js 自动进清单，下架同理）；③ 电视物理分辨率分档 + 5% overscan 安全区；④ 遥控器方向键/确认键防抖与弹层焦点锁定。同签名，可直接覆盖安装",
+  "note": "三端合一（手机/平板/电视通用包，自动识别设备）：① 机顶盒「热更自检」入口从右下角飘浮按钮搬进顶栏 —— 电视遥控器原本根本选不中那个飘浮圆钮（几何最近邻离主内容太远），现在是顶栏里 ⚙️ 旁边的「🛠️」按钮，方向键上/左都能走到；② 电视显示参数独立成可热更调参文件，机顶盒显示比例异常出热更包即可修好，不用重装；③ 玩法可热更增减；④ 电视物理分辨率分档 + 5% overscan 安全区；⑤ 遥控器方向键/确认键防抖与弹层焦点锁定。同签名，可直接覆盖安装，不用卸载",
   "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@96a68c8f12124bb48f48f3744f3f60cf866bf9c4/apk/ChinesePlayground.apk",
+  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@f6430851e085f5bd3e17039c100df1e0f62402db/apk/ChinesePlayground.apk",
   "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@96a68c8f12124bb48f48f3744f3f60cf866bf9c4/apk/ChinesePlayground.apk",
+  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@f6430851e085f5bd3e17039c100df1e0f62402db/apk/ChinesePlayground.apk",
   "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
-  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@96a68c8f12124bb48f48f3744f3f60cf866bf9c4/apk/ChinesePlayground.apk"
+  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@f6430851e085f5bd3e17039c100df1e0f62402db/apk/ChinesePlayground.apk"
 }
