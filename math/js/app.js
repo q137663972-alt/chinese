@@ -317,6 +317,12 @@ function renderHotDiag(){
   var ids = games.map(function (g) { return g.id; });
   var base = window.HOT_BASE || "(未知)";
   var source = localBuild ? ("热更包（build=" + localBuild + "）") : "内置版（无本地热更包）";
+  /* 【显示尺寸实测】电视上没有控制台，比例出问题时只能靠这行读数判断。
+     实现放在共享层 js/tv.js 的 window.tvDiagHtml()，三科共用一份，避免三份漂移。 */
+  var dim = (typeof window.tvDiagHtml === "function")
+    ? window.tvDiagHtml()
+    : '(当前不是电视模式，未采集显示参数)';
+
   app.innerHTML = topbar("热更自检", true) +
     '<div class="result-box" style="text-align:left;font-size:15px;line-height:2">' +
       '本机运行来源：' + source + '<br>' +
@@ -328,6 +334,12 @@ function renderHotDiag(){
       '连通性：<span id="hotCon">未测试</span><br>' +
       '<span style="color:var(--sub);font-size:13px">判读：本机运行来源=代码实际来自内置还是已装热更包；' +
       '玩法列表=这次热更真正注册进来的玩法。新增玩法要在这里出现才算生效。</span>' +
+    '</div>' +
+    '<div class="result-box" style="text-align:left;font-size:15px;line-height:2;margin-top:12px">' +
+      '<b>📐 显示尺寸实测</b><br>' + dim +
+      '<span style="color:var(--sub);font-size:13px">比例不对时看「容器实测宽」与「横向溢出」两行：' +
+      '溢出为正说明页面比屏幕宽、两侧被裁。修显示参数只改 js/tv-tune.js 与 css/tv.css，' +
+      '两者都能热更，不用装包。</span>' +
     '</div>' +
     '<div class="row" style="margin-top:12px">' +
       '<button class="btn ghost" onclick="hotTestConn()">🔌 测试连通</button>' +

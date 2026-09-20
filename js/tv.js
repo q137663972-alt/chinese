@@ -175,10 +175,23 @@
     var T = (typeof window.TV_TUNE === "object" && window.TV_TUNE) || {};
     function num(v, d) { return (typeof v === "number" && isFinite(v)) ? v : d; }
 
+    /* ★★ 双重乘 dpr —— 2026-09-20 修（这是"比例整体偏大"的真正主因）★★
+       原写法：
+         vw/vh = innerWidth/innerHeight × dpr      ← 已经是物理像素了
+         w     = max(vw, screen.width × dpr)       ← screen.width 本来就是物理像素，又乘一次
+       而 tiers 的阈值（3000/2300/1700/1100）是按物理像素写的。
+       1080p 电视实况：innerWidth=960、dpr=2、screen.width=1920
+         vw = 960×2 = 1920           ← 对的，就是 1080p
+         w  = max(1920, 1920×2=3840) ← 3840！被当成 4K
+       于是 1080p 命中 [3000,1700,2.2] 这一档，缩放给到 2.2 而不是 1.5 ——
+       整体大了近 50%，配上容器宽度的问题就成了现场那副"撑爆、被裁"的样子。
+       Android TV / Fire TV 的 screen.width 返回的就是物理像素，不需要再乘 dpr；
+       真正需要乘 dpr 还原物理分辨率的只有 innerWidth/innerHeight 那一对。
+       ★ 结论：screen 只是"最后一道保险"，且必须与 vw/vh 同一个物理量纲 —— 不再乘 dpr。 */
     var dpr = T.dprFix === false ? 1 : (window.devicePixelRatio || 1);
     var vw = (window.innerWidth || 0) * dpr, vh = (window.innerHeight || 0) * dpr;
-    var w = Math.max(vw, window.screen ? (window.screen.width || 0) * dpr : 0);
-    var h = Math.max(vh, window.screen ? (window.screen.height || 0) * dpr : 0);
+    var w = Math.max(vw, window.screen ? (window.screen.width || 0) : 0);
+    var h = Math.max(vh, window.screen ? (window.screen.height || 0) : 0);
 
     var DEF_TIERS = [[3000, 1700, 2.2], [2300, 1300, 1.8], [1700, 950, 1.5], [1100, 620, 1.25]];
     var tiers = (T.tiers && T.tiers.length) ? T.tiers : DEF_TIERS;
@@ -294,6 +307,35 @@
     window.__tvRenderWrapped = false;
     wrapRender();
     try { markFocusable(document); } catch (e) {}
+  };
+
+  /* ===================== 显示尺寸实测（自检面板用） =====================
+     电视上没有控制台，比例出问题时用户只能描述"两边有缝""字被切"，
+     排查全靠猜。这里把真实生效值读成一段 HTML，塞进各科的热更自检面板 ——
+     一次热更就能让用户把诊断数据读给我们。
+     ★ 只读、不改任何样式，纯诊断，出问题也不影响使用。
+     ★ 测的是 getComputedStyle 的实际生效值，不是我们写进去的输入值：
+       三科样式表叠加后到底谁赢了，只有这里能看出来。 */
+  window.tvDiagHtml = function () {
+    try {
+      var el = document.getElementById("app");
+      if (!el) return "(找不到 #app)";
+      var cs = window.getComputedStyle(el);
+      var s = window.getComputedStyle(document.documentElement)
+                .getPropertyValue("--s").trim() || "(未设)";
+      var vw = window.innerWidth, vh = window.innerHeight;
+      var boxW = el.getBoundingClientRect().width;
+      var over = boxW - vw;
+      return '视口：' + vw + ' × ' + vh + ' CSS px　dpr=' + (window.devicePixelRatio || 1) + '<br>' +
+        '屏幕：' + (window.screen ? (window.screen.width + ' × ' + window.screen.height) : '?') + '<br>' +
+        '--s（整体缩放）：<span style="font-weight:700">' + s + '</span><br>' +
+        '容器实测宽：' + Math.round(boxW) + 'px　max-width=' + cs.maxWidth +
+        '　padding=' + cs.padding + '<br>' +
+        '横向溢出：' + (over > 1
+          ? '<span style="color:#d33;font-weight:700">⚠️ 超出 ' + Math.round(over) +
+            'px —— 两侧会被裁出竖缝，请把这一行反馈</span>'
+          : '<span style="color:#0a0;font-weight:700">✅ 无（容器未超出视口）</span>');
+    } catch (e) { return '(取不到显示参数: ' + e.message + ')'; }
   };
 
   function init() {

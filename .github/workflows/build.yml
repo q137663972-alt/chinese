@@ -114,6 +114,12 @@ jobs:
       - name: Run legacy bridge smoke (2.4.x → 三科)
         run: node tools/smoke-legacy.mjs
 
+      # 2026-09-20 现场事故：1080p 机顶盒两侧各一道竖直"接缝"、整页被压扁。
+      # 根因不是某处写错，而是 #app 宽度有三处各写各的（shell 520px / 语文乘了 --s / 数学英语靠横屏断点）。
+      # 这类"三处分开看都合理"的问题人眼看不出来，只能靠机械规则卡住。
+      - name: Check TV layout redlines (容器宽度唯一真源 / 不乘 --s / 老 WebView 红线写法)
+        run: node tools/check-tv-layout.mjs
+
   pages:
     name: Deploy H5 + 热更包 (GitHub Pages)
     needs: build
