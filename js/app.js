@@ -19,7 +19,7 @@ setGrades();
 /* ===================== 状态 & 进度 ===================== */
 var MODES = [
   { id:"listen",    name:"听音选字",   icon:"🔊", desc:"听读音，选出那个字" },
-  { id:"picture",   name:"看图识字",   icon:"👀", desc:"看图片，认出对应的字" },
+  /* 2026-09-20 应要求下线「看图识字」：同步根 js/games.js 的 registerGame 注释，避免 MODES 兜底清单里仍暴露该玩法 */
   { id:"pinyin",    name:"拼音配对",   icon:"🔤", desc:"读拼音，找出汉字" },
   { id:"wordfill",  name:"组词填空",   icon:"📝", desc:"把词语补完整" },
   { id:"eliminate", name:"生字消消乐", icon:"💥", desc:"字和词语配成一对消掉" },
