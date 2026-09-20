@@ -93,12 +93,18 @@ const codeFiles = [
   ...walk(path.join(ROOT, "css"), [".css"]),
   ...walk(path.join(ROOT, "js"), [".js"]).filter((f) => path.basename(f) !== "boot.js"),
 ];
-/* 资源包：图片 / 音频 / 字体 */
+/* 资源包：图片 / 音频 / 字体
+ * ★ 这里必须排除 js/ 与 css/ —— 图片目录里混着的 js/css 会被打进 assets.zip，
+ *   而 assets.zip 先装、code.zip 后装，原生侧是「整目录替换」：
+ *   后装的 code.zip 会把先前解压出来的 js/*.js、css/*.css 一起覆盖掉（等于白装）。
+ *   boot.js 是冻结文件，白装它更糟 —— 热更包里的这份会盖掉内置版。
+ *   2026-09-20 修：原先 img/ 用了 .svg 扩展名白名单，图库里的 js/css 会漏进来。 */
+const BANNED_IN_ASSETS = /\.(js|css|html|htm)$/i;
 const assetFiles = [
   ...walk(path.join(ROOT, "img"), [".webp", ".png", ".jpg", ".svg"]),
   ...walk(path.join(ROOT, "audio"), [".mp3", ".m4a", ".ogg"]),
   ...walk(path.join(ROOT, "font"), [".woff2", ".woff", ".ttf"]),
-];
+].filter((f) => !BANNED_IN_ASSETS.test(path.relative(ROOT, f).split(path.sep).join("/")));
 
 const rel = (f) => path.relative(ROOT, f).split(path.sep).join("/");
 const codePaths = codeFiles.map(rel).sort();
