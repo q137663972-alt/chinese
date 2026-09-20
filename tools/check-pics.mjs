@@ -25,7 +25,8 @@ import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const JS = path.join(ROOT, 'js');
+/* 语文的数据文件在 cn/js/ 下（三科已迁子目录），写成 ROOT/js 会 ENOENT */
+const JS = path.join(ROOT, 'cn', 'js');
 
 const ARGV = process.argv.slice(2);
 const WANT_GLOBAL = ARGV.includes('--global');

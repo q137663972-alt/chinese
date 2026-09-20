@@ -19,7 +19,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const JS = path.join(ROOT, 'js');
+/* 语文的 app.js / data-*.js 在 cn/js/ 下（三科已迁子目录） */
+const JS = path.join(ROOT, 'cn', 'js');
 
 const arg = (k, d) => {
   const i = process.argv.indexOf('--' + k);

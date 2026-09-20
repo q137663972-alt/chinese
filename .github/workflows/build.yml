@@ -88,6 +88,25 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.project }}/app/build/outputs/apk/release/app-release-signed.apk
 
+  smoke:
+    name: 冒烟测试（四模式）
+    runs-on: ubuntu-latest
+    # ① 不 needs build、② pages 也不 needs 它 ——
+    #   这是刻意的：测试脚本要是哪天自己卡住或失灵，最多是这一格变红，
+    #   绝不能把热更包和 APK 的发布链条一起拖下水。
+    #   node_modules 已随仓库提交，CI 里直接跑得起来，不用联网 npm install。
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run smoke (picker / cn / math / en)
+        run: node tools/smoke.mjs
+
   pages:
     name: Deploy H5 + 热更包 (GitHub Pages)
     needs: build

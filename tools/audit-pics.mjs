@@ -42,7 +42,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* 待审清单：PIC_PHOTOS 里有、且 img/ 里真有文件的字 */
 const win = {};
-Object.assign(win, new Function('window', fs.readFileSync(path.join(ROOT, 'js', 'pics.js'), 'utf8') + '\n;return window;')(win));
+Object.assign(win, new Function('window', fs.readFileSync(path.join(ROOT, 'cn', 'js', 'pics.js'), 'utf8') + '\n;return window;')(win));
 const PHOTOS = win.PIC_PHOTOS || {};
 
 /* --from-json：上一轮结果还在 tmp/style-audit.json，没必要再问一遍模型

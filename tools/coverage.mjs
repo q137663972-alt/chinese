@@ -27,7 +27,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
-const JS = path.join(ROOT, 'js');
+/* ★ 三科迁进子目录后，语文的数据文件都在 cn/js/ 下 ——
+   这里的 JS 指的不是「宿主层根目录 js/」，而是语文自己的那一套：
+   pics.js（看图识字 143 张图的表）和 data-c*.js（教材字表）都在 cn/js。
+   写成 ROOT/js 的直接后果是 ENOENT 崩在半路。 */
+const JS = path.join(ROOT, 'cn', 'js');
 const PEP = path.join(ROOT, 'tmp', 'pep');
 const OUTDIR = path.join(ROOT, 'tools', 'pep');
 
