@@ -38,6 +38,18 @@ body{
 #app{width:100%;max-width:520px;min-height:100vh;position:relative;margin:0 auto;
      padding:calc(14px + env(safe-area-inset-top,0px)) calc(14px + env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) calc(14px + env(safe-area-inset-left,0px))}
 
+/* ★★ 2026-09-21 现场事故（手机版）：加进首页那条 #subjectBar 之后，
+      #app 被挤成屏幕右边一条（约 72%），左边一大片空白。
+      根因就在上面那句 body{display:flex}：body 是**横向弹性盒**，
+      原来只有 #app 一个子元素，width:100% + max-width:520px 居中安然无事；
+      多出一个 #subjectBar 就是**第二个 flex item**，两个兄弟按内容分宽度，
+      #app 的 100% 也被重新解释成"剩给我的那部分"。
+  对策（谁也别抢谁的）：
+      · #subjectBar —— 全宽、不参与伸缩（flex:0 0 auto + 基宽 100%）
+      · #app        —— 写明 flex:1 1 auto，把"独占行内剩余宽度"这件事说清楚
+  两条都热更，不影响任何一科的样式。 */
+body > #app{flex:1 1 auto}
+
 /* ------------------------------------------------- 通用组件（学科 css 也会重写一份，后来者胜） */
 .btn{
   border:none;border-radius:18px;padding:16px;font-size:17px;font-weight:700;color:#fff;cursor:pointer;

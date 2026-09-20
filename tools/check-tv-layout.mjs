@@ -414,6 +414,33 @@ console.log("\n──── ⑨ 老机启动哨兵会被喂饱（防熔断） �
     const c = fs.readFileSync(cp, "utf8");
     chk(/#subjectBar/.test(c) && /\.sb-btn:focus/.test(c),
         "picker.css 里有 #subjectBar 样式且按钮有焦点环（遥控器看得见）");
+    /* ★★ 2026-09-21 手机版事故：加进 #subjectBar 后 #app 被挤成右边一条 ★★
+       shell.css 与三科 style.css 里那句 body{display:flex;justify-content:center}
+       是为"只有 #app 一个孩子"写的；多一个兄弟就分宽度。
+       这条断言防的是：以后有人把下面两处兜底删掉（或搬走）又踩同一脚。 */
+    const barIdx = c.indexOf("#subjectBar {");
+    const barBlock = barIdx >= 0 ? c.slice(barIdx, c.indexOf("}", barIdx)) : "";
+    chk(/order\s*:\s*-1/.test(barBlock),
+        "#subjectBar 写了 order:-1（无论挂在哪都排在最前）");
+    chk(/display\s*:\s*flex/.test(barBlock),
+        "#subjectBar 自己就是 flex 容器（自成一行，不去当被分配的兄弟）");
+    chk(/width\s*:\s*100%/.test(barBlock), "#subjectBar 占了整行宽");
+    chk(/body\s*>\s*#subjectBar\s*\{[^}]*flex\s*:\s*0\s+0\s+100%/
+          .test(c.replace(/\s+/g, " ")) || /flex\s*:\s*0\s+0\s+100%/.test(c),
+        "兜底：body 是弹性盒时条也锁死整行（flex:0 0 100%）");
+    /* 负向对照：把 order 抠掉，上面第一条必须认得出 */
+    const brokenBar = barBlock.replace(/order\s*:\s*-1\s*;?/, "");
+    chk(!/order\s*:\s*-1/.test(brokenBar),
+        "负向对照：删掉 order 后断言会失效（说明这条不是白给）");
+  }
+
+  /* shell.css 里 #app 必须显式声明 flex 伸缩 ——
+     与上面同源：body 是弹性盒，不写清楚就会被兄弟抢宽。 */
+  const sp = path.join(ROOT, "css/shell.css");
+  if (fs.existsSync(sp)) {
+    chk(/body\s*>\s*#app\s*\{[^}]*flex\s*:\s*1\s+1\s+auto/.test(
+          fs.readFileSync(sp, "utf8").replace(/\s+/g, " ")),
+        "shell.css 里 body>#app 写了 flex:1 1 auto（独占行内剩余宽度）");
   }
 }
 
