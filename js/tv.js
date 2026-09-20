@@ -300,23 +300,54 @@
     }
 
     /* 返回键：遥控器上的「返回 / 退出」。
-       真机上一般由 MainActivity.onKeyDown(KEYCODE_BACK) 直接调 window.tvBack()，
-       这里兜住浏览器预览与部分把按键透传到 WebView 的盒子。
        顺序很重要：**先让玩法自己收尾**（清计时器、停朗读），再退页面 ——
        否则玩法里的 setInterval 会继续跑，几秒后把界面又刷回游戏里。 */
     var BACK_KEY = { Escape: 1, Backspace: 1, GoBack: 1, BrowserBack: 1 };
+    /* 各家机顶盒的返回键没有一个统一的 DOM keyCode，实测见过的：
+         4 (Android KEYCODE_BACK)、461 (SMART-TV 的 "返回")、166 (部分盒子的 "通道返回")、
+         0 + key="Unidentified"（中兴/华为部分 IPTV 盒子）……
+       只认 4 会让「设置弹层按返回关不掉」——用户只能摸索到「完成」按钮去关。
+       这里把已知形态全列上，并额外接纳「keyCode 为 0 且浏览器也说不出键名」的情况。 */
+    var BACK_CODE = { 4: 1, 461: 1, 166: 1 };
+    /* 按下与抬起会成对到达，用于给 keyup 兜底去重（见文末 keyup 监听）。 */
+    var lastBackAt = 0;
     function isBack(e) {
       var kc = e.keyCode || 0;
-      return !!(BACK_KEY[e.key] || kc === 4 || kc === 461 || kc === 166);
+      if (BACK_KEY[e.key]) return true;
+      if (BACK_CODE[kc]) return true;
+      /* keyCode 0 + Unidentified：固件把返回键吞成了未知键，
+         唯一能认出来的线索就是「既没有键名也没有键码」。 */
+      if (kc === 0 && e.key === "Unidentified") return true;
+      /* 老 WebView 只有 keyIdentifier（Esc 是 U+001B）。 */
+      try { if (String(e.keyIdentifier || "") === "U+001B") return true; } catch (err) {}
+      return false;
+    }
+    /* ★ 任何返回值风格的按键处理器都要走这一层：焦点在输入框上时，
+       WebView 可能把后续的 keydown 吞掉（用于关软键盘 / 取消控件编辑）。
+       这里在最前面把返回键截下来并立刻停掉冒泡，保证「身在输入框也能返回」。 */
+    function tryBack(e) {
+      if (!isBack(e)) return false;
+      /* ★ 必须打时间戳：一次按键的 keydown/keyup 会成对到达，
+         不标记的话 keyup 兜底会再关一层 —— 表现为「按一下返回，设置关了连着又退出一个页面」。 */
+      lastBackAt = Date.now();
+      try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+      doBack();
+      return true;
     }
     function doBack() {
       /* ① 最上层是弹层（设置）→ 先关它。
             不这么排，按返回会直接退掉背后的页面，而设置界面还盖在上面 ——
-            用户看到的就是「返回键只能退回上一级菜单，设置关不掉」。 */
+            用户看到的就是「返回键只能退回上一级菜单，设置关不掉」。
+         ② 焦点若卡在输入框里（语速滑块 / 备份文本框），先把它摘出来，
+            否则关了弹层焦点还留在已隐藏的节点上，下一个界面收不到焦点。 */
+      var act = document.activeElement;
+      if (act && /^(INPUT|TEXTAREA|SELECT)$/.test(act.tagName || "")) {
+        try { act.blur(); } catch (e) {}
+      }
       if (typeof window.closeTopLayer === "function") {
         try { if (window.closeTopLayer()) return true; } catch (e) {}
       }
-      /* ② 玩法自己在跑 → 让它收尾（清计时器、停朗读）再退 */
+      /* ③ 玩法自己在跑 → 让它收尾（清计时器、停朗读）再退 */
       if (typeof window.__gameExit === "function") {
         try { if (window.__gameExit() !== false) return true; } catch (e) { return true; }
       }
@@ -327,11 +358,27 @@
     }
 
     document.addEventListener("keydown", function (e) {
-      if (isBack(e)) { e.preventDefault(); doBack(); return; }
+      if (tryBack(e)) return;
 
       var act = document.activeElement;
-      // 滑块（语速）放行方向键，交给原生调整数值
-      if (act && act.tagName === "INPUT") return;
+      /* ★ 表单控件（语速滑块 / 备份文本框 / 下拉）里不能一棍子放行。
+            旧写法是 `if (act.tagName === "INPUT") return;` —— 焦点一进滑块，
+            四个方向键全部被放行、导航再也不执行，用户就「困在里面出不来了」，
+            只能杀进程重开（2026-09-20 用户反馈的第二个问题）。
+         正确分工（与 Android TV 原生控件一致）：
+            左右键 → 留给控件调数值（range 调 +/-）
+            上下键 → 一律跳出，交还给焦点导航
+         这样既能调语速，又永远出得去。 */
+      if (act && /^(INPUT|TEXTAREA|SELECT)$/.test(act.tagName || "")) {
+        var kd = e.key;
+        if (kd === "ArrowUp" || kd === "ArrowDown") {
+          e.preventDefault();
+          try { act.blur(); } catch (err) {}
+          nav(kd === "ArrowUp" ? "up" : "down");
+        }
+        /* 其余按键（含左右、确认）放行给控件自身 */
+        return;
+      }
 
       var k = e.key;
       if (k === "ArrowLeft") { e.preventDefault(); nav("left"); }
@@ -359,6 +406,36 @@
 
     document.addEventListener("keydown", unlockOnce, true);
     document.addEventListener("click", unlockOnce, true);
+
+    /* （去重计数 lastBackAt 已在上面声明，此处只挂监听）
+       ★ keyup 兜底：部分机顶盒固件只在抬键时把返回键交给 WebView
+       （按下那一刻被系统层截去做「关软键盘 / 退出控件」了），
+       只听 keydown 就永远收不到 —— 表现正是「返回键完全没反应」。
+       去重：同一个键的 down 已经处理过（tryBack 打过时间戳）就不再重复处理 up。 */
+    document.addEventListener("keyup", function (e) {
+      if (!isBack(e)) return;
+      if (Date.now() - lastBackAt < 350) return;   // down/up 成对，别关两次
+      lastBackAt = Date.now();
+      try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+      doBack();
+    }, true);
+
+    /* ★ 弹层专属的返回通道：焦点落在设置面板内部的输入框上时，
+       输入框可能把 keydown 吃掉（上面 keyup 兜底之外再上一层保险）。
+       直接在弹层容器上挂 capture 监听，确保弹层开着时返回一定能关掉它。 */
+    document.addEventListener("keydown", function (e) {
+      var m = activeModal();
+      if (!m) return;
+      var a = document.activeElement;
+      if (!a || !m.contains(a)) return;            // 焦点不在弹层里，交给主流程
+      if (!/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName || "")) return;
+      if (!isBack(e)) return;
+      /* 同样打时间戳：这里已经把弹层关了，keyup 兜底再跑一次 doBack() 就会顺带退掉背后的页面。 */
+      lastBackAt = Date.now();
+      try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+      try { a.blur(); } catch (err) {}
+      if (typeof window.closeSettings === "function") window.closeSettings();
+    }, true);
 
     window.addEventListener("load", function () { setTimeout(function () { ensureFocus(true); }, 50); });
     // 视图切换后焦点可能落在已消失的节点上，兜底复位

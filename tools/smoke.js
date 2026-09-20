@@ -210,6 +210,96 @@ console.log('\n=== battle exit regression ===');
       }
     } catch (e) { console.log('  顶栏可达性检查异常: ' + e.message); }
 
+    /* ②a-3 回归：TV 遥控器两大「困死」场景（2026-09-20 用户反馈）
+       ① 打开设置后按返回关不掉，只能摸到「完成」按钮；
+       ② 焦点进入语速滑块 / 备份文本框后出不来，只能杀进程重开。
+       共同根因是 js/tv.js 里那句 `if (act.tagName === "INPUT") return;` ——
+       一进表单控件，四个方向键全部放行，导航彻底停摆。
+       现在规则是：左右键留给控件调值，上下键一律跳出；返回键全程优先。 */
+    try {
+      const modalEl = doc.getElementById('settingsModal');
+      const isHidden = () => String(modalEl.className).indexOf('hidden') >= 0;
+      const press = (key, type) => {
+        w.document.dispatchEvent(new w.KeyboardEvent(type || 'keydown', { key, bubbles: true }));
+      };
+      const pressCode = (keyCode, type) => {
+        const ev = new w.KeyboardEvent(type || 'keydown', { key: 'Unidentified', bubbles: true });
+        Object.defineProperty(ev, 'keyCode', { get: () => keyCode, configurable: true });
+        Object.defineProperty(ev, 'which', { get: () => keyCode, configurable: true });
+        w.document.dispatchEvent(ev);
+      };
+
+      /* ① 弹层开着 + 焦点在输入框里 → 各种形态的返回键都能关掉它 */
+      const range = doc.getElementById('rateRange');
+      const backup = doc.getElementById('backupBox');
+      const scenarios = [
+        ['Escape 键', (type) => press('Escape', type)],
+        ['GoBack 键', (type) => press('GoBack', type)],
+        ['Backspace 键', (type) => press('Backspace', type)],
+        ['keyCode 4', (type) => pressCode(4, type)],
+        ['keyCode 461', (type) => pressCode(461, type)],
+        ['keyCode 0 + Unidentified', (type) => pressCode(0, type)],
+      ];
+      let backOk = 0;
+      const failed = [];
+      for (const [label, fire] of scenarios) {
+        for (const target of [range, backup]) {
+          w.openSettings(); await sleep(40);
+          if (isHidden()) { failed.push(label + '（弹层没打开）'); continue; }
+          try { target.focus(); } catch (e) {}
+          fire('keydown');
+          await sleep(40);
+          if (isHidden()) backOk++; else failed.push(label + '@' + (target.id || target.tagName));
+        }
+      }
+      console.log('  设置弹层可被返回键关闭: ' + (failed.length ? '❌ ' + failed.join(', ')
+        : '✅ ' + backOk + '/' + (scenarios.length * 2) + ' 种返回键形态全部可关'));
+
+      /* ② keyup 兜底：固件只在抬键时把返回键交给 WebView 的情况。
+         先等出去重窗口（350ms），模拟「用户独立地按了一次返回」而不是和上一步连在一起。
+         真实连按路径走的始终是 keydown（tryBack 会先处理），去重窗口影响不到它。 */
+      await sleep(400);
+      w.openSettings(); await sleep(40);
+      try { range.focus(); } catch (e) {}
+      press('Escape', 'keyup');
+      await sleep(40);
+      console.log('  返回键仅在 keyup 派发时也能关闭: ' + (isHidden() ? '✅ 是' : '❌ 否'));
+
+      /* ③ 焦点困死回归：滑块里按「下」必须能跳出去 */
+      w.openSettings(); await sleep(60);
+      try { range.focus(); } catch (e) {}
+      let escaped = false;
+      const before = act();
+      for (let i = 0; i < 4 && !escaped; i++) {
+        press('ArrowDown'); await sleep(40);
+        const a = act();
+        if (a !== before && !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName || ''))) escaped = true;
+      }
+      console.log('  焦点能从滑块跳出来: ' + (escaped ? '✅ 是' : '❌ 否（会困死）'));
+      /* ④ 导出备份不能把焦点抢进文本框（TV 上等于把遥控器锁死） */
+      w.openSettings(); await sleep(40);
+      try { w.exportProgress(); } catch (e) {}
+      await sleep(40);
+      const af = act();
+      const trapped = af && /^(INPUT|TEXTAREA|SELECT)$/.test(af.tagName || '');
+      console.log('  导出备份未把焦点锁进文本框: ' + (trapped ? '❌ 焦点的 still 在 ' + (af.id || af.tagName) : '✅ 是'));
+      if (!isHidden()) w.closeSettings();
+
+      /* ⑤ 一次按键只能退一层：keydown 关掉弹层后，紧接着的 keyup 不能再触发一次 doBack()。
+         不打时间戳去重的话，表现为「按一下返回，设置关了连着又把背后的页面也退掉了」。 */
+      w.openSettings(); await sleep(40);
+      let tvBackCalls = 0;
+      const origTvBack = w.tvBack;
+      w.tvBack = function () { tvBackCalls++; return true; };
+      try { range.focus(); } catch (e) {}
+      press('Escape', 'keydown'); await sleep(30);
+      press('Escape', 'keyup'); await sleep(30);
+      try { w.tvBack = origTvBack; } catch (e) { delete w.tvBack; }
+      console.log('  一次返回键只关一层（不连带退页）: '
+        + (tvBackCalls === 0 ? '✅ 是' : '❌ 否，多退了 ' + tvBackCalls + ' 层'));
+      if (!isHidden()) w.closeSettings();
+    } catch (e) { console.log('  表单控件 / 返回键回归异常: ' + e.message); }
+
     // ②b 真实路径：在设置里改完 → 按返回关掉 → 再进下一个界面。
     //    旧 bug 就出在这条路上：关掉弹层后 activeElement 还留在弹层残留节点里，
     //    ensureFocus 一看「已经有焦点」就跳过，新页面的焦点永远设不上。

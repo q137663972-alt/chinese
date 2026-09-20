@@ -48,11 +48,20 @@ function exportProgress(){
   var box = document.getElementById("backupBox");
   box.value = progressJSON();
   box.classList.remove("hidden");
-  box.focus(); box.select();
-  try { box.setSelectionRange(0, 999999); } catch(e){}
-  var ok = false;
-  try { ok = document.execCommand("copy"); } catch(e){}
-  toast(ok ? "已复制 " + totalStars() + " 颗星的记录，粘贴到备忘录/微信收藏" : "请长按全选框内文本复制");
+  /* ★ 电视上绝对不能 focus 这个文本框：焦点一旦进去纯文本框，遥控器就出不来，
+       用户只能杀进程重开（2026-09-20 反馈的第二个问题）。
+       TV 下不抢焦点，只在必要时给 select 全选以便文本框自己的复制行为，
+       然后把焦点交还给「导出」按钮，由 js/tv.js 的焦点管理接管。 */
+  var isTV = !!(window.__isTV || (document.body && document.body.classList.contains("tv")));
+  if (isTV) {
+    toast("已生成备份文本，可用遥控器复制或从手机上获取更多方式");
+  } else {
+    box.focus(); box.select();
+    try { box.setSelectionRange(0, 999999); } catch(e){}
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch(e){}
+    toast(ok ? "已复制 " + totalStars() + " 颗星的记录，粘贴到备忘录/微信收藏" : "请长按全选框内文本复制");
+  }
 }
 function importProgress(){
   var box = document.getElementById("backupBox");

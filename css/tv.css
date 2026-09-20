@@ -91,6 +91,36 @@ body.tv .topbar .gear.hot {
   white-space: nowrap;
 }
 
+/* 语速滑块：遥控器左右调数值、上下跳出焦点。
+   焦点落在它上面时必须「看得出来」，否则用户以为遥控器失灵了
+   —— 旧样式没有焦点框，配合「上下键才跳走」的规则会让人一头雾水。
+   同时把左右两侧的用途画出来：← → 是调音量，↑ ↓ 是移动焦点。 */
+body.tv input[type=range] {
+  width: 220px; width: calc(220px * var(--s, 1));
+  height: 44px; height: calc(44px * var(--s, 1));
+}
+body.tv input[type=range]:focus {
+  outline: none;
+  box-shadow: 0 0 0 6px #ffd400, 0 0 20px 6px rgba(255, 212, 0, .75);
+  border-radius: 12px; border-radius: calc(12px * var(--s, 1));
+}
+body.tv input[type=range]:focus::before {
+  content: "← → 调节";
+  position: absolute;
+  margin-top: -26px; margin-top: calc(-26px * var(--s, 1));
+  font-size: 16px; font-size: calc(16px * var(--s, 1));
+  font-weight: 700;
+  color: #8a6d3b;
+  white-space: nowrap;
+}
+/* 备份文本框在电视上只读展示，不参与遥控器焦点（js/tv.js 也会摘 tabindex）。
+   留一点间距，避免和上面的导出/恢复按钮挤在一起。 */
+body.tv #backupBox {
+  margin-top: 8px; margin-top: calc(8px * var(--s, 1));
+  font-size: 14px; font-size: calc(14px * var(--s, 1));
+  max-height: 22vh;
+}
+
 /* ------------------------------------------------------------ 3. 首页 */
 body.tv .hero { padding: 2vh 10px 1vh; }
 body.tv .mascot { font-size: 90px; font-size: calc(90px * var(--s, 1)); }
