@@ -402,23 +402,53 @@ window.__hotDiag = function (txt) {
  *   boot.js 是冻结文件，改不得（手册 §0 铁律），所以在这里重做一遍：
  *   用户主动点 → 立刻下载 → 进度可见 → 失败可重试 → 装完提示重启。
  *   用的还是原生桥那几个公开方法（httpGet / installPack），不碰任何冻结文件。 */
-var _hotPend = [], _hotBase = "", _hotBuild = "", _hotMine = false;
+var _hotPend = [], _hotBase = "", _hotBuild = "", _hotMine = false, _hotCur = null;
+/* ★ 2026-09-21 多源轮询：原先只用 window.HOT_BASE（= cdn.jsdelivr.net），
+   大陆网络访问 jsDelivr 时常超时 → 原生 openStream 返回 null →
+   面板报「分包安装失败（fail download failed）」（手机版实测）。
+   boot.js 的后台更新本来就有多源轮询，手动下载这条线把能力丢了，这里补回来。 */
+var _hotBases = [], _hotBaseIdx = 0;
+function hotBases() {
+  if (_hotBases.length) return _hotBases;
+  var list = [];
+  try {
+    /* boot.js 暴露的完整源列表（jsdelivr 优先、github.io 兜底） */
+    if (window.HOT_BASES && window.HOT_BASES.length) {
+      for (var i = 0; i < window.HOT_BASES.length; i++) {
+        if (window.HOT_BASES[i]) list.push(window.HOT_BASES[i]);
+      }
+    }
+  } catch (e) {}
+  if (!list.length && window.HOT_BASE) list.push(window.HOT_BASE);
+  _hotBases = list;
+  return _hotBases;
+}
 window.hotNowCheck = function () {
   var H = window.AndroidHot;
   if (!H || typeof H.httpGet !== "function") { hotSetMsg("❌ 本机没有热更桥（浏览器预览模式）"); return; }
-  hotSetMsg("🔍 正在检查更新…");
-  var base = window.HOT_BASE || "";
-  if (!base) { hotSetMsg("❌ 取不到热更源地址"); return; }
-  _hotBase = base;
-  try { H.httpGet(base + "pack/manifest.json?t=" + Date.now(), "__hotNowManifest"); }
-  catch (e) { hotSetMsg("❌ 检查失败：" + e.message); }
+  var bs = hotBases();
+  if (!bs.length) { hotSetMsg("❌ 取不到热更源地址"); return; }
+  _hotBaseIdx = 0;
+  hotFetchManifest();
 };
+/* 取清单：当前源失败就换下一个，全部试完才认输 */
+function hotFetchManifest() {
+  var bs = hotBases();
+  if (_hotBaseIdx >= bs.length) { hotSetMsg("❌ 所有热更源都连不上，请检查网络后重试"); return; }
+  _hotBase = bs[_hotBaseIdx];
+  var n = _hotBaseIdx + 1;
+  hotSetMsg("🔍 正在检查更新…（源 " + n + "/" + bs.length + "）");
+  try { window.AndroidHot.httpGet(_hotBase + "pack/manifest.json?t=" + Date.now(), "__hotNowManifest"); }
+  catch (e) { _hotBaseIdx++; hotFetchManifest(); }
+}
 function hotSetMsg(s) {
   var t = document.getElementById("hotNowMsg");
   if (t) t.innerHTML = esc(s);
 }
 window.__hotNowManifest = function (txt) {
-  if (txt == null) { hotSetMsg("❌ 连不上热更源，请检查电视网络后重试"); return; }
+  /* null = 这个源连不上（原生 httpGet 拿到的是 null）→ 换下一个源重试。
+     以前这里直接报错，jsDelivr 一抖就整条手动更新失败。 */
+  if (txt == null) { _hotBaseIdx++; hotFetchManifest(); return; }
   var m = null; try { m = JSON.parse(txt); } catch (e) { hotSetMsg("❌ 清单格式异常"); return; }
   if (!m || !m.build) { hotSetMsg("❌ 清单缺少 build"); return; }
   var cur = "";
@@ -440,8 +470,10 @@ function hotInstallNext() {
     return;
   }
   var pk = _hotPend.shift();
+  _hotCur = pk;                        /* 记住当前包：失败换源时要重下它 */
   hotSetMsg("⬇️ 正在下载 " + esc(pk.name) + "（剩 " + (_hotPend.length + 1) + " 个）… " +
-    Math.round((num(pk.size, 0) / 1048576) * 10) / 10 + "MB");
+    Math.round((num(pk.size, 0) / 1048576) * 10) / 10 + "MB" +
+    (_hotBaseIdx > 0 ? "（源 " + (_hotBaseIdx + 1) + "/" + hotBases().length + "）" : ""));
   try {
     /* ★ 原生桥 installPack(url, sha256) 只有两个参数，回调名硬编码为
        window.__onHotPack / window.__onHotProgress，无法自定义第三个参数。
