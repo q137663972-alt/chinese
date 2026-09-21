@@ -37,7 +37,7 @@
   var TOTAL_Q = 8;             /* 单局题数 */
   var BASE_TIME = 15;          /* 每题秒数 */
   var MIN_TIME = 10;
-  var START_STARS = 4;         /* 初始能量星 */
+  var START_STARS = 5;         /* 初始能量星（每人 5 颗；掉光即出局） */
   var WALK_IN_MS = 5000;       /* 开场走 5 秒 */
   var WALK_BACK_MS = 3000;     /* 掉星回教室走 3 秒 */
   var INV_KEY = "arena_inventory_v2";
@@ -386,33 +386,11 @@
   function loseStar(p) { p.stars--; if (p.stars <= 0) { p.stars = 0; p.alive = false; p.resting = true; } }
   function starStr(n) { var k = Math.round(num(n, 0)); if (k < 0) k = 0; if (k > START_STARS) k = START_STARS; return "★".repeat(k) + "☆".repeat(START_STARS - k); }
 
-  /* 真人受保护：掉星最低留 1 颗，永远不会被淘汰 —— 配合下方 AI 强制淘汰进度，保证人类必为第一名 */
-  function humanLoseStar(p) { if (p.stars > 1) p.stars--; }
-
-  /* ★ 2026-09-21：按"局"强制 AI 淘汰进度（解决「所有 AI 全赢」）
-   *   第 5 局后至少 1 个 AI 出局、第 6 局后 2 个、第 7 局后 3 个。
-   *   取存活 AI 中积分/星最低的几个，逐个清零出局（输光积分），并播老师点名 + 出局音效。
-   *   返回是否本局触发了淘汰（用于延长下一题的间隔，让动画播完）。 */
-  function ensureAIsOut(k) {
-    var aliveAIs = S.players.filter(function (p) { return p.alive && !p.isMe; });
-    var out = S.players.length - 1 - aliveAIs.length;   /* 已淘汰 AI 数 = 总 - 人类 - 存活AI */
-    var need = k - out;
-    if (need <= 0) return false;
-    aliveAIs.sort(function (a, b) { return (a.stars - b.stars) || (a.score - b.score); });
-    var triggered = false, nth = 0;
-    for (var i = 0; i < need && i < aliveAIs.length; i++) {
-      var p = aliveAIs[i];
-      p.score = 0;                                        /* 输光积分 */
-      while (p.alive) loseStar(p);                        /* 星清零 → 出局 */
-      var idxP = S.players.indexOf(p);
-      p._walked = false;
-      walkBack(idxP, nth * 1400); nth++;
-      sfx("elim");
-      banner("💥 " + T(p.name) + " 积分输光，出局！");
-      triggered = true;
-    }
-    return triggered;
-  }
+  /* ★ 2026-09-21 修正（用户明确规则）：
+   *   每人 5 星；真人答错掉光星也出局（不走"受保护"），走回教室 + 被批评 + 游戏结束。
+   *   不再按"局"强制淘汰 AI；淘汰只发生在某人星掉到 0（自然发生）。
+   *   8 题后判定：满星 → 真人必第一（受表扬）；不满星 → 星 >= 存活 AI 最高星则第一但被批评；
+   *   否则 AI 赢、真人被批评。详见 renderOver()。 */
 
   /* 人类夺冠特效：彩带 + 皇冠弹入 + 号角音效 + 老师表扬（renderOver 调用，只播一次） */
   function championFX() {
@@ -678,7 +656,7 @@
     S.chosen = idx; S.revealed = true;
     var me = S.players[0];
     if (correct) { me.score++; sfx("correct"); tts("答对啦，加一分"); }
-    else { humanLoseStar(me); sfx("wrong"); later(function () {
+    else { loseStar(me); sfx("wrong"); later(function () {
       try { var right = (q.opts || [])[q.correct]; tts(right ? T(right.label) : T(q.speakText)); } catch (e) {}
     }, 200); }
     for (var i = 1; i < S.players.length; i++) {
@@ -710,17 +688,13 @@
 
   function afterResolve() {
     if (!S) return;
-    /* 玩家掉光星 → 直接结束（真人受保护，正常不会触发，仅作兜底） */
+    /* 真人掉光星 → 走回教室 + 被批评 + 游戏结束（2026-09-21 修正：真人不再受保护） */
     if (!S.players[0].alive) { endGame(); return; }
     var alive = alivePlayers();
     if (alive.length <= 1) { endGame(); return; }
-    /* ★ 按"局"强制 AI 淘汰进度：第 5 局后 ≥1 出局，第 6 局后 ≥2，第 7 局后 ≥3 */
-    var elim = 0;
-    if (S.qn === 5) elim = 1; else if (S.qn === 6) elim = 2; else if (S.qn === 7) elim = 3;
-    var triggered = elim > 0 ? ensureAIsOut(elim) : false;
     S.qn++;
-    if (S.qn > TOTAL_Q) { endGame(); return; }
-    later(showQuestion, triggered ? 3400 : 1700);
+    if (S.qn > TOTAL_Q) { endGame(); return; }   /* 8 题后结算（按星判定胜负） */
+    later(showQuestion, 1800);                    /* 等本轮掉星回教室动画走完 */
   }
 
   /* ★ 2026-09-21 修复：原先只调用了 endGame()，但这个函数从来没定义过 ——
@@ -739,10 +713,11 @@
       if (cls) cls.classList.add("on");
     } catch (e) {}
     if (meLost && !me._walked) walkBack(0, 0);
-    /* 老师评价：输了批评鼓励、赢了表扬。延后一点，避免和被淘汰点名语音叠在一起 */
-    var talk = meLost
-      ? "你回教室好好学习，下次一定能答对！"
-      : "太棒了，你是本局的知识王者！";
+    /* 老师评价：满星表扬，否则一律批评（含中途掉光星出局）。延后一点避免和点名语音叠在一起 */
+    var meFull = (me.stars >= START_STARS);
+    var talk = meFull
+      ? "太棒了，你满星通关，是当之无愧的第一名！"
+      : "你没拿满星，老师要批评你，下次要全对哦！";
     later(function () { tts(talk); }, meLost ? 3200 : 500);
     /* 等回教室动画走完再出结算面板，别让面板盖住动画 */
     later(function () { if (S) battleRender(); }, meLost ? 3400 : 1600);
@@ -750,38 +725,45 @@
 
   function renderOver(hud) {
     var me = S.players[0];
-    /* ★ 2026-09-21：人类永远第一名。
-       真人末局受保护（最低留 1 星）不会被淘汰，其余 AI 按局数被强制淘汰；
-       所以只要真人还在场，冠军就判给真人——剩余 AI 即便满分也只能拿第二。 */
-    if (me.alive) me.score += S.players.length;      /* 确保积分压过所有 AI */
-    var alive = alivePlayers();
-    alive.sort(function (a, b) {
-      if (a.isMe !== b.isMe) return a.isMe ? -1 : 1;  /* 人类排最前 */
-      return (b.stars - a.stars) || (b.score - a.score);
-    });
-    var winner = alive[0] || null, youWon = !!(winner && winner.isMe);
+    var meFull = (me.stars >= START_STARS);          /* 满星 = 5/5，全程没掉星 */
+    /* ★ 2026-09-21 修正（用户明确规则）：8 题后按星判定胜负
+       满星        → 真人必第一，受表扬（👑 知识王者）
+       不满星且星 ≥ 存活 AI 最高星 → 真人第一，但被批评（没拿满星）
+       不满星且星 < 存活 AI 最高星 → AI 赢，真人被批评 */
+    var board = alivePlayers().slice();
+    board.sort(function (a, b) { return (b.stars - a.stars) || (b.score - a.score); });
+    if (meFull && (!board[0] || !board[0].isMe)) board = [me].concat(board.filter(function (p) { return !p.isMe; }));
+    var winner = board[0] || me;
+    var youWon = !!winner.isMe;
+    var youPraised = meFull;                          /* 只有满星才受表扬 */
+    S._praised = youPraised;
     if (youWon) {
       var v = attachPiece();
       banner("🏆 冠军奖励 +1 配件（共 " + v.attachments + "）");
-      championFX();                                  /* 彩带 + 皇冠 + 号角 + 老师表扬 */
+      if (youPraised) championFX();                   /* 满星才放彩带皇冠 */
     }
     var rival = null;
-    for (var i = 0; i < alive.length; i++) if (!alive[i].isMe) { rival = alive[i]; break; }
+    for (var i = 0; i < board.length; i++) if (!board[i].isMe) { rival = board[i]; break; }
     var head;
-    if (youWon) {
+    if (youPraised) {
       head =
         '<div style="text-align:center;font-size:52px" class="a-crown">👑</div>' +
-        '<div style="text-align:center;font-size:26px;font-weight:900;color:#e08b00">知识王者！</div>' +
-        '<div style="text-align:center;font-size:13px;color:#8a5cf6;font-weight:800;margin-top:4px">👩‍🏫 老师：太棒了，你是本局的第一名！</div>' +
-        (rival ? '<div style="text-align:center;color:#888;margin-top:4px">亚军：' + T(rival.emoji) + T(rival.name) + "（" + num(rival.score, 0) + " 分）</div>" : "");
+        '<div style="text-align:center;font-size:26px;font-weight:900;color:#e08b00">知识王者！满星通关</div>' +
+        '<div style="text-align:center;font-size:13px;color:#8a5cf6;font-weight:800;margin-top:4px">👩‍🏫 老师：太棒了，你满星通关，是当之无愧的第一名！</div>' +
+        (rival ? '<div style="text-align:center;color:#888;margin-top:4px">亚军：' + T(rival.emoji) + T(rival.name) + "（" + num(rival.stars, 0) + " 星）</div>" : "");
+    } else if (youWon) {
+      head =
+        '<div style="text-align:center;font-size:48px">🥇</div>' +
+        '<div style="text-align:center;font-size:22px;font-weight:900">你得了第一名</div>' +
+        '<div style="text-align:center;font-size:13px;color:#ef7d57;font-weight:800;margin-top:4px">👩‍🏫 老师：你拿了第一，但没满星，要批评你，下次要全对！</div>';
     } else {
       head =
         '<div style="text-align:center;font-size:46px">🪑</div>' +
-        '<div style="text-align:center;font-size:20px;font-weight:900;margin:6px 0">星星掉光啦，回教室好好学习</div>' +
-        '<div style="text-align:center;color:#8a5cf6;font-weight:800">👩‍🏫 老师：下次一定能答对！</div>';
+        '<div style="text-align:center;font-size:20px;font-weight:900;margin:6px 0">你被淘汰啦，回教室好好学习</div>' +
+        '<div style="text-align:center;color:#8a5cf6;font-weight:800">👩‍🏫 老师：你比 ' + (rival ? T(rival.name) : "同学") + ' 少了一颗星，下次加油！</div>';
     }
     hud.innerHTML = head +
-      '<div style="text-align:center;font-size:15px;font-weight:800;margin:8px 0">本局得分 ' + num(me.score, 0) + ' 分 · 名次 ' + (youWon ? "第 1 名" : "—") + "</div>" +
+      '<div style="text-align:center;font-size:15px;font-weight:800;margin:8px 0">本局得分 ' + num(me.score, 0) + ' 分 · ' + (meFull ? "满星 ⭐⭐⭐⭐⭐" : ("剩 " + num(me.stars, 0) + " 星")) + "</div>" +
       '<div style="text-align:center;font-size:13px;color:#888">🎒 配件 ' + readInv().attachments + " · 成品 " + readInv().finished + "</div>" +
       '<div class="a-bottom" style="margin-top:12px">' +
         '<button onclick="arenaTeacherTalk()">🔊 听老师</button>' +
@@ -793,7 +775,9 @@
   /* 结算页重听老师评价（赢了表扬 / 输了鼓励） */
   window.arenaTeacherTalk = function () {
     if (!S) return;
-    var talk = S.players[0].alive ? "太棒了，你是本局的第一名！" : "你回教室好好学习，下次一定能答对！";
+    var talk = S._praised
+      ? "太棒了，你满星通关，是当之无愧的第一名！"
+      : "你没拿满星，老师要批评你，下次要全对哦！";
     tts(talk);
   };
 
