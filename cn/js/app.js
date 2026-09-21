@@ -553,16 +553,21 @@ function mountSubjectBar() {
     bar.setAttribute("data-subject-bar", "1");
     bar.innerHTML =
       '<span class="sb-cur">📖 当前学科：<b>语文</b></span>' +
-      '<button class="sb-btn" type="button" onclick="__pickSubjectFromBar()">🔄 换学科</button>';
+      '<button class="sb-btn" type="button" onclick="window.__pickSubject()">🔄 换学科</button>';
     var appEl = document.getElementById("app");
     if (appEl && appEl.parentNode) appEl.parentNode.insertBefore(bar, appEl);
     else document.body.insertBefore(bar, document.body.firstChild);
   } catch (e) {}
 }
-/* 点「换学科」= 清掉学科标记后重载，回到选学科页。
-   与 subject.js 里 __setSubject 的写法保持一致（同一把 localStorage 钥匙）。 */
+/* 点「换学科」= 清掉学科标记（localStorage + URL 里的 #subj=xxx 哈希）后重载，回到选学科页。
+   ★ 2026-09-21 修：原先只清了 localStorage、没清 URL 哈希；而 __setSubject 会往 URL 写 #subj=cn，
+     boot.js 读学科「哈希优先于 localStorage」，于是重载后哈希还在 → 又被选回同一科，
+     表现为「顶部按钮点了没反应」。现在顶部按钮直接委托 boot.js 的 __pickSubject()（它同时清哈希），与设置页一致。
+     这里保留一个同名别名，万一旧入口还在引用也不会崩。 */
 window.__pickSubjectFromBar = function () {
+  try { if (window.__pickSubject) { window.__pickSubject(); return; } } catch (e) {}
   try { localStorage.setItem("app_subject", ""); } catch (e) {}
+  try { location.hash = ""; } catch (e) {}
   try { location.reload(); } catch (e) {}
 };
 /* 挂载时机：load 之后 + 延迟两次兜底（别的代码若重建 body 也能补回来，幂等）。 */

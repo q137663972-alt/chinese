@@ -45,10 +45,18 @@
      ★ 2026-09-21 改：左右两片同屏（左 42% 教室 / 右 58% 操场），输了的走进教室并缩小，
      不再像以前那样把头像 translateX 移出屏外（那样根本看不到教室）。 */
   /* 操场区（右 66%）：上下两排，每排 3 个 —— i<3 上排、i>=3 下排。
-     ★ 2026-09-21 改：原先单排 6 个挤成一串，孩子看不清谁是谁；改成跟教室一致的两排。 */
-  var PLAY_L = [42, 56, 70, 42, 56, 70];
-  /* 教室区（左 34%）：上下两排，每排 3 个 —— i<3 上排、i>=3 下排 */
-  var CLASS_L = [4, 13, 22, 4, 13, 22];
+     ★ 2026-09-21 改：原先单排 6 个挤成一串，孩子看不清谁是谁；改成跟教室一致的两排。
+     ★★ 2026-09-21 修「人物叠到一起」：原先两排共用同一组 left，且开场走位漏设 bottom，
+        于是 #0/#3、#1/#4、#2/#5 落到同一矩形（实测 32×64px 完全重合）。
+        现在：上下两排用**同一组列位**（干净 3×2 网格，行与行之间只差 bottom、不差 left），
+        bottom 由 bottomOf() 统一给出，开场走位与 placeAvatar 共用，杜绝「漏设一种」的不一致。 */
+  var PLAY_L = [40, 55, 70, 40, 55, 70];
+  /* 教室区（左 34%）：同样的 3×2 网格 */
+  var CLASS_L = [4, 12, 20, 4, 12, 20];
+  /* 排位（0=上排 / 1=下排）与对应 bottom 像素。开场走位和 placeAvatar 必须共用这一份，
+     否则又会出现「一个位置一个不设」的不一致 —— 那正是本次叠人的根因。 */
+  function rowOf(i) { return (i < 3) ? 0 : 1; }
+  function bottomOf(i) { return (i < 3) ? "70px" : "4px"; }
 
   /* ---------- 通用小工具 ---------- */
   function rnd(n) { return Math.floor(Math.random() * n); }
@@ -400,8 +408,9 @@
     var L = (zone === "class") ? CLASS_L : PLAY_L;
     el.style.left = L[i] + "%";
     /* 两个区都分上下两排：前 3 个站上排、后 3 个站下排。
-       ★ 2026-09-21 改：操场原先只有一排，6 个头像挤成一串；现在与教室一致排两排。 */
-    el.style.bottom = (i < 3 ? "70px" : "6px");
+       ★ 2026-09-21 改：操场原先只有一排，6 个头像挤成一串；现在与教室一致排两排。
+       ★ 2026-09-21 修叠人：bottom 与 left 必须**成对**设置 —— 只设 left 会让两排落回同一行。 */
+    el.style.bottom = bottomOf(i);
   }
   /* ★ 2026-09-21 丢星特效：星星先闪一下（放大变红），0.43s 后刷新成「少一颗星」的灰态（☆）。
      before = 丢星前的星数，先短暂显示满星闪烁，再落到新数量。 */
@@ -489,10 +498,12 @@
       ".a-avs{position:absolute;inset:0;z-index:2}" +
       /* 头像：绝对定位到各自「槽位」，切换场景靠改 left% / bottom%；走进教室缩成 .small。
          默认 transition 同时含 left / bottom / transform，开场用 JS 临时把 left 过渡拉长成「走 5 秒」。 */
-      ".a-avatar{position:absolute;bottom:6px;width:10%;display:flex;flex-direction:column;align-items:center;transition:left .8s ease,bottom .8s ease,transform .3s ease;transform-origin:bottom center}" +
+      /* 头像宽 10% 太窄（stage 320px 时只有 32px），名字「拉布拉多警长」「汪汪队工程犬」
+         一律被省略成「汪…」，孩子分不清谁是谁。放宽到 15% 并允许名字轻微溢出可见。 */
+      ".a-avatar{position:absolute;bottom:6px;width:15%;display:flex;flex-direction:column;align-items:center;transition:left .8s ease,bottom .8s ease,transform .3s ease;transform-origin:bottom center}" +
       ".a-avatar .a-body{position:relative;width:100%;max-width:34px;aspect-ratio:1/1;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 5px rgba(0,0,0,.15)}" +
       ".a-avatar .a-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
-      ".a-avatar .a-name{font-size:10px;font-weight:800;margin-top:1px;background:rgba(255,255,255,.7);border-radius:8px;padding:0 2px;max-width:100%;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}" +
+      ".a-avatar .a-name{font-size:9px;font-weight:800;margin-top:1px;background:rgba(255,255,255,.7);border-radius:8px;padding:0 2px;max-width:100%;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}" +
       ".a-avatar.me .a-body{outline:3px solid #4a86e8}" +
       ".a-avatar.rest .a-body{filter:grayscale(1);opacity:.6}" +
       ".a-avatar.small{transform:scale(.6)}" +
@@ -555,7 +566,7 @@
     var rowHtml = players.map(function (p, i) {
       var eq = (p.equip === "gun") ? '<img class="a-equip on" src="' + T(IMG + p.equipImg) + '" onerror="this.remove()">'
         : (p.equip === "doll") ? '<img class="a-equip on" src="' + T(IMG + p.equipImg) + '" onerror="this.remove()">' : '<img class="a-equip">';
-      return '<div class="a-avatar ' + (p.isMe ? "me" : "") + '" data-i="' + i + '" style="left:' + PLAY_L[i] + '%">' +
+      return '<div class="a-avatar ' + (p.isMe ? "me" : "") + '" data-i="' + i + '" style="left:' + PLAY_L[i] + '%;bottom:' + bottomOf(i) + '">' +
         '<div class="a-body">' + faceHTML(p.emoji, p.img) +
           '<div class="a-x">❌</div>' + eq + '</div>' +
         '<div class="a-name">' + (p.isMe ? "你" : T(p.name)) + '</div>' +
@@ -585,17 +596,24 @@
     avatarEls = [];
     var nodes = document.querySelectorAll(".arena .a-avatar");
     for (var n = 0; n < nodes.length; n++) avatarEls.push(nodes[n]);
-    /* 开场：头像先从左侧屏幕外走到操场各自槽位（left 过渡拉长成 5 秒） */
+    /* 开场：头像先从左侧屏幕外走到操场各自槽位（left 过渡拉长成 5 秒）
+       ★★ 2026-09-21 修「人物叠到一起」根因：这里原先**只设 left、没设 bottom**，
+        mountStage 建 DOM 时也没给 bottom（只有 placeAvatar 会给，而开场根本没调它），
+        于是 6 个头像全停在 CSS 默认的 bottom:6px 这一行；两排共用同一组 left，
+        #0/#3、#1/#4、#2/#5 就落成完全相同的矩形（实测 32×64px 重合）。
+        现在：先把 bottom 直接落位（不做过渡，避免开场"从下往上飘"），再走 left。 */
     for (var i = 0; i < avatarEls.length; i++) {
       var el = avatarEls[i];
+      el.style.bottom = bottomOf(i);
       el.style.transition = "left " + (WALK_IN_MS / 1000) + "s linear";
       el.style.left = (PLAY_L[i] - 60) + "%";
     }
     /* 强制重排后归位 → 触发过渡；归位后把过渡恢复正常速度（掉星回教室用 .8s） */
     later(function () {
       for (var j = 0; j < avatarEls.length; j++) {
-        avatarEls[j].style.transition = "left .8s ease, transform .3s ease";
+        avatarEls[j].style.transition = "left .8s ease, bottom .8s ease, transform .3s ease";
         avatarEls[j].style.left = PLAY_L[j] + "%";
+        avatarEls[j].style.bottom = bottomOf(j);
       }
     }, 60);
   }
