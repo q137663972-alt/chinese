@@ -387,11 +387,12 @@ window.__hotDiag = function (txt) {
     el.textContent = "✅ 可达，线上 build=" + (m.build || "?");
   } catch (e) { el.textContent = "⚠️ 返回了非预期内容"; }
 };
+/* ★ 2026-09-21 修复「电视端热更永远不成功」：原实现只 reset() 清标记、不下载 */
 window.hotForceReload = function () {
   try {
     if (!window.AndroidHot) { toast("浏览器预览无法下载"); return; }
-    window.AndroidHot.reset();
-    toast("已清除本地标记，请关闭 App 再重新打开以拉取内容");
+    if (typeof window.hotNowCheck === "function") { window.hotNowCheck(); return; }
+    toast("下载器未就绪，请返回游戏列表重进一次后重试");
   } catch (e) { toast("操作失败"); }
 };
 /* 旧版那个飘在右下角的 🛠️ 圆钮已移除（电视上遥控器选不中）。

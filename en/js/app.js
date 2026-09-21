@@ -344,7 +344,12 @@ function renderHotDiag(){
     '</div>' +
     '<div class="row" style="margin-top:12px">' +
       '<button class="btn ghost" onclick="hotTestConn()">🔌 测试连通</button>' +
-      '<button class="btn green" onclick="hotForceReload()">🔄 强制重新下载</button>' +
+      '<button class="btn green" onclick="hotForceReload()">⬇️ 立即下载更新</button>' +
+    '</div>' +
+    '<div id="hotNowMsg" style="text-align:left;font-size:14px;font-weight:800;margin-top:8px;min-height:20px"></div>' +
+    '<div style="text-align:left;color:var(--sub);font-size:12px;margin-top:4px">' +
+      '电视端请用「立即下载更新」：下载完<b>完全退出 App 再打开</b>才生效。' +
+      '自动热更也一直在跑，但它要下完约 4MB，过早关机就会中断。' +
     '</div>' +
     '<button class="btn pink" style="margin-top:10px" onclick="state.view=\'home\';render()">返回</button>';
 }
@@ -367,11 +372,12 @@ window.__hotDiag = function (txt) {
     el.textContent = "✅ 可达，线上 build=" + (m.build || "?");
   } catch (e) { el.textContent = "⚠️ 返回了非预期内容"; }
 };
+/* ★ 2026-09-21 修复「电视端热更永远不成功」：原实现只 reset() 清标记、不下载 */
 window.hotForceReload = function () {
   try {
     if (!window.AndroidHot) { toast("浏览器预览无法下载"); return; }
-    window.AndroidHot.reset();
-    toast("已清除本地标记，请关闭 App 再重新打开以拉取内容");
+    if (typeof window.hotNowCheck === "function") { window.hotNowCheck(); return; }
+    toast("下载器未就绪，请返回游戏列表重进一次后重试");
   } catch (e) { toast("操作失败"); }
 };
 /* 设置标题点 3 次的隐形入口：电视走顶栏 🛠️ 按钮，这个只是手机上的备用通道 */
