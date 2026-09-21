@@ -155,10 +155,19 @@
     window.__subjKeysBound = true;
 
     document.addEventListener("keydown", function (e) {
+      /* ★ 选学科页的键盘导航只能由本文件自理。
+         boot.js 的 planPicker 只注入 js/subject.js（HOST_JS），并不含共享层
+         SHARED_JS（tv-tune.js / tv.js），所以电视上本页没有任何 tv.js 在岗、
+         根本无法把方向键交给它处理 —— 必须自己来。
+         真机 Android TV 的 WebView 方向键发 keyCode 19/20/21/22/23 且 e.key 常为空，
+         所以下面这套必须同时认 ArrowXxx 和 DPAD 码，否则"换学科"在电视上方向键全无反应。
+         ※ 注意：window.tvBack 是本文件自己设的【返回键=退出 App】语义（line 203），
+           不代表 tv.js 在岗；绝不能用它当"交给 tv.js"的开关，否则本页键盘导航会被自己关掉。 */
       var k = e.key;
       var kc = e.keyCode || 0;
-      if (k === "ArrowUp" || kc === 38) { e.preventDefault(); move("up"); return; }
-      if (k === "ArrowDown" || kc === 40) { e.preventDefault(); move("down"); return; }
+      /* 遥控器 DPAD：KEYCODE_DPAD_UP=19 / DOWN=20（部分 WebView 的 e.key 为空，只认 keyCode） */
+      if (k === "ArrowUp" || kc === 38 || kc === 19) { e.preventDefault(); move("up"); return; }
+      if (k === "ArrowDown" || kc === 40 || kc === 20) { e.preventDefault(); move("down"); return; }
       var isEnter = (k === "Enter" || k === " " || k === "Spacebar" || kc === 13 || kc === 66 || kc === 23);
       if (!isEnter) return;
       /* 220ms 防抖：中兴/华为 IPTV 的遥控器在 keydown + ActionUp 各来一次，

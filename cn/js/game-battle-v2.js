@@ -492,22 +492,29 @@
       ".a-cz:before{content:'🏫 教室';position:absolute;top:4px;left:6px;font-weight:900;font-size:11px;color:#a9743a}" +
       ".a-pz{position:absolute;top:0;bottom:0;left:34%;right:0;background:linear-gradient(180deg,#bfe9c0,#7fc98a)}" +
       ".a-pz:before{content:'🏟️ 操场';position:absolute;top:4px;left:6px;font-weight:900;font-size:11px;color:#2f7a3a}" +
-      /* 老师站在操场区中央（开场点名、结尾评价都用得上） */
-      ".a-teacher{position:absolute;top:6px;left:67%;transform:translateX(-50%);width:50px;height:50px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 2px 6px rgba(0,0,0,.2);z-index:3}" +
+      /* 老师站到操场**最右侧**（不再是 67% 居中）。
+         ★ 2026-09-22 修：原先 left:67% 正好压在「拉布拉多警长 / 汪汪队工程犬 / 白熊 / 棕熊」
+         几个学生头像上（实测与 4 人横向重叠），孩子看不清谁是谁。挪到右缘、并缩小，
+         避开两排学生（上排左起 40/55/70%，下排 40/55/70% 的卡片右缘到 76%+卡片宽）。 */
+      ".a-teacher{position:absolute;top:4px;right:2px;width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 2px 6px rgba(0,0,0,.2);z-index:4}" +
       ".a-teacher img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
       ".a-avs{position:absolute;inset:0;z-index:2}" +
       /* 头像：绝对定位到各自「槽位」，切换场景靠改 left% / bottom%；走进教室缩成 .small。
          默认 transition 同时含 left / bottom / transform，开场用 JS 临时把 left 过渡拉长成「走 5 秒」。 */
       /* 头像宽 10% 太窄（stage 320px 时只有 32px），名字「拉布拉多警长」「汪汪队工程犬」
-         一律被省略成「汪…」，孩子分不清谁是谁。放宽到 15% 并允许名字轻微溢出可见。 */
-      ".a-avatar{position:absolute;bottom:6px;width:15%;display:flex;flex-direction:column;align-items:center;transition:left .8s ease,bottom .8s ease,transform .3s ease;transform-origin:bottom center}" +
+         一律被省略成「汪…」，孩子分不清谁是谁。放宽到 14%（留出邻座间隙）。 */
+      ".a-avatar{position:absolute;bottom:6px;width:14%;display:flex;flex-direction:column;align-items:center;transition:left .8s ease,bottom .8s ease,transform .3s ease;transform-origin:bottom center}" +
       ".a-avatar .a-body{position:relative;width:100%;max-width:34px;aspect-ratio:1/1;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 5px rgba(0,0,0,.15)}" +
       ".a-avatar .a-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
       ".a-avatar .a-name{font-size:9px;font-weight:800;margin-top:1px;background:rgba(255,255,255,.7);border-radius:8px;padding:0 2px;max-width:100%;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}" +
       ".a-avatar.me .a-body{outline:3px solid #4a86e8}" +
       ".a-avatar.rest .a-body{filter:grayscale(1);opacity:.6}" +
       ".a-avatar.small{transform:scale(.6)}" +
-      ".a-avatar .a-stars{font-size:11px;color:#e08b00;letter-spacing:1px;min-height:14px}" +
+      /* ★ 2026-09-22 修「星星太宽、挨到一起」：a-stars 原先 font-size:11px + letter-spacing:1px，
+         4 颗星宽约 4×(11+1)=48px，而卡片本身只有 48px 宽、相邻卡片首尾相接（间隙实测 0px），
+         于是两个人的 ★★★★ 看起来连成一条。
+         现在：字号收到 8px、去掉字距、并限宽到 90%（不撑满卡片），两侧留出可见空隙。 */
+      ".a-avatar .a-stars{font-size:8px;color:#e08b00;letter-spacing:0;min-height:11px;line-height:1.1;max-width:92%;white-space:nowrap}" +
       /* ★ 2026-09-21 丢星特效：星星闪一下（放大变红）再变灰色（☆） */
       ".a-avatar .a-stars.flash{animation:astar .43s ease}" +
       "@keyframes astar{0%{transform:scale(1.35);color:#ff3b3b}50%{transform:scale(.85)}100%{transform:scale(1);color:#e08b00}}" +

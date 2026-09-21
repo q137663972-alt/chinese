@@ -507,22 +507,27 @@
             上下键 → 一律跳出，交还给焦点导航
          这样既能调语速，又永远出得去。 */
       if (act && /^(INPUT|TEXTAREA|SELECT)$/.test(act.tagName || "")) {
-        var kd = e.key;
-        if (kd === "ArrowUp" || kd === "ArrowDown") {
+        var kd = e.key, kdc = e.keyCode || 0;
+        /* 支持 Android 遥控器 DPAD 键码：UP=19 / DOWN=20（e.key 常为 ""） */
+        if (kd === "ArrowUp" || kd === "ArrowDown" || kdc === 19 || kdc === 20) {
           e.preventDefault();
           try { act.blur(); } catch (err) {}
-          nav(kd === "ArrowUp" ? "up" : "down");
+          nav(kd === "ArrowUp" ? "up" : (kdc === 19 ? "up" : "down"));
         }
         /* 其余按键（含左右、确认）放行给控件自身 */
         return;
       }
 
-      var k = e.key;
-      if (k === "ArrowLeft") { e.preventDefault(); nav("left"); }
-      else if (k === "ArrowRight") { e.preventDefault(); nav("right"); }
-      else if (k === "ArrowUp") { e.preventDefault(); nav("up"); }
-      else if (k === "ArrowDown") { e.preventDefault(); nav("down"); }
-      else if (k === "Enter" || k === " " || e.keyCode === 13 || e.keyCode === 23 || e.keyCode === 66) {
+      var k = e.key, kc = e.keyCode || 0;
+      /* ★ 2026-09-22 修「电视换学科无法定位选择」：原生 Android TV WebView 把方向键当 DPAD 发，
+         e.key 多为空、keyCode 用 19/20/21/22/23，而不是 PC 的 ArrowUp(38)/Down(40)。
+         原来只匹配 "ArrowUp" 等字符串 → 真机遥控器一个方向键都收不到，焦点动不了。
+         现在一并认 DPAD 键码：UP=19 DOWN=20 LEFT=21 RIGHT=22 CENTER=23 ENTER=66。 */
+      if (k === "ArrowLeft" || kc === 21) { e.preventDefault(); nav("left"); }
+      else if (k === "ArrowRight" || kc === 22) { e.preventDefault(); nav("right"); }
+      else if (k === "ArrowUp" || kc === 19) { e.preventDefault(); nav("up"); }
+      else if (k === "ArrowDown" || kc === 20) { e.preventDefault(); nav("down"); }
+      else if (k === "Enter" || k === " " || kc === 13 || kc === 23 || kc === 66) {
         /* 三重防护，缺一个都会漏出「按一次点两下」：
            ① e.repeat —— 安卓固件按住 OK 会持续发 keydown（长按连发），必须丢掉；
            ② 220ms 防抖 —— 部分遥控器一次按下会补发第二个 keydown；
