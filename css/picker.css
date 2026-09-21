@@ -143,47 +143,61 @@
 /* ---------------------------------------------------------------------------
  * ★★★ 2026-09-21 手机版事故：画面被压成右边一条、左边一大片空白 ★★★
  *
- * 根因不在本文件，而在三处**同一个** body 规则：
- *     html,body{margin:0;padding:0;height:100%}
- *     body{...; min-height:100vh; display:flex; justify-content:center;}
- *     #app{width:100%; max-width:520px; margin:0 auto;}
- * body 是**横向弹性盒**，而这个规则是给"只有 #app 一个孩子"的情形写的。
- * 我们插进来的 #subjectBar 成了**第二个 flex item**：手机上视口才约 393px，
- * 两个兄弟按内容分宽度，#app 的 width:100% 也被重新解释成"剩给我的那部分"，
- * 于是它只剩屏幕右边约 72%。
+ * 【第一次判断错了，这里记下来免得再走弯路】
+ *   我以为是 #subjectBar 当"第二个 flex item"去和 #app 抢宽度，于是加了一堆
+ *   flex 救火。结果热更上线后用户截图**一模一样** —— 判断错。
+ *   真正的根因是这一对：
+ *       #subjectBar{ width:100%; max-width:100% }        ← body 的弹性盒子项
+ *       #app{ width:100%; max-width:520px; margin:0 auto}
+ *   body 是 `display:flex; justify-content:center` 的**横向弹性盒**。
+ *   弹性盒的 `width:100%` 是"解析后宽度"，它会连带把该行可用空间算成
+ *   「视口宽 + #app 想要的 520px」；手机视口才约 393px，两者一除就得到
+ *   一个被放大的"内容盒宽度"。#app 随后按 max-width:520px 在这块虚拟空间里
+ *   居中 —— 于是整页被推到右边，左边留出约 72% 的空白。
  *
- * 对策 —— 「清场 + 自成一行」双保险，一条都不许省：
- *   ① 清场：#subjectBar 自己写 `display:block`。
- *      就算别人把 #app 改成 display:flex，#app 也只会以块级正常参与外层
- *      弹性盒的分配（不会变成"又一个抢宽度的兄弟"），布局立刻恢复我们想要的。
- *   ② 自成一行：自己是 flex 容器，顺序写死在最前（order:-1）。
- *      即使换成 display:block 的父级、或将来加了别的 wrapper，位置也不会漂。
+ * 【正解：让条的自动宽度压根不去定义这一行】
+ *   ① `width` / `max-width` **一律不写** —— 弹性盒里会拉伸，效果本来就等于 100%。
+ *      只要它不主动声明宽度，这一行的可用空间就仍是"视口宽"，#app 的居中算对。
+ *   ② `flex:0 0 auto` 明说"别伸缩"，配合 ③ 一起用。
+ *   ③ `position:fixed` 把它挪出这一行的计算（见下方说明：这一条是关键）。
  *
- * 为什么不再用 `position:fixed` 一挂了之：fixed 会脱离文档流，#app 那句
- * min-height:100vh 会把它整屏顶下去（顶部要空出条的高度），而且电视上
- * overscan 裁切配合 fixed 很容易把按钮切掉一半 —— 吃过亏，不重来。
+ * 为什么敢用 fixed：`html,body{height:100%}` 已经锁住了根元素高度，
+ * 所以 fixed 元素**不会**影响 #app 那句 `min-height:100vh` 的参照系 ——
+ * 早先担心的"内容被顶出屏幕"不会发生。电视上另给 #app 加 padding-top
+ * 让开这条的高度（见文件末尾 tv 段，只在 body.tv 下生效）。
  *
  * 【安卓 8 红线照旧】只用 calc() + var(--s) + flex，不用 clamp()/min()/max()
  * 与 aspect-ratio。 */
 #subjectBar {
-  order: -1;                       /* 永远在最前，与 DOM 顺序无关 */
-  display: flex;                   /* 自成一行：它是容器，不是被分配的兄弟 */
+  /* ① 挪出 body 的弹性盒计算 —— 这是修手机版错位的**主要手段**，
+        不是装饰。整幅页面被推到右边就是这一行带来的。 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;                     /* 高于内容；设置弹层是 50，仍在它上面 */
+
+  /* 弹层内的条（万一有人把它塞进设置里）退回相对定位，别浮在最上层挡视线 */
+  /* ② 自己内部排版（横向一行：左边文字、右边按钮） */
+  display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  width: 100%;
-  max-width: 100%;
+
+  /* ③ 宽度：一个字都不写。绝对定位元素的 left+right=0 已经把它拉满整行；
+        再写 width:100% / max-width:100% 会把"解析后宽度"的坑重新引回来。 */
   box-sizing: border-box;
-  /* ★ 条要「细而显眼」，不能厚得吃掉屏幕 —— 手机上整条控制在 60px 以内。
-     上边距多留一点，因为它是 body 的第一个块级子元素，贴着屏幕上沿，
-     短屏手机的原生状态栏/挖孔可能压到它。 */
+  /* 顶部多留一点：它现在贴在屏幕最上沿，短屏手机的原生状态栏/挖孔可能压到它。
+     两段式写法 —— 安卓 8 的 WebView 不认 env()，整条会被丢弃，第一句是兜底。 */
   padding: 12px 14px 10px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
   background: var(--card, #fff);
   box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
 }
-/* 万一被放进别的横向弹性盒（别人的 body 也是 flex）：
-   flex-basis:100% + 不许伸缩 —— 占满整行，绝不参与"分宽度"。 */
-body > #subjectBar { flex: 0 0 100%; }
+/* 条高约 58px（含 12px 上留白）。内容必须让开，否则第一条内容会被压在条下面。
+   ★ 只在 body.tv 之外生效 —— 电视下 #app 自己带 3vh padding，够了。 */
+body:not(.tv) #app { padding-top: 68px; }
 #subjectBar .sb-cur { font-size: 14px; color: var(--sub, #8a90a8); line-height: 1.3; }
 #subjectBar .sb-cur b { font-size: 19px; color: #2f3350; margin-left: 4px; }
 #subjectBar .sb-btn {
@@ -208,7 +222,7 @@ body > #subjectBar { flex: 0 0 100%; }
 }
 
 @media (min-width: 560px) {
-  #subjectBar { padding: calc(13px * var(--s, 1)) calc(18px * var(--s, 1)); }
+  #subjectBar { padding: calc(11px * var(--s, 1)) calc(18px * var(--s, 1)) calc(11px * var(--s, 1)); }
   #subjectBar .sb-cur { font-size: calc(17px * var(--s, 1)); }
   #subjectBar .sb-cur b { font-size: calc(24px * var(--s, 1)); }
   #subjectBar .sb-btn {
@@ -220,7 +234,7 @@ body > #subjectBar { flex: 0 0 100%; }
 }
 
 @media (min-width: 900px) {
-  #subjectBar { padding: calc(14px * var(--s, 1)) calc(22px * var(--s, 1)); }
+  #subjectBar { padding: calc(13px * var(--s, 1)) calc(22px * var(--s, 1)) calc(13px * var(--s, 1)); }
   #subjectBar .sb-cur { font-size: calc(19px * var(--s, 1)); }
   #subjectBar .sb-cur b { font-size: calc(28px * var(--s, 1)); }
   #subjectBar .sb-btn {

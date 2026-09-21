@@ -414,33 +414,47 @@ console.log("\n──── ⑨ 老机启动哨兵会被喂饱（防熔断） �
     const c = fs.readFileSync(cp, "utf8");
     chk(/#subjectBar/.test(c) && /\.sb-btn:focus/.test(c),
         "picker.css 里有 #subjectBar 样式且按钮有焦点环（遥控器看得见）");
-    /* ★★ 2026-09-21 手机版事故：加进 #subjectBar 后 #app 被挤成右边一条 ★★
-       shell.css 与三科 style.css 里那句 body{display:flex;justify-content:center}
-       是为"只有 #app 一个孩子"写的；多一个兄弟就分宽度。
-       这条断言防的是：以后有人把下面两处兜底删掉（或搬走）又踩同一脚。 */
+    /* ★★★ 2026-09-21 手机版事故：加进 #subjectBar 后整页被推到右边 ★★★
+       症状：内容只占屏幕右边约 72%，左边一大片空白。
+       根因：body 是 `display:flex; justify-content:center` 的横向弹性盒（三处
+       style.css + shell.css 都有这句，是给"body 只有 #app 一个孩子"写的）。
+       #subjectBar 一旦声明 width/max-width，它作为弹性盒子项就会把该行的
+       **可用空间**算成「视口宽 + #app 想要的 520px」——手机视口才约 393px，
+       #app 按 max-width:520px 在那块虚拟空间里居中，整页就偏向右边。
+       ★ 我第一轮按"两个兄弟分宽度"去修（加 order/flex-basis），上线后用户截图
+         一模一样 —— 判断错。数据落在"行可用空间"上，不在"兄弟分配"上。
+       对策（缺一不可）：#subjectBar 用 position:fixed 挪出这一行，
+       并且**一个字都不声明 width**。 */
     const barIdx = c.indexOf("#subjectBar {");
-    const barBlock = barIdx >= 0 ? c.slice(barIdx, c.indexOf("}", barIdx)) : "";
-    chk(/order\s*:\s*-1/.test(barBlock),
-        "#subjectBar 写了 order:-1（无论挂在哪都排在最前）");
-    chk(/display\s*:\s*flex/.test(barBlock),
-        "#subjectBar 自己就是 flex 容器（自成一行，不去当被分配的兄弟）");
-    chk(/width\s*:\s*100%/.test(barBlock), "#subjectBar 占了整行宽");
-    chk(/body\s*>\s*#subjectBar\s*\{[^}]*flex\s*:\s*0\s+0\s+100%/
-          .test(c.replace(/\s+/g, " ")) || /flex\s*:\s*0\s+0\s+100%/.test(c),
-        "兜底：body 是弹性盒时条也锁死整行（flex:0 0 100%）");
-    /* 负向对照：把 order 抠掉，上面第一条必须认得出 */
-    const brokenBar = barBlock.replace(/order\s*:\s*-1\s*;?/, "");
-    chk(!/order\s*:\s*-1/.test(brokenBar),
-        "负向对照：删掉 order 后断言会失效（说明这条不是白给）");
+    /* ★ 取块之后必须**先剥注释再判** —— 块里那句注释正写着
+       "再写 width:100% / max-width:100% 会把行宽算错"，
+       不剥注释就会把注释里的字面命中当成"真声明了宽度"，直接把正确写法判红。
+       （本轮踩到的第 N 次"断言被自己注释坑"，教训同 stripComments。） */
+    const barBlockRaw = barIdx >= 0 ? c.slice(barIdx, c.indexOf("}", barIdx)) : "";
+    const barBlock = barBlockRaw.replace(/\/\*[\s\S]*?\*\//g, " ");
+    chk(/position\s*:\s*fixed/.test(barBlock),
+        "#subjectBar 是 position:fixed（挪出 body 的弹性盒计算）");
+    chk(/top\s*:\s*0/.test(barBlock) && /left\s*:\s*0/.test(barBlock) &&
+        /right\s*:\s*0/.test(barBlock),
+        "#subjectBar 用 top/left/right:0 拉满整行（而不是声明 width）");
+    chk(!/(^|[^-])width\s*:/.test(barBlock) && !/max-width\s*:/.test(barBlock),
+        "★ #subjectBar 绝不声明 width/max-width（声明了就会把行宽算错，整页偏移）");
+    /* 负向对照：把 fixed 抠掉，第一条必须认得出 */
+    chk(!/position\s*:\s*fixed/.test(barBlock.replace(/position\s*:\s*fixed\s*;?/, "")),
+        "负向对照：删掉 position:fixed 后断言会失效（说明这条不是白给）");
+    /* 对上了就必须让开：条是浮层，内容要留出它的高度 */
+    chk(/body:not\(\.tv\)\s*#app\s*\{[^}]*padding-top/.test(c.replace(/\s+/g, " ")),
+        "picker.css 里非电视端给 #app 留了顶部空间（内容不被浮层压住）");
   }
 
-  /* shell.css 里 #app 必须显式声明 flex 伸缩 ——
-     与上面同源：body 是弹性盒，不写清楚就会被兄弟抢宽。 */
+  /* shell.css 里不许再往 body 加会改变该行宽度的规则 ——
+     第一轮加的 body>#app{flex:1 1 auto} 对这个问题无效，已删；
+     留着反而多一处可能干扰学科样式的规则。这里守住"别再长回来"。 */
   const sp = path.join(ROOT, "css/shell.css");
   if (fs.existsSync(sp)) {
-    chk(/body\s*>\s*#app\s*\{[^}]*flex\s*:\s*1\s+1\s+auto/.test(
-          fs.readFileSync(sp, "utf8").replace(/\s+/g, " ")),
-        "shell.css 里 body>#app 写了 flex:1 1 auto（独占行内剩余宽度）");
+    const sh = stripComments(fs.readFileSync(sp, "utf8")).replace(/\s+/g, " ");
+    chk(!/body\s*>\s*#app\s*\{[^}]*flex\s*:\s*1\s+1\s+auto/.test(sh),
+        "shell.css 不再有 body>#app{flex:1 1 auto}（无效救火，已移除）");
   }
 }
 
