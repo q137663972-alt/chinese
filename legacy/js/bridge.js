@@ -81,6 +81,7 @@
         "math/js/tts.js",
         "math/js/praise.js",
         "math/js/games.js",
+        "math/js/game-battle.js",
         "math/js/app.js",
         "math/js/update.js"
       ]
@@ -94,6 +95,7 @@
         "en/js/tts.js",
         "en/js/praise.js",
         "en/js/games.js",
+        "en/js/game-battle.js",
         "en/js/app.js",
         "en/js/update.js"
       ]
@@ -125,6 +127,42 @@
       };
       document.head.appendChild(s);
     })();
+  }
+
+  /* ---------- 从已装资源包的清单里补上「新增玩法」 ----------
+     ★ 2026-09-21 事故复盘：这份静态清单漏了 math / en 的 game-battle.js，
+       于是老机上英语、数学的知识圈**永远不上线**（语文正常，纯粹因为
+       cn/js/game-battle.js 是 APK 内置的、不靠热更注入）。
+       静态清单是人手维护的，迟早还会再漏一次 —— 所以这里改成：
+       从已装资源包的 MANIFEST 里，把本学科目录下的玩法文件
+       （名字形如 game-xxx.js）自动补进来，位置仍在学科 games.js 之后
+       （registerGame 必须先存在，否则玩法文件会安全降级不注册）。
+       桥或清单取不到时静默退回静态清单，行为与以前完全一致。 */
+  function withPackGames(files, dir) {
+    try {
+      var H = window.AndroidHot;
+      if (!H || typeof H.manifest !== "function") return files;
+      var t = H.manifest();
+      if (!t) return files;
+      var m = JSON.parse(t);
+      if (!m || !m.files || !m.files.length) return files;
+      var extra = [], i, p;
+      for (i = 0; i < m.files.length; i++) {
+        p = m.files[i] && m.files[i].p;
+        if (typeof p !== "string" || p.indexOf(dir + "/js/") !== 0) continue;
+        if (!/\.js$/.test(p)) continue;
+        if (files.indexOf(p) >= 0) continue;
+        if (!/\/game-[^\/]+\.js$/.test(p)) continue;   /* 只补玩法文件，别的没登记不乱注 */
+        extra.push(p);
+      }
+      if (!extra.length) return files;
+      var out = files.slice(), at = -1;
+      for (i = 0; i < out.length; i++) if (/js\/games\.js$/.test(out[i])) at = i;
+      if (at < 0) at = out.length - 1;
+      for (i = 0; i < extra.length; i++) out.splice(at + 1 + i, 0, extra[i]);
+      log("补入资源包玩法：" + extra.join("、"));
+      return out;
+    } catch (e) { return files; }
   }
 
   /* ---------- 样式：shell → 学科 → tv ----------
@@ -241,7 +279,7 @@
   /* 学科条**立刻**挂，不等 18 个学科文件加载完 ——
      机顶盒上那一两秒里如果屏幕上什么都没有，用户会以为卡住了。 */
   mountSubjectBar(cur);
-  loadSeq(subj.files, function () {
+  loadSeq(withPackGames(subj.files, subj.dir), function () {
     /* 学科 App 是 tv.js 跑完之后才加载的 —— window.render 此刻才第一次出现，
        必须补一次包装，否则机顶盒上每次切页焦点都不会复位。
        这也是为什么一开始就要求 app.js 排在 tv.js 之前、然后由这里兜底。 */
