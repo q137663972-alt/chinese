@@ -22,7 +22,11 @@
  *   4. 退出必须走 battleStop()：runId++ 作废在途回调 + 清计时器 + 停朗读 + 摘钩子。
  * ==================================================================== */
 (function () {
-  if (typeof registerGame !== "function") return; /* games.js 没加载时不注册，安全降级 */
+  try { if (typeof log === "function") log("math battle file executing"); } catch (e) {}
+  if (typeof registerGame !== "function") {
+    try { if (typeof log === "function") log("math battle: registerGame missing"); } catch (e) {}
+    return; /* games.js 没加载时不注册，安全降级 */
+  }
 
   var SKILL = 0.72;          /* AI 单题正确率（控制淘汰节奏） */
   var TOTAL_Q = 8;           /* 单局题数 */
@@ -479,6 +483,7 @@
     showQuestion();
   }
 
+  try { if (typeof log === "function") log("math battle registering"); } catch (e) {}
   registerGame({
     id: "battle",
     name: "知识圈",
@@ -486,4 +491,5 @@
     desc: "答题生存赛：答对活、答错掉星，最后剩 1 人当知识王者！",
     start: startBattle
   });
+  try { if (typeof log === "function") log("math battle registered, GAMES=" + ((window.GAMES && window.GAMES.length) || 0)); } catch (e) {}
 })();
