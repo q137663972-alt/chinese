@@ -243,3 +243,21 @@ body:not(.tv) #app { padding-top: 68px; }
     min-height: calc(64px * var(--s, 1));
   }
 }
+
+/* --------------------------------------------------- 换学科条 × 电视端 */
+/* ★ 2026-09-21 补：2.5.0 新壳重新挂上 #subjectBar 后，与电视顶栏撞车了。
+   两者都在屏幕最上沿：条是 position:fixed top:0 z-index:40，
+   顶栏是 position:sticky top:0 z-index:30 —— 条会盖住顶栏的 ← / 🛠️ / ⚙️。
+   原文注释说「电视下 #app 自己带 3vh padding，够了」，但 #app 的 padding
+   挡不住 fixed 元素（fixed 脱离文档流，不参与 #app 的盒模型）。
+   这里给电视下的 #app 额外让出条的高度，并把条压到顶栏之下，各归各位。
+
+   条高（电视档，--s≈1.5）≈ 13*1.5*2 + 内容 ≈ 100px，取 12vh 留余量。 */
+body.tv #subjectBar {
+  z-index: 35;                     /* 低于设置弹层(50)、高于顶栏吸顶带 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .10);
+}
+body.tv #app {
+  /* 与 tv.css 的 padding:3vh 5vw 4vh 叠加：上方再加 10vh 让开换学科条 */
+  padding-top: 10vh;
+}

@@ -65,16 +65,23 @@ body.tv #app > * { max-width: 100%; }
 body.tv img, body.tv svg, body.tv canvas { max-width: 100%; }
 
 /* ------------------------------------------------------------- 2. 顶栏 */
-/* 吸顶：滚到哪都能按返回。padding 做成不透明，避免内容从下面透出来 */
+/* 吸顶：滚到哪都能按返回。
+   ★ 2026-09-21 修「上下漏出」：背景原来是
+       linear-gradient(180deg, #fdf3e7 70%, rgba(253,243,231,0))
+     底部 30% 是**全透明**的，注释写着「padding 做成不透明」却没做到 ——
+     #app 内容一旦滚到顶栏下沿就从这个透明带里透出来，
+     现场表现就是「顶栏上下漏出字」（截图里标题下面还能看见正文）。
+     改法：① 用不透明纯色打底，去掉透明渐变；
+           ② 下 padding 从 1vh 加到 2vh，让不透明区真正盖住吸顶带上沿，
+              光靠 1vh（720p 上才 7.2px）挡不住后续内容。 */
 body.tv .topbar {
   position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 30;
-  padding: 1vh 0;
-  margin: 0 0 2vh;
-  background: #f6ecdf;
-  background: linear-gradient(180deg, #fdf3e7 70%, rgba(253, 243, 231, 0));
+  padding: 1vh 0 2vh;
+  margin: 0 0 1.5vh;
+  background: #fdf3e7;              /* 不透明纯色：滚上来的内容不会透出来 */
 }
 body.tv .topbar .back,
 body.tv .topbar .gear {

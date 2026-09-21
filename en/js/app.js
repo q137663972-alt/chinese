@@ -373,6 +373,91 @@ window.__hotDiag = function (txt) {
   } catch (e) { el.textContent = "⚠️ 返回了非预期内容"; }
 };
 /* ★ 2026-09-21 修复「电视端热更永远不成功」：原实现只 reset() 清标记、不下载 */
+/* ★ 2026-09-21 从 game-battle-v2.js 搬来 ★
+   这段「一键热更」原先被写在知识圈竞赛的玩法文件里 —— 于是必须进过那个玩法，
+   window.hotNowCheck 才会注册。没进过的话，自检页点「立即下载更新」只会弹
+   『下载器未就绪，请返回游戏列表重进一次后重试』（用户实测就是这个）。
+   它跟玩法毫无关系，是宿主级的电视端救命入口，理应待在自检面板所在的 app.js。
+   注：块内 T() 已换成 app.js 自带的 esc()（原文件没有 T，搬过来会直接报未定义）。*/
+/* ===================== 一键热更（电视端救命入口） =====================
+ * ★ 2026-09-21 用户反馈：电视端热更「从没成功过」，手机端正常。
+ *   根因不在下载本身，而在 boot.js 的后台更新时机（启动 3 秒后才开始拉，
+ *   两个 zip 合计 ~4.2MB，装完才提示「下次打开生效」）——
+ *   电视端看完就关机，4.2MB 没下完就被中断，而 boot.js 本轮直接放弃重试。
+ *   boot.js 是冻结文件，改不得（手册 §0 铁律），所以在这里重做一遍：
+ *   用户主动点 → 立刻下载 → 进度可见 → 失败可重试 → 装完提示重启。
+ *   用的还是原生桥那几个公开方法（httpGet / installPack），不碰任何冻结文件。 */
+var _hotPend = [], _hotBase = "", _hotBuild = "", _hotMine = false;
+window.hotNowCheck = function () {
+  var H = window.AndroidHot;
+  if (!H || typeof H.httpGet !== "function") { hotSetMsg("❌ 本机没有热更桥（浏览器预览模式）"); return; }
+  hotSetMsg("🔍 正在检查更新…");
+  var base = window.HOT_BASE || "";
+  if (!base) { hotSetMsg("❌ 取不到热更源地址"); return; }
+  _hotBase = base;
+  try { H.httpGet(base + "pack/manifest.json?t=" + Date.now(), "__hotNowManifest"); }
+  catch (e) { hotSetMsg("❌ 检查失败：" + e.message); }
+};
+function hotSetMsg(s) {
+  var t = document.getElementById("hotNowMsg");
+  if (t) t.innerHTML = esc(s);
+}
+window.__hotNowManifest = function (txt) {
+  if (txt == null) { hotSetMsg("❌ 连不上热更源，请检查电视网络后重试"); return; }
+  var m = null; try { m = JSON.parse(txt); } catch (e) { hotSetMsg("❌ 清单格式异常"); return; }
+  if (!m || !m.build) { hotSetMsg("❌ 清单缺少 build"); return; }
+  var cur = "";
+  try { cur = (window.AndroidHot && window.AndroidHot.manifest && JSON.parse(window.AndroidHot.manifest() || "{}").build) || ""; } catch (e) {}
+  if (!cur) cur = window.__HOT_BUILD || "";
+  if (cur === m.build) { hotSetMsg("✅ 已是最新（build=" + m.build + "）"); return; }
+  _hotBuild = m.build;
+  _hotPend = (m.packs && m.packs.length) ? m.packs.slice() : [];
+  if (!_hotPend.length) { hotSetMsg("❌ 清单里没有分包"); return; }
+  _hotMine = true;                     /* 标记：接下来这一串回调属于本次手动更新 */
+  hotSetMsg("⬇️ 开始下载 " + _hotPend.length + " 个分包…");
+  hotInstallNext();
+};
+function hotInstallNext() {
+  if (!_hotPend.length) {
+    _hotMine = false;
+    hotSetMsg("🎉 下载完成！<b>请完全退出 App 再重新打开</b>，新内容即生效。");
+    try { if (typeof window.toast === "function") window.toast("新内容已就绪，请重启 App"); } catch (e) {}
+    return;
+  }
+  var pk = _hotPend.shift();
+  hotSetMsg("⬇️ 正在下载 " + esc(pk.name) + "（剩 " + (_hotPend.length + 1) + " 个）… " +
+    Math.round((num(pk.size, 0) / 1048576) * 10) / 10 + "MB");
+  try {
+    /* ★ 原生桥 installPack(url, sha256) 只有两个参数，回调名硬编码为
+       window.__onHotPack / window.__onHotProgress，无法自定义第三个参数。
+       所以这里必须复用同一组回调，靠 _hotMine 标记分流：
+       是我发起的 → 推进我自己的面板；是 boot.js 的 → 交回给 boot.js。
+       下面在 installPack 之后包一层 __onHotPack，两条通道互不打断。 */
+    _installHook();
+    window.AndroidHot.installPack(_hotBase + pk.name + "?b=" + _hotBuild, pk.sha256 || "");
+  } catch (e) { _hotMine = false; hotSetMsg("❌ 下载失败：" + e.message); }
+}
+/* 把 __onHotPack / __onHotProgress 包一层：我这条线优先，其余原样交给 boot.js */
+var _origPack = null, _origProg = null;
+function _installHook() {
+  if (_origPack) return;                       /* 只包一次 */
+  _origPack = window.__onHotPack || null;
+  _origProg = window.__onHotProgress || null;
+  window.__onHotPack = function (st, msg) {
+    if (_hotMine) {
+      if (st === "ok" || st === true) { hotInstallNext(); return; }
+      _hotMine = false;
+      hotSetMsg("❌ 分包安装失败（" + esc(st) + (msg ? " " + esc(msg) : "") + "），可再点一次重试");
+      return;
+    }
+    if (typeof _origPack === "function") return _origPack.apply(this, arguments);
+  };
+  window.__onHotProgress = function (done) {
+    if (_hotMine && done > 0) { hotSetMsg("⬇️ 已下载 " + (done / 1048576).toFixed(1) + "MB…"); return; }
+    if (typeof _origProg === "function") return _origProg.apply(this, arguments);
+  };
+}
+
 window.hotForceReload = function () {
   try {
     if (!window.AndroidHot) { toast("浏览器预览无法下载"); return; }
@@ -382,6 +467,61 @@ window.hotForceReload = function () {
 };
 /* 设置标题点 3 次的隐形入口：电视走顶栏 🛠️ 按钮，这个只是手机上的备用通道 */
 (function () {
+/* ★ 2026-09-21 补回「换学科」入口条 ★
+   2.4.2 老壳在首页顶部有一条固定的「当前学科 ｜ 🔄 换学科」
+   （见 legacy/js/bridge.js 的 mountSubjectBar，样式在 css/picker.css 的 #subjectBar 段）。
+   2.5.0 新壳丢了这条，只剩设置里的入口，用户反馈「切换怎么不和 2.4 一样」。
+   这里按同一套 DOM/类名补回来，样式直接复用 picker.css，两代壳外观一致。
+
+   为什么插在 #app 之外：学科 App 的 render() 会重建 #app 的内容，条插在里面会被冲掉；
+   插在外面 + position:fixed 就不用每帧跟它抢位置。
+   为什么写在各科 app.js 而不是宿主层：boot.js 是冻结文件，HOST_JS 加新文件要出新 APK，
+   而这段纯 JS 可以热更下发，立刻生效。 */
+/* picker.css 里才有 #subjectBar 的样式，但 2.5.0 新壳默认不加载它
+   （只有 legacy 老壳会 add("cssPick", ...)）。不补这一步，条会掉成浏览器默认样式。
+   加载方式与 boot.js 的 swapCss 一致：先试热更源，404 回退内置相对路径。 */
+function ensurePickerCss() {
+  try {
+    if (document.getElementById("cssPick")) return;
+    var l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.id = "cssPick";
+    l.href = "https://local.hot/css/picker.css";
+    l.onerror = function () {
+      /* 热更包里没有 → 退回 APK 内置那份（boot.js 同款降级思路） */
+      try { l.href = "css/picker.css"; l.onerror = null; } catch (e) {}
+    };
+    var tvLink = document.getElementById("cssTV");
+    if (tvLink && tvLink.parentNode) tvLink.parentNode.insertBefore(l, tvLink);
+    else document.head.appendChild(l);
+  } catch (e) {}
+}
+function mountSubjectBar() {
+  try {
+    ensurePickerCss();
+    if (document.getElementById("subjectBar")) return;
+    var bar = document.createElement("div");
+    bar.id = "subjectBar";
+    bar.setAttribute("data-subject-bar", "1");
+    bar.innerHTML =
+      '<span class="sb-cur">🔤 当前学科：<b>英语</b></span>' +
+      '<button class="sb-btn" type="button" onclick="__pickSubjectFromBar()">🔄 换学科</button>';
+    var appEl = document.getElementById("app");
+    if (appEl && appEl.parentNode) appEl.parentNode.insertBefore(bar, appEl);
+    else document.body.insertBefore(bar, document.body.firstChild);
+  } catch (e) {}
+}
+/* 点「换学科」= 清掉学科标记后重载，回到选学科页。
+   与 subject.js 里 __setSubject 的写法保持一致（同一把 localStorage 钥匙）。 */
+window.__pickSubjectFromBar = function () {
+  try { localStorage.setItem("app_subject", ""); } catch (e) {}
+  try { location.reload(); } catch (e) {}
+};
+/* 挂载时机：load 之后 + 延迟两次兜底（别的代码若重建 body 也能补回来，幂等）。 */
+if (document.readyState === "complete") mountSubjectBar();
+else window.addEventListener("load", function () { setTimeout(mountSubjectBar, 200); });
+setTimeout(mountSubjectBar, 1200);
+
   var taps = 0, last = 0;
   function hook() {
     var h = document.querySelector("#settingsModal .modal-card h3");
