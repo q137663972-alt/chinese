@@ -272,8 +272,15 @@
        最近邻会先跳到紧贴顶栏的大卡片，用户要连按好几次才够得着顶栏 ——
        机上表现就是「热更/设置按钮在顶上够不到」。
        这里只在「还没跨过顶栏」的前提下让上键优先吸附顶栏：
-       当前元素在顶栏下沿以下、且存在横向重叠的顶栏按钮时，直接把焦点交给它。
-       横向不重叠的（例如左下角按钮）不受影响，仍按就近原则走。 */
+       当前元素在顶栏下沿以下时，直接把焦点交给顶栏按钮。
+
+       【2.4.2 修复 · 2026-09-21】原实现要求候选与当前元素「横向有重叠」
+       （cr.left < r0.right && cr.right > r0.left）。但悬浮在右下角的按钮
+       （热更自检圆钮、以及某些页面的角落按钮）与右上角的 ⚙️ 横向完全不重叠，
+       条件恒为假 → 吸附失效 → 落回几何最近邻 → 只能先跳到正上方的大卡片。
+       安卓 TV 上表现为「右下角锤子光标按上键回不到顶栏」，老人小孩根本找不到设置。
+       改为两级：① 优先横向重叠的（保持原有「就近够到正上方那个」的手感）；
+       ② 没有重叠时，退一步把整条顶栏当候选 —— 只要它在屏幕上方就够得着。 */
     if (dir === "up") {
       var bars = $all("#app .topbar");
       for (var bi = 0; bi < bars.length; bi++) {
@@ -281,22 +288,27 @@
         if (bar.offsetParent === null) continue;
         var br = bar.getBoundingClientRect();
         if (r0.top < br.bottom - 2) continue;        // 已经在顶栏里/之上了
-        var cands = $all(".gear, .back", bar).filter(function (el) {
+        var tops = $all(".gear, .back", bar).filter(function (el) {
           if (el.offsetParent === null || el === cur) return false;
+          /* 只收「确实在当前元素上方」的，避免横向拉到同排或更低的按钮 */
+          return el.getBoundingClientRect().top < r0.top;
+        });
+        if (!tops.length) continue;
+        var overlap = tops.filter(function (el) {
           var cr = el.getBoundingClientRect();
           return cr.left < r0.right && cr.right > r0.left;   // 横向有重叠
         });
-        if (cands.length) {
-          /* 多个候选时取横向最接近的（例如从右下方按上 → 先够到 ⚙️ 而不是 🛠️） */
-          var pick = cands[0], pd = Infinity;
-          cands.forEach(function (el) {
-            var cr = el.getBoundingClientRect();
-            var d = Math.abs((cr.left + cr.width / 2) - cx);
-            if (d < pd) { pd = d; pick = el; }
-          });
-          focusAt(pick);
-          return;
-        }
+        /* ① 有横向重叠的 → 从中取横向最接近的（例如从右下方按上 → 先够到 ⚙️ 而不是 🛠️） */
+        /* ② 没有 → 从整条顶栏里取几何最接近的，保证「按上一定能到顶栏」 */
+        var pool = overlap.length ? overlap : tops;
+        var pick = pool[0], pd = Infinity;
+        pool.forEach(function (el) {
+          var cr = el.getBoundingClientRect();
+          var d = Math.abs((cr.left + cr.width / 2) - cx);
+          if (d < pd) { pd = d; pick = el; }
+        });
+        focusAt(pick);
+        return;
       }
     }
 
