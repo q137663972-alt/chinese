@@ -60,6 +60,82 @@
       (img ? '<img class="a-photo" src="' + T(IMG + img) + '" alt="" onerror="this.remove()">' : "");
   }
 
+  /* ---------- 声音系统（2026-09-21 补：之前全程静音） ----------
+   *  TTS：原生 speak 桥优先，缺失时用浏览器内置 speechSynthesis 兜底，保证一定有朗读。
+   *  sfx：用 Web Audio 即时合成音效，不依赖任何音频文件（无 5MB 限制、离线可用）。 */
+  var _nativeSpeak = (typeof speak === "function") ? speak : null;
+  var _audioCtx = null;
+  function audioCtx() {
+    try {
+      if (!_audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) _audioCtx = new AC(); }
+      if (_audioCtx && _audioCtx.state === "suspended") _audioCtx.resume();
+    } catch (e) {}
+    return _audioCtx;
+  }
+  /* 按当前学科返回朗读语种 */
+  function curLang() {
+    return (curSubj() === "en") ? "en-US" : "zh-CN";
+  }
+  /* 题卡顶部的小标题：数学「算一算」、语文「选一选」、英语「Read & Choose」 */
+  function subjectLabel() {
+    var s = curSubj();
+    if (s === "cn") return "📖 选一选";
+    if (s === "en") return "🔤 Read & Choose";
+    return "🧮 算一算";
+  }
+  /* 朗读文本。三级降级，保证任何机型都有声音：
+     ① 原生 speak 桥 —— 但它在三科 tts.js 里都有 `if(!settings.tts) return` 门禁，
+        设置里一关朗读就全线静音；所以只在桥确实能出声时才用它（见下方 hasTTS）。
+     ② 学科自己的音频兜底 speakAudio —— 有道 MP3，电视 / 微信 / 关了朗读设置都能响。
+     ③ 浏览器 Web Speech API —— 最后的本地兜底。 */
+  function ttsOn() {
+    try { if (typeof settings !== "undefined" && settings && !settings.tts) return false; } catch (e) {}
+    return true;
+  }
+  function tts(text, lang) {
+    text = T(text); if (!text) return;
+    if (!lang) lang = curLang();
+    /* ★ 2026-09-21 英语（及所有科）无声的真正根因：
+       三科 tts.js 的 speak() 第一行都是「if(!settings.tts || !text) return;」——
+       只要设置里关了朗读、或 settings 未初始化，就静默返回。
+       手机上数学科还能靠别的路径出声，英语科则全程无声 → 表现为「只有英语没声音」。
+       这里不再依赖那个开关：优先学科音频兜底，再退浏览器合成。 */
+    var bridged = false;
+    if (ttsOn() && _nativeSpeak) { try { _nativeSpeak(text, lang); bridged = true; } catch (e) { bridged = false; } }
+    if (bridged) return;
+    try { if (typeof window.speakAudio === "function") { window.speakAudio(text); return; } } catch (e) {}
+    try {
+      if (window.speechSynthesis) {
+        var u = new SpeechSynthesisUtterance(text);
+        u.lang = lang; u.rate = 1; u.pitch = 1; u.volume = 1;
+        window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+  }
+  /* 音效：正确/错误/倒计时/出局/夺冠，用振荡器即时合成 */
+  function sfx(type) {
+    var ac = audioCtx(); if (!ac) return;
+    try {
+      var now = ac.currentTime, notes = [], dur = 0.18, gain = 0.18, wave = "sine";
+      if (type === "correct") { notes = [523.25, 659.25, 783.99]; dur = 0.12; }                 /* C5 E5 G5 上行叮 */
+      else if (type === "wrong") { notes = [311.13, 233.08]; dur = 0.22; gain = 0.16; wave = "sawtooth"; } /* Eb4 Bb3 下行嗡 */
+      else if (type === "tick") { notes = [880]; dur = 0.07; gain = 0.12; }                      /* 倒计时滴 */
+      else if (type === "elim") { notes = [440, 329.63, 246.94]; dur = 0.2; gain = 0.18; wave = "sawtooth"; } /* A4 E4 B3 出局 */
+      else if (type === "win") { notes = [523.25, 659.25, 783.99, 1046.5]; dur = 0.18; gain = 0.2; } /* 冠军号角 */
+      else return;
+      for (var i = 0; i < notes.length; i++) {
+        var o = ac.createOscillator(), g = ac.createGain();
+        o.type = wave; o.frequency.value = notes[i];
+        var t0 = now + i * dur;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(gain, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t0); o.stop(t0 + dur + 0.02);
+      }
+    } catch (e) {}
+  }
+
   /* ---------- 题库（同源复用 math 全局 genQ/genV/vertHTML） ---------- */
   var FALLBACK_GEN = [{ t: "addsub", max: 10 }, { t: "addsub", max: 20 }, { t: "compare" }, { t: "addsub2" }, { t: "mul1" }];
   var GENPOOL = [], CURTIP = "";
@@ -99,42 +175,156 @@
   function curSubj() {
     try { if (typeof window !== "undefined" && window.APP_SUBJECT) return window.APP_SUBJECT; } catch (e) {}
     try { if (typeof window !== "undefined" && window.HOT_APP) return window.HOT_APP; } catch (e) {}
+    /* ★ 2026-09-21 兜底：若全局学科变量都没挂，用脚本自身所在目录名判断，
+       否则语文/英语科会被误判成 math → 一直出数学题。 */
+    try {
+      var sc = document.querySelector('script[src*="game-battle-v2.js"]');
+      if (sc) {
+        var src = sc.getAttribute("src") || "";
+        var m = src.match(/\/(cn|en|math)\/js\//);
+        if (m) return m[1];
+      }
+    } catch (e) {}
     return "math";
   }
-  /* 语文：从学科内容里抽字词/诗句做选择题（DATA 结构与数学不同，取不到就退回数学题） */
+  /* 按当前年级过滤题库（取不到 g 就不过滤，保证一定有题） */
+  function nowGrade() {
+    try { if (typeof state !== "undefined" && state) return num(state.gi, 0) + 1; } catch (e) {}
+    return 0;
+  }
+  function fromLib(lib, g) {
+    var a = window[lib]; if (!a || !a.length) return null;
+    var gg = nowGrade();
+    var f = gg ? a.filter(function (x) { return !x.g || num(x.g, 0) === gg; }) : [];
+    return (f.length >= 4) ? f : a;
+  }
+
+  /* ---------- 语文题：近反义词 / 成语 / 量词 / 古诗 ---------- */
   function cnQ() {
+    var kind = rnd(4);
     try {
-      var grades = (window.DATA && window.DATA.grades) || [];
-      var pool = [];
+      if (kind === 0 || kind === 1) {
+        /* 近义词 / 反义词：给出词 a，从选项里选它的近/反义项 */
+        var nf = fromLib("NEARFAR", 0); if (!nf) return null;
+        var it = pick(nf); if (!it || !it.a || !it.b) return null;
+        var isFan = (it.t === "反");
+        var right = isFan ? it.b : it.b;
+        var opts = [right], guard = 0;
+        while (opts.length < 4 && guard++ < 80) {
+          var o = pick(nf); if (!o || !o.b) continue;
+          /* 干扰项必须与正确项同类型（同为反义/近义），否则一眼排除 */
+          if (String(o.t) !== String(it.t)) continue;
+          if (opts.indexOf(o.b) < 0 && String(o.b) !== String(it.a)) opts.push(o.b);
+        }
+        if (opts.length < 4) return null;
+        var qs = isFan ? ("选出「" + it.a + "」的反义词") : ("选出「" + it.a + "」的近义词");
+        return finalizeQ({ q: qs, a: right, opts: shuffle(opts), say: qs, tip: isFan ? "想想意思相反的那个词" : "想想意思相近的那个词" });
+      }
+      if (kind === 2) {
+        /* 成语释义：给出成语选意思（或给释义选成语） */
+        var id = fromLib("IDIOMS", 0); if (!id) return null;
+        var i2 = pick(id); if (!i2 || !i2.w || !i2.m) return null;
+        var flip = Math.random() < 0.5;
+        var r2 = flip ? i2.m : i2.w;
+        var opts2 = [r2], g2 = 0;
+        while (opts2.length < 4 && g2++ < 90) {
+          var o2 = pick(id); if (!o2) continue;
+          var cand = flip ? o2.m : o2.w;
+          if (cand && opts2.indexOf(cand) < 0 && String(cand) !== String(r2)) opts2.push(cand);
+        }
+        if (opts2.length < 4) return null;
+        var qs2 = flip ? ("「" + i2.w + "」是什么意思？") : ("哪个成语的意思是：" + i2.m + "？");
+        return finalizeQ({ q: qs2, a: r2, opts: shuffle(opts2), say: qs2, tip: "联系成语里的字来想" });
+      }
+      if (kind === 3) {
+        /* 量词搭配：一(__)名词 */
+        var lc = fromLib("LIANGCI", 0); if (!lc) return null;
+        var l1 = pick(lc); if (!l1 || !l1.n || !l1.l) return null;
+        var r3 = l1.l, opts3 = [r3];
+        (l1.o || []).forEach(function (x) { if (opts3.length < 4 && opts3.indexOf(x) < 0) opts3.push(x); });
+        if (opts3.length < 4) return null;
+        var qs3 = "一（　）" + l1.n + "　该填哪个量词？";
+        return finalizeQ({ q: qs3, a: r3, opts: shuffle(opts3), say: "一" + l1.n + "的量词是什么", tip: "想想平时怎么说话" });
+      }
+      /* 古诗：给上句选下句 */
+      var pm = fromLib("POEMS", 0); if (!pm) return null;
+      var p = pick(pm); if (!p || !p.l || p.l.length < 2) return null;
+      var li = rnd(p.l.length - 1);
+      var head = String(p.l[li]).replace(/[，。？！、；：]$/, "");
+      var r4 = String(p.l[li + 1]).replace(/[，。？！、；：]$/, "");
+      var opts4 = [r4], g4 = 0;
+      while (opts4.length < 4 && g4++ < 120) {
+        var p2 = pick(pm); if (!p2 || !p2.l) continue;
+        var c2 = String(pick(p2.l)).replace(/[，。？！、；：]$/, "");
+        if (c2 && opts4.indexOf(c2) < 0 && c2 !== r4) opts4.push(c2);
+      }
+      if (opts4.length < 4) return null;
+      var qs4 = "《" + p.t + "》下一句是？\n" + head + "，";
+      return finalizeQ({ q: qs4, a: r4, opts: shuffle(opts4), say: "诗句接龙，" + head + "，下一句是", tip: "回忆这首诗的原文" });
+    } catch (e) { return null; }
+  }
+
+  /* ---------- 英语题：看英选中 / 看中选英 / 句子翻译 ---------- */
+  function enWords() {
+    try {
+      var grades = (window.GRADES && window.GRADES.length) ? window.GRADES : ((window.DATA && window.DATA.grades) || []);
+      var gg = nowGrade(), pool = [], all = [];
       for (var g = 0; g < grades.length; g++) {
         var books = grades[g].books || [];
         for (var b = 0; b < books.length; b++) {
           var us = books[b].u || [];
           for (var u = 0; u < us.length; u++) {
-            var cu = us[u] || {};
-            /* 语文字词：优先 word/poem/生字等字段，有则收集 */
-            var arr = cu.words || cu.chars || cu.poem || cu.items || null;
-            if (arr && arr.length) for (var k = 0; k < arr.length; k++) {
-              var it = arr[k];
-              if (typeof it === "string") pool.push(it);
-              else if (it && (it.w || it.word || it.c)) pool.push(String(it.w || it.word || it.c));
+            var ws = (us[u] && us[u].w) || [];
+            for (var k = 0; k < ws.length; k++) {
+              var w = ws[k];
+              if (w && w.e && w.z) { all.push(w); if (!gg || num(grades[g].g, 0) === gg) pool.push(w); }
             }
           }
         }
       }
-      if (pool.length < 8) return null;
-      var right = pick(pool), opts = [right];
-      var guard = 0;
-      while (opts.length < 4 && guard++ < 80) { var w = pick(pool); if (opts.indexOf(w) < 0 && w) opts.push(w); }
-      if (opts.length < 4) return null;
-      return { q: "选出正确的词语", a: right, opts: shuffle(opts), say: "请选出正确的词语", v: null, tip: "看清字形再选" };
+      return (pool.length >= 8) ? pool : (all.length >= 8 ? all : null);
+    } catch (e) { return null; }
+  }
+  function enQ() {
+    try {
+      var pool = enWords(); if (!pool) return null;
+      var it = pick(pool); if (!it) return null;
+      if (Math.random() < 0.5) {
+        /* 看英文选中文 */
+        var r = it.z, opts = [r], g = 0;
+        while (opts.length < 4 && g++ < 90) {
+          var o = pick(pool); if (!o) continue;
+          if (o.z && opts.indexOf(o.z) < 0 && o.z !== r) opts.push(o.z);
+        }
+        if (opts.length < 4) return null;
+        var qs = it.e + "　是什么意思？";
+        return finalizeQ({ q: qs, a: r, opts: shuffle(opts), say: it.e, speakText: it.e, tip: "读一读这个单词" });
+      }
+      /* 看中文选英文 */
+      var r2 = it.e, opts2 = [r2], g2 = 0;
+      while (opts2.length < 4 && g2++ < 90) {
+        var o2 = pick(pool); if (!o2) continue;
+        if (o2.e && opts2.indexOf(o2.e) < 0 && o2.e !== r2) opts2.push(o2.e);
+      }
+      if (opts2.length < 4) return null;
+      var qs2 = "「" + it.z + "」的英语是？";
+      return finalizeQ({ q: qs2, a: r2, opts: shuffle(opts2), say: it.e, speakText: it.e, tip: "想想它在课文里怎么念" });
     } catch (e) { return null; }
   }
 
   function makeQuestion() {
     var subj = curSubj();
-    /* 语文：先试语文字词题，取不到就落到数学题（至少能玩） */
-    if (subj === "cn") { var cq = cnQ(); if (cq) return finalizeQ(cq, "看清字形再选"); }
+    /* ★ 2026-09-21：语文/英语必须出本科目的题。
+       之前只试一次 cnQ() 就落到数学题，导致「语文英语出的都是数学题」。
+       现在多试几次，仍失败才退回数学（保证不卡死）。 */
+    if (subj === "cn") {
+      for (var i = 0; i < 6; i++) { var cq = cnQ(); if (cq) return cq; }
+      try { if (typeof log === "function") log("arena: cnQ 取不到题，回退数学题"); } catch (e) {}
+    }
+    if (subj === "en") {
+      for (var j = 0; j < 6; j++) { var eq = enQ(); if (eq) return eq; }
+      try { if (typeof log === "function") log("arena: enQ 取不到题，回退数学题"); } catch (e) {}
+    }
     var cfg = pick(GENPOOL) || { t: "addsub", max: 10 };
     var q = null, tip = CURTIP, useVert = (typeof genV === "function") && Math.random() < 0.35;
     try { q = useVert ? genV(cfg) : ((typeof genQ === "function") ? genQ(cfg) : null); } catch (e) { q = null; }
@@ -154,7 +344,8 @@
     return {
       qText: qText,
       vert: (isVert && typeof vertHTML === "function") ? vertHTML(q.v) : "",
-      speakText: T(q.say) || qText,
+      /* speakText 允许调用方指定（英语题要读英文单词，不能读中文题干） */
+      speakText: T(q.speakText) || T(q.say) || qText,
       hint: T(hint),
       opts: opts, correct: correct
     };
@@ -195,6 +386,54 @@
   function loseStar(p) { p.stars--; if (p.stars <= 0) { p.stars = 0; p.alive = false; p.resting = true; } }
   function starStr(n) { var k = Math.round(num(n, 0)); if (k < 0) k = 0; if (k > START_STARS) k = START_STARS; return "★".repeat(k) + "☆".repeat(START_STARS - k); }
 
+  /* 真人受保护：掉星最低留 1 颗，永远不会被淘汰 —— 配合下方 AI 强制淘汰进度，保证人类必为第一名 */
+  function humanLoseStar(p) { if (p.stars > 1) p.stars--; }
+
+  /* ★ 2026-09-21：按"局"强制 AI 淘汰进度（解决「所有 AI 全赢」）
+   *   第 5 局后至少 1 个 AI 出局、第 6 局后 2 个、第 7 局后 3 个。
+   *   取存活 AI 中积分/星最低的几个，逐个清零出局（输光积分），并播老师点名 + 出局音效。
+   *   返回是否本局触发了淘汰（用于延长下一题的间隔，让动画播完）。 */
+  function ensureAIsOut(k) {
+    var aliveAIs = S.players.filter(function (p) { return p.alive && !p.isMe; });
+    var out = S.players.length - 1 - aliveAIs.length;   /* 已淘汰 AI 数 = 总 - 人类 - 存活AI */
+    var need = k - out;
+    if (need <= 0) return false;
+    aliveAIs.sort(function (a, b) { return (a.stars - b.stars) || (a.score - b.score); });
+    var triggered = false, nth = 0;
+    for (var i = 0; i < need && i < aliveAIs.length; i++) {
+      var p = aliveAIs[i];
+      p.score = 0;                                        /* 输光积分 */
+      while (p.alive) loseStar(p);                        /* 星清零 → 出局 */
+      var idxP = S.players.indexOf(p);
+      p._walked = false;
+      walkBack(idxP, nth * 1400); nth++;
+      sfx("elim");
+      banner("💥 " + T(p.name) + " 积分输光，出局！");
+      triggered = true;
+    }
+    return triggered;
+  }
+
+  /* 人类夺冠特效：彩带 + 皇冠弹入 + 号角音效 + 老师表扬（renderOver 调用，只播一次） */
+  function championFX() {
+    if (S._fx) return; S._fx = true;
+    sfx("win");
+    tts("太棒了，你是本局的知识王者！");
+    try {
+      var colors = ["#ff5b5b", "#ffd23f", "#5fd08a", "#4a86e8", "#b06bff", "#ff9f43"];
+      for (var i = 0; i < 44; i++) {
+        var c = document.createElement("div");
+        c.className = "a-confetti";
+        c.style.left = (Math.random() * 100) + "vw";
+        c.style.background = colors[rnd(colors.length)];
+        c.style.animationDelay = (Math.random() * 0.8) + "s";
+        c.style.borderRadius = (Math.random() < 0.5 ? "2px" : "50%");
+        document.body.appendChild(c);
+        later(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 3800);
+      }
+    } catch (e) {}
+  }
+
   /* ---------- 装备 / 库存（localStorage 持久化，简单可桩） ---------- */
   function readInv() {
     /* ★ 2026-09-21 修复「兑换(undefined)」：
@@ -224,22 +463,25 @@
     var s = document.createElement("style");
     s.id = "arena-style";
     s.textContent =
-      ".arena{max-width:560px;margin:0 auto;padding:8px;font-family:inherit;position:relative}" +
-      ".a-top{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:13px;font-weight:800;flex-wrap:wrap;margin-bottom:6px}" +
-      ".a-top .pill{background:#fff;border:0;border-radius:999px;padding:5px 10px;box-shadow:0 2px 6px rgba(0,0,0,.08)}" +
+      ".arena{max-width:560px;margin:0 auto;padding:6px;font-family:inherit;position:relative;box-sizing:border-box;width:100%;overflow-x:hidden}" +
+      ".a-top{display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:12px;font-weight:800;flex-wrap:wrap;margin-bottom:5px}" +
+      ".a-top .pill{background:#fff;border:0;border-radius:999px;padding:4px 8px;box-shadow:0 2px 6px rgba(0,0,0,.08)}" +
       ".a-top .stars{color:#e08b00}" +
-      /* 舞台：教室 / 操场两层叠加，按 scene 切换可见 */
-      ".a-stage{position:relative;height:230px;border-radius:16px;overflow:hidden;background:#cfe8ff;box-shadow:0 4px 12px rgba(0,0,0,.1)}" +
-      ".a-scene{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;padding-bottom:14px}" +
+      /* 舞台：教室 / 操场两层叠加，按 scene 切换可见。
+         ★ 2026-09-21 用户反馈「操场宽度占比高」：原 height 固定 230px 太占屏，
+         改为按视口高度自适应（手机≈150px、大屏最多 190px），把空间让给题目和选项。 */
+      ".a-stage{position:relative;height:150px;max-height:22vh;border-radius:14px;overflow:hidden;background:#cfe8ff;box-shadow:0 4px 12px rgba(0,0,0,.1)}" +
+      "@media(min-height:700px){.a-stage{height:180px}}" +
+      ".a-scene{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;padding-bottom:8px}" +
       ".a-scene.on{display:flex}" +
       ".a-classroom{background:linear-gradient(180deg,#fff3d6,#ffe2a8)}" +
       ".a-classroom:before{content:'🏫 教室';position:absolute;top:8px;left:10px;font-weight:900;color:#a9743a}" +
       ".a-playground{background:linear-gradient(180deg,#bfe9c0,#7fc98a)}" +
       ".a-playground:before{content:'🏟️ 操场';position:absolute;top:8px;left:10px;font-weight:900;color:#2f7a3a}" +
       /* 头像：flex 排开，走路靠 transform translateX（CSS 过渡） */
-      ".a-row{display:flex;gap:6px;justify-content:center;align-items:flex-end;width:100%;padding:0 4px;box-sizing:border-box;overflow:hidden}" +
-      ".a-avatar{position:relative;flex:1 1 0;min-width:0;max-width:62px;display:flex;flex-direction:column;align-items:center;transition:transform 5s linear}" +
-      ".a-avatar .a-body{position:relative;width:100%;max-width:54px;aspect-ratio:1/1;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 2px 5px rgba(0,0,0,.15)}" +
+      ".a-row{display:flex;gap:4px;justify-content:center;align-items:flex-end;width:100%;padding:0 2px;box-sizing:border-box;overflow:hidden}" +
+      ".a-avatar{position:relative;flex:1 1 0;min-width:0;max-width:56px;display:flex;flex-direction:column;align-items:center;transition:transform 5s linear}" +
+      ".a-avatar .a-body{position:relative;width:100%;max-width:48px;aspect-ratio:1/1;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 2px 5px rgba(0,0,0,.15)}" +
       ".a-avatar .a-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
       ".a-avatar .a-name{font-size:11px;font-weight:800;margin-top:2px;background:rgba(255,255,255,.7);border-radius:8px;padding:0 3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}" +
       ".a-avatar.me .a-body{outline:3px solid #4a86e8}" +
@@ -255,25 +497,33 @@
       ".a-teacher{position:absolute;top:30px;left:50%;transform:translateX(-50%);width:60px;height:60px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:0 2px 6px rgba(0,0,0,.2)}" +
       ".a-teacher img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
       /* HUD 题目卡 */
-      ".a-q{background:#fff;border-radius:16px;padding:14px;margin:8px 0;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.08)}" +
-      ".a-q .qbig{font-size:32px;font-weight:900;line-height:1.2;word-break:break-all}" +
-      ".a-q .qtext{font-size:16px;font-weight:800;margin:4px 0;color:#333}" +
-      ".a-q .qhint{font-size:14px;color:#8a5cf6;font-weight:800;margin-top:4px}" +
-      ".a-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}" +
-      ".a-opt{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fff,#f3f7ff);border:2px solid #e3e9f5;border-radius:16px;padding:14px 10px;font-size:20px;font-weight:900;color:#234;cursor:pointer;min-height:60px}" +
+      /* ★ 2026-09-21 用户反馈「选项溢出」：原来 1fr 1fr + 20px 字号 + 大内边距，
+         长文本（语文词句/英语句子）会把卡片撑破、被屏幕裁掉。
+         改法：minmax(0,1fr) 允许收缩、word-break 强制换行、字号降一档、内边距收紧。 */
+      ".a-q{background:#fff;border-radius:14px;padding:10px;margin:6px 0;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.08);box-sizing:border-box;width:100%;overflow:hidden}" +
+      ".a-q .qbig{font-size:26px;font-weight:900;line-height:1.25;word-break:break-word;overflow-wrap:anywhere;white-space:pre-line}" +
+      ".a-q .qtext{font-size:15px;font-weight:800;margin:4px 0;color:#333;word-break:break-word}" +
+      ".a-q .qhint{font-size:13px;color:#8a5cf6;font-weight:800;margin-top:4px;word-break:break-word}" +
+      ".a-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;box-sizing:border-box}" +
+      ".a-opt{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fff,#f3f7ff);border:2px solid #e3e9f5;border-radius:14px;padding:10px 6px;font-size:17px;font-weight:900;color:#234;cursor:pointer;min-height:52px;min-width:0;box-sizing:border-box;word-break:break-word;overflow-wrap:anywhere;text-align:center;line-height:1.25}" +
       ".a-opt:active{transform:scale(.97)}" +
       ".a-opt.correct{background:#d8f5e3;border-color:#37b26a;color:#1f7a45}" +
       ".a-opt.wrong{background:#ffe1e1;border-color:#ef476f;color:#b3233f}" +
       ".a-opt.excl{opacity:.4;text-decoration:line-through;pointer-events:none}" +
-      ".a-timer{height:10px;background:#eef;border-radius:999px;overflow:hidden;margin:6px 0}" +
+      ".a-timer{height:8px;background:#eef;border-radius:999px;overflow:hidden;margin:5px 0}" +
       ".a-timer>i{display:block;height:100%;background:linear-gradient(90deg,#5fd08a,#f5c542,#ef476f);transition:width .1s linear}" +
-      ".a-fb{text-align:center;font-size:16px;font-weight:900;min-height:22px;margin:6px 0}" +
-      ".a-bottom{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}" +
-      ".a-bottom button{flex:1;border:0;border-radius:12px;padding:10px;font-size:13px;font-weight:800;background:#fff;color:#456;box-shadow:0 2px 6px rgba(0,0,0,.08);cursor:pointer}" +
+      ".a-fb{text-align:center;font-size:15px;font-weight:900;min-height:20px;margin:5px 0}" +
+      ".a-bottom{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;width:100%;box-sizing:border-box}" +
+      ".a-bottom button{flex:1 1 30%;min-width:0;border:0;border-radius:12px;padding:9px 6px;font-size:12px;font-weight:800;background:#fff;color:#456;box-shadow:0 2px 6px rgba(0,0,0,.08);cursor:pointer;word-break:break-word}" +
       ".a-cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:120px;font-weight:900;color:#fff;text-shadow:0 4px 12px rgba(0,0,0,.4);pointer-events:none}" +
       ".a-banner{position:fixed;left:0;right:0;top:28%;text-align:center;z-index:9999;pointer-events:none}" +
       ".a-banner .badge{display:inline-block;background:rgba(0,0,0,.72);color:#fff;font-size:20px;font-weight:900;padding:12px 22px;border-radius:999px;animation:abp .8s ease}" +
-      "@keyframes abp{0%{transform:scale(.5);opacity:0}40%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}";
+      "@keyframes abp{0%{transform:scale(.5);opacity:0}40%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}" +
+      /* 人类夺冠特效 */
+      ".a-confetti{position:fixed;top:-24px;width:10px;height:14px;z-index:9998;pointer-events:none;animation:acf 2.8s linear forwards}" +
+      "@keyframes acf{0%{transform:translateY(-24px) rotate(0);opacity:1}100%{transform:translateY(106vh) rotate(720deg);opacity:0}}" +
+      ".a-crown{display:inline-block;animation:acr .7s ease both}" +
+      "@keyframes acr{0%{transform:scale(.3) rotate(-20deg);opacity:0}60%{transform:scale(1.25) rotate(8deg);opacity:1}100%{transform:scale(1) rotate(0)}}";
     (document.head || document.documentElement).appendChild(s);
   }
 
@@ -368,7 +618,7 @@
     }).join("");
     hud.innerHTML =
       '<div class="a-q">' +
-        '<div class="qtext">' + (q.vert ? T(q.qText) : "🧮 算一算") + "</div>" +
+        '<div class="qtext">' + (q.vert ? T(q.qText) : subjectLabel()) + "</div>" +
         '<div class="qbig">' + (q.vert ? q.vert : T(q.qText)) + "</div>" +
         (q.hint && S.showHint ? '<div class="qhint">💡 提示：' + T(q.hint) + "</div>" : "") +
         '<button class="pill" style="margin-top:6px;cursor:pointer" onclick="arenaReplay()">🔊 读题</button>' +
@@ -400,7 +650,7 @@
     var cd = document.getElementById("a-cd");
     if (n <= 0) { if (cd) cd.style.display = "none"; showQuestion(); return; }
     if (cd) { cd.style.display = "flex"; cd.textContent = T(n); }
-    if (typeof speak === "function") { try { speak(T(String(n)), "zh-CN"); } catch (e) {} }
+    sfx("tick"); tts(T(String(n)));
     later(function () { countdown(n - 1); }, 1000);
   }
 
@@ -410,7 +660,7 @@
     S.q = makeQuestion();
     S.chosen = -1; S.revealed = false; S.fb = ""; S.left = S.time; S.locked = false; S.showHint = false;
     battleRender();
-    if (typeof speak === "function") later(function () { try { speak(T(S.q.speakText), "zh-CN"); } catch (e) {} }, 350);
+    later(function () { tts(S.q.speakText); }, 350);
     var last = Date.now();
     S.tick = every(function () {
       if (!S) return;
@@ -427,16 +677,16 @@
     var q = S.q, correct = (idx === q.correct);
     S.chosen = idx; S.revealed = true;
     var me = S.players[0];
-    if (correct) me.score++; else loseStar(me);
+    if (correct) { me.score++; sfx("correct"); tts("答对啦，加一分"); }
+    else { humanLoseStar(me); sfx("wrong"); later(function () {
+      try { var right = (q.opts || [])[q.correct]; tts(right ? T(right.label) : T(q.speakText)); } catch (e) {}
+    }, 200); }
     for (var i = 1; i < S.players.length; i++) {
       var p = S.players[i]; if (!p.alive) continue;
       if (Math.random() < SKILL) p.score++; else loseStar(p);
     }
     var fb = document.getElementById("afb");
-    if (fb) fb.textContent = correct ? "✅ 答对啦！+1 分" : "❌ 掉了一颗星";
-    if (!correct && typeof speak === "function") later(function () {
-      try { var right = (q.opts || [])[q.correct]; speak(right ? T(right.label) : T(q.speakText), "zh-CN"); } catch (e) {}
-    }, 200);
+    if (fb) fb.textContent = correct ? "✅ 答对啦！+1 分" : "❌ 答错了，加油";
     battleRender();
     /* 处理掉星回教室罚站动画：本轮所有掉星（输了的）学生都走回教室，老师逐个点名 */
     var nth = 0;
@@ -453,22 +703,24 @@
     el.style.transform = "translateX(-720px)";
     /* 老师点名：某某，回教室好好学习（每个被淘汰的学生各播一次，靠 _walked 守卫，绝不漏、绝不重复） */
     var msg = T(p.isMe ? "你" : p.name) + "，回教室好好学习";
-    if (typeof speak === "function") {
-      if (delayMs && delayMs > 0) later(function () { try { speak(msg, "zh-CN"); } catch (e) {} }, delayMs);
-      else try { speak(msg, "zh-CN"); } catch (e) {}
-    }
+    if (delayMs && delayMs > 0) later(function () { tts(msg); }, delayMs);
+    else tts(msg);
     later(function () { refreshAvatar(i); }, WALK_BACK_MS + 50);
   }
 
   function afterResolve() {
     if (!S) return;
-    /* 玩家掉光星 → 直接结束（老师批评+回教室已由 walkBack 处理） */
+    /* 玩家掉光星 → 直接结束（真人受保护，正常不会触发，仅作兜底） */
     if (!S.players[0].alive) { endGame(); return; }
     var alive = alivePlayers();
     if (alive.length <= 1) { endGame(); return; }
+    /* ★ 按"局"强制 AI 淘汰进度：第 5 局后 ≥1 出局，第 6 局后 ≥2，第 7 局后 ≥3 */
+    var elim = 0;
+    if (S.qn === 5) elim = 1; else if (S.qn === 6) elim = 2; else if (S.qn === 7) elim = 3;
+    var triggered = elim > 0 ? ensureAIsOut(elim) : false;
     S.qn++;
     if (S.qn > TOTAL_Q) { endGame(); return; }
-    showQuestion();
+    later(showQuestion, triggered ? 3400 : 1700);
   }
 
   /* ★ 2026-09-21 修复：原先只调用了 endGame()，但这个函数从来没定义过 ——
@@ -491,24 +743,45 @@
     var talk = meLost
       ? "你回教室好好学习，下次一定能答对！"
       : "太棒了，你是本局的知识王者！";
-    later(function () { if (typeof speak === "function") { try { speak(talk, "zh-CN"); } catch (e) {} } }, meLost ? 3200 : 500);
+    later(function () { tts(talk); }, meLost ? 3200 : 500);
     /* 等回教室动画走完再出结算面板，别让面板盖住动画 */
     later(function () { if (S) battleRender(); }, meLost ? 3400 : 1600);
   }
 
   function renderOver(hud) {
+    var me = S.players[0];
+    /* ★ 2026-09-21：人类永远第一名。
+       真人末局受保护（最低留 1 星）不会被淘汰，其余 AI 按局数被强制淘汰；
+       所以只要真人还在场，冠军就判给真人——剩余 AI 即便满分也只能拿第二。 */
+    if (me.alive) me.score += S.players.length;      /* 确保积分压过所有 AI */
     var alive = alivePlayers();
-    if (alive.length > 1) alive.sort(function (a, b) { return (b.stars - a.stars) || (b.score - a.score); });
-    var winner = alive[0] || null, youWon = !!(winner && winner.isMe), me = S.players[0];
-    /* 奖励：冠军得 1 个配件（桩） */
-    if (youWon) { var v = attachPiece(); banner("🏆 冠军奖励 +1 配件（共 " + v.attachments + "）"); }
-    var head = youWon
-      ? '<div style="text-align:center;font-size:46px">🏆</div><div style="text-align:center;font-size:24px;font-weight:900;color:#e08b00">知识王者！</div>'
-      : '<div style="text-align:center;font-size:46px">🪑</div><div style="text-align:center;font-size:20px;font-weight:900;margin:6px 0">星星掉光啦，回教室好好学习</div>' +
-        '<div style="text-align:center;color:#8a5cf6;font-weight:800">👩‍🏫 老师：下次一定能答对！</div>' +
-        '<div style="text-align:center;color:#888;margin-top:4px">本局王者：' + (winner ? T(winner.emoji) + (winner.isMe ? "你" : T(winner.name)) : "—") + "</div>";
+    alive.sort(function (a, b) {
+      if (a.isMe !== b.isMe) return a.isMe ? -1 : 1;  /* 人类排最前 */
+      return (b.stars - a.stars) || (b.score - a.score);
+    });
+    var winner = alive[0] || null, youWon = !!(winner && winner.isMe);
+    if (youWon) {
+      var v = attachPiece();
+      banner("🏆 冠军奖励 +1 配件（共 " + v.attachments + "）");
+      championFX();                                  /* 彩带 + 皇冠 + 号角 + 老师表扬 */
+    }
+    var rival = null;
+    for (var i = 0; i < alive.length; i++) if (!alive[i].isMe) { rival = alive[i]; break; }
+    var head;
+    if (youWon) {
+      head =
+        '<div style="text-align:center;font-size:52px" class="a-crown">👑</div>' +
+        '<div style="text-align:center;font-size:26px;font-weight:900;color:#e08b00">知识王者！</div>' +
+        '<div style="text-align:center;font-size:13px;color:#8a5cf6;font-weight:800;margin-top:4px">👩‍🏫 老师：太棒了，你是本局的第一名！</div>' +
+        (rival ? '<div style="text-align:center;color:#888;margin-top:4px">亚军：' + T(rival.emoji) + T(rival.name) + "（" + num(rival.score, 0) + " 分）</div>" : "");
+    } else {
+      head =
+        '<div style="text-align:center;font-size:46px">🪑</div>' +
+        '<div style="text-align:center;font-size:20px;font-weight:900;margin:6px 0">星星掉光啦，回教室好好学习</div>' +
+        '<div style="text-align:center;color:#8a5cf6;font-weight:800">👩‍🏫 老师：下次一定能答对！</div>';
+    }
     hud.innerHTML = head +
-      '<div style="text-align:center;font-size:15px;font-weight:800;margin:8px 0">本局得分 ' + num(me.score, 0) + ' 分</div>' +
+      '<div style="text-align:center;font-size:15px;font-weight:800;margin:8px 0">本局得分 ' + num(me.score, 0) + ' 分 · 名次 ' + (youWon ? "第 1 名" : "—") + "</div>" +
       '<div style="text-align:center;font-size:13px;color:#888">🎒 配件 ' + readInv().attachments + " · 成品 " + readInv().finished + "</div>" +
       '<div class="a-bottom" style="margin-top:12px">' +
         '<button onclick="arenaTeacherTalk()">🔊 听老师</button>' +
@@ -519,9 +792,9 @@
 
   /* 结算页重听老师评价（赢了表扬 / 输了鼓励） */
   window.arenaTeacherTalk = function () {
-    if (!S || typeof speak !== "function") return;
-    var talk = S.players[0].alive ? "太棒了，你是本局的知识王者！" : "你回教室好好学习，下次一定能答对！";
-    try { speak(talk, "zh-CN"); } catch (e) {}
+    if (!S) return;
+    var talk = S.players[0].alive ? "太棒了，你是本局的第一名！" : "你回教室好好学习，下次一定能答对！";
+    tts(talk);
   };
 
   /* ---------- 退出：一次收干净 ---------- */
@@ -535,8 +808,8 @@
 
   /* ---------- 公开控制（挂在 window，供 onclick 调用） ---------- */
   window.arenaAnswer = arenaAnswer;
-  window.arenaReplay = function () { if (S && S.q && typeof speak === "function") { try { speak(T(S.q.speakText), "zh-CN"); } catch (e) {} } };
-  window.arenaTeacher = function () { if (typeof speak === "function") { try { speak("同学们，准备开始答题闯关！", "zh-CN"); } catch (e) {} } };
+  window.arenaReplay = function () { if (S && S.q) tts(S.q.speakText); };
+  window.arenaTeacher = function () { tts("同学们，准备开始答题闯关！"); };
   window.arenaHint = function () {
     if (!S || !S.q || S.hintUsed || S.revealed) return;
     var wrongs = []; (S.q.opts || []).forEach(function (o, i) { if (i !== S.q.correct && i !== S.excluded) wrongs.push(i); });
@@ -582,6 +855,15 @@
   }
 
   try { if (typeof log === "function") log("arena registering"); } catch (e) {}
+  /* 自检探针：供热更自检面板/自动化测试确认「本科目出的是本科目的题」 */
+  window.__arenaProbe = function (n) {
+    var out = [], subj = curSubj();
+    for (var i = 0; i < (n || 5); i++) {
+      var q = makeQuestion();
+      out.push({ q: q.qText, a: q.opts[q.correct] && q.opts[q.correct].label, subj: subj, opts: q.opts.length });
+    }
+    return { subj: subj, samples: out };
+  };
   registerGame({
     id: "arena2",
     name: "知识圈竞赛2",
