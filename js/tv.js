@@ -31,7 +31,41 @@
 
   function detectTV() {
     if (location.hash.indexOf("tv") >= 0) return true;       // 调试开关，最优先
-    if (typeof DEV.tv === "boolean") return DEV.tv;          // 原生桥说了算
+    if (location.hash.indexOf("phone") >= 0) return false;   // 反向开关：强制按手机版渲染
+    /* ★★ 2026-09-21 现场事故：触屏「电视一体机」上整个电视版布局全废 ★★
+       现象：语文/数学等界面在大屏上呈现手机布局 —— 卡片小、散落、被拉伸。
+       根因链：
+         ① 这台设备是触屏一体机（用户用手指点屏），系统既不是
+            UI_MODE_TYPE_TELEVISION、也没有 LEANBACK 特性，但**有触屏** →
+            原生桥 isTV() 三重判定全落空 → 返回 false；
+         ② boot.js 据此把 body 判成 phone（sw=361 < 600，361 是 16:9 的短边 dp，本身没错）；
+         ③ 本文件原先第 34 行 `if (typeof DEV.tv === "boolean") return DEV.tv;`
+            —— 直接采信原生桥的 false 就早退，下面的 UA / 几何兜底全都轮不到；
+         ④ 于是 body.tv 从来没被加上，css/tv.css 里所有 body.tv 规则一条都不生效。
+       ⚠️ boot.js 加 class 那一步改不了（冻结文件），但**在这里可以补**：
+          只要判定为 TV，本文件就会执行 document.body.classList.add("tv")（第 48 行）。
+       修法：原生桥说 false 时**不直接采信**，再用几何特征复核一遍 ——
+          「横屏 + 屏幕够大 + 宽高比接近 16:9」是电视/一体机的强特征，
+          手机平板横屏时通常也满足宽高比，但屏幕物理尺寸不足以达到下面的阈值。 */
+    if (typeof DEV.tv === "boolean" && DEV.tv) return true;  // 桥说是 TV → 直接信
+    /* 桥说不是（或压根没有桥）→ 几何复核。
+       阈值取「物理像素」；判定条件：屏幕够大（短边 dp ≥ 600 或物理短边 ≥ 900px）
+       且宽高比在 1.4~2.0 之间（16:9=1.78、16:10=1.6）—— 手机竖屏必被排除。
+       可用 TV_TUNE.tvForce = false 关闭这条兜底（个别设备误判时）。 */
+    try {
+      var tt = (typeof window.TV_TUNE === "object" && window.TV_TUNE) || {};
+      if (tt.tvForce !== false) {
+        var dpr = window.devicePixelRatio || 1;
+        var sw = window.screen ? (window.screen.width || 0) : 0;
+        var sh = window.screen ? (window.screen.height || 0) : 0;
+        var iw = window.innerWidth || 0, ih = window.innerHeight || 0;
+        var pw = Math.max(sw, sh), ph = Math.min(sw, sh);
+        if (pw <= 0) { pw = Math.max(iw, ih) * dpr; ph = Math.min(iw, ih) * dpr; }
+        var wide = pw / (ph || 1);
+        var bigShort = (DEV.sw >= 600) || (ph >= 900);
+        if (bigShort && wide >= 1.4 && wide <= 2.0) return true;
+      }
+    } catch (e) {}
     try {
       if (/tv|googletv|android tv|aftenmab?|aft|smarttv|smart-tv|appletv|crkey|fugu|shield android tv|mi tv|fire tv|hisense|tcl/i.test(navigator.userAgent)) return true;
     } catch (e) {}
@@ -46,6 +80,10 @@
   if (!TV) return; // 非 TV：什么都不做，原版行为不变
 
   document.body.classList.add("tv");
+  /* boot.js 拿到的是原生桥的判定结果，触屏一体机上会被判成 phone（见 detectTV 注释）。
+     这里既然复核出是 TV，就把 phone/tablet 摘掉，避免两套 class 语义打架。
+     （当前没有 .phone 的 CSS 规则，但 body.tablet 有 —— 摘掉更干净。） */
+  try { document.body.classList.remove("phone"); document.body.classList.remove("tablet"); } catch (e) {}
 
   /* 可聚焦选择器：白名单 + 通用规则。
      通用规则（button / a[href] / [onclick] / [data-tv-focus]）保证
@@ -327,13 +365,23 @@
       var el = document.getElementById("app");
       if (!el) return "(找不到 #app)";
       var cs = window.getComputedStyle(el);
+      var isTv = document.body.classList.contains("tv");
+      var dpr = window.devicePixelRatio || 1;
+      var scw = window.screen ? (window.screen.width || 0) : 0;
+      var sch = window.screen ? (window.screen.height || 0) : 0;
+      var pw = Math.max(scw, sch), ph = Math.min(scw, sch);
+      var wide = ph ? (Math.round((pw / ph) * 100) / 100) : 0;
       var s = window.getComputedStyle(document.documentElement)
                 .getPropertyValue("--s").trim() || "(未设)";
       var vw = window.innerWidth, vh = window.innerHeight;
       var boxW = el.getBoundingClientRect().width;
       var over = boxW - vw;
-      return '视口：' + vw + ' × ' + vh + ' CSS px　dpr=' + (window.devicePixelRatio || 1) + '<br>' +
-        '屏幕：' + (window.screen ? (window.screen.width + ' × ' + window.screen.height) : '?') + '<br>' +
+      return '电视版样式：' + (isTv
+          ? '<span style="color:#0a0;font-weight:700">✅ 已启用（body.tv 已加上，css/tv.css 生效）</span>'
+          : '<span style="color:#d33;font-weight:700">❌ 未启用 —— 大屏上会按手机布局渲染，' +
+            '请在地址后加 #tv 或反馈此页</span>') + '<br>' +
+        '视口：' + vw + ' × ' + vh + ' CSS px　dpr=' + dpr + '<br>' +
+        '屏幕：' + scw + ' × ' + sch + '　宽高比=' + wide + '（原判定 sw=' + ((DEV && DEV.sw) || 0) + '）<br>' +
         '--s（整体缩放）：<span style="font-weight:700">' + s + '</span><br>' +
         '容器实测宽：' + Math.round(boxW) + 'px　max-width=' + cs.maxWidth +
         '　padding=' + cs.padding + '<br>' +
