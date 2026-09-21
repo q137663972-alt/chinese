@@ -3,6 +3,11 @@ name: Build APK + Deploy H5
 on:
   push:
   workflow_dispatch:
+    inputs:
+      empty_shell:
+        description: '产出 2.5.0 通用空壳 APK（不内置 math/en，内容改由热更包下发；保留 cn 作离线兜底）'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -20,6 +25,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # ★ 空壳模式（workflow_dispatch 勾选 empty_shell）：剥离 chinese-universal 内置的 math/en，
+      #   仅保留 cn 作离线兜底。产出的即 2.5.0「通用空壳」——三科内容全部走热更包下发。
+      #   注意：本步只删 Android assets 里的 math/en，不动仓库根的源；boot.js 的 BUILTIN_MATH/EN
+      #   清单照旧，运行时由已安装的热更包按同路径顶替（首开无包时选数学/英语会白屏，装包即正常）。
+      - name: 空壳模式：剥离 math/en 内置资源
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.empty_shell == 'true' }}
+        run: |
+          echo "═══ EMPTY_SHELL：移除 ${{ matrix.project }} 内置的 math/en（保留 cn 作离线兜底）═══"
+          rm -rf "${{ matrix.project }}/app/src/main/assets/math" "${{ matrix.project }}/app/src/main/assets/en"
+          echo "剥离后 assets 内容："
+          ls "${{ matrix.project }}/app/src/main/assets"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
