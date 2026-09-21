@@ -37,15 +37,17 @@
   var TOTAL_Q = 8;             /* 单局题数 */
   var BASE_TIME = 15;          /* 每题秒数 */
   var MIN_TIME = 10;
-  var START_STARS = 5;         /* 初始能量星（每人 5 颗；掉光即出局） */
+  var START_STARS = 4;         /* 初始能量星（每人 4 颗；掉光即出局） */
   var WALK_IN_MS = 5000;       /* 开场走 5 秒 */
   var WALK_BACK_MS = 3000;     /* 掉星回教室走 3 秒 */
   var INV_KEY = "arena_inventory_v2";
   /* 头像槽位（百分比 left）：PLAY_ 在操场区，CLASS_ 在教室区。
      ★ 2026-09-21 改：左右两片同屏（左 42% 教室 / 右 58% 操场），输了的走进教室并缩小，
      不再像以前那样把头像 translateX 移出屏外（那样根本看不到教室）。 */
-  var PLAY_L = [44, 53, 62, 71, 80, 89];
-  var CLASS_L = [2, 9, 16, 23, 30, 37];
+  /* 操场区（右 58%）：单排 6 个，槽位铺满，避免头像/名字互相挤叠 */
+  var PLAY_L = [42, 52, 62, 72, 82, 92];
+  /* 教室区（左 34%，比之前小）：上下两排，每排 3 个 —— i<3 上排、i>=3 下排 */
+  var CLASS_L = [4, 13, 22, 8, 17, 26];
 
   /* ---------- 通用小工具 ---------- */
   function rnd(n) { return Math.floor(Math.random() * n); }
@@ -396,6 +398,8 @@
     var el = avatarEls[i]; if (!el) return;
     var L = (zone === "class") ? CLASS_L : PLAY_L;
     el.style.left = L[i] + "%";
+    /* 教室区分上下两排：前 3 个站上排、后 3 个站下排；操场只有一排 */
+    el.style.bottom = (zone === "class") ? (i < 3 ? "70px" : "6px") : "6px";
   }
   /* ★ 2026-09-21 丢星特效：星星先闪一下（放大变红），0.43s 后刷新成「少一颗星」的灰态（☆）。
      before = 丢星前的星数，先短暂显示满星闪烁，再落到新数量。 */
@@ -473,20 +477,20 @@
          之前输了的只被 translateX 移出屏外，根本看不到教室；现在留在屏内、走进教室区并缩小）。 */
       ".a-stage{position:relative;height:150px;max-height:22vh;border-radius:14px;overflow:hidden;background:#cfe8ff;box-shadow:0 4px 12px rgba(0,0,0,.1)}" +
       "@media(min-height:700px){.a-stage{height:180px}}" +
-      ".a-cz{position:absolute;top:0;bottom:0;left:0;width:42%;background:linear-gradient(180deg,#fff3d6,#ffe2a8);border-right:2px dashed #d9b46a}" +
+      ".a-cz{position:absolute;top:0;bottom:0;left:0;width:34%;background:linear-gradient(180deg,#fff3d6,#ffe2a8);border-right:2px dashed #d9b46a}" +
       ".a-cz:before{content:'🏫 教室';position:absolute;top:4px;left:6px;font-weight:900;font-size:11px;color:#a9743a}" +
-      ".a-pz{position:absolute;top:0;bottom:0;left:42%;right:0;background:linear-gradient(180deg,#bfe9c0,#7fc98a)}" +
+      ".a-pz{position:absolute;top:0;bottom:0;left:34%;right:0;background:linear-gradient(180deg,#bfe9c0,#7fc98a)}" +
       ".a-pz:before{content:'🏟️ 操场';position:absolute;top:4px;left:6px;font-weight:900;font-size:11px;color:#2f7a3a}" +
       /* 老师站在操场区中央（开场点名、结尾评价都用得上） */
-      ".a-teacher{position:absolute;top:6px;left:71%;transform:translateX(-50%);width:54px;height:54px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 2px 6px rgba(0,0,0,.2);z-index:3}" +
+      ".a-teacher{position:absolute;top:6px;left:67%;transform:translateX(-50%);width:50px;height:50px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 2px 6px rgba(0,0,0,.2);z-index:3}" +
       ".a-teacher img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
       ".a-avs{position:absolute;inset:0;z-index:2}" +
-      /* 头像：绝对定位到各自「槽位」，切换场景靠改 left%；走进教室缩成 .small。
-         默认 transition 同时含 left / transform，开场用 JS 临时把 left 过渡拉长成「走 5 秒」。 */
-      ".a-avatar{position:absolute;bottom:6px;width:9%;display:flex;flex-direction:column;align-items:center;transition:left .8s ease,transform .3s ease;transform-origin:bottom center}" +
-      ".a-avatar .a-body{position:relative;width:100%;max-width:48px;aspect-ratio:1/1;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 2px 5px rgba(0,0,0,.15)}" +
+      /* 头像：绝对定位到各自「槽位」，切换场景靠改 left% / bottom%；走进教室缩成 .small。
+         默认 transition 同时含 left / bottom / transform，开场用 JS 临时把 left 过渡拉长成「走 5 秒」。 */
+      ".a-avatar{position:absolute;bottom:6px;width:10%;display:flex;flex-direction:column;align-items:center;transition:left .8s ease,bottom .8s ease,transform .3s ease;transform-origin:bottom center}" +
+      ".a-avatar .a-body{position:relative;width:100%;max-width:34px;aspect-ratio:1/1;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 5px rgba(0,0,0,.15)}" +
       ".a-avatar .a-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
-      ".a-avatar .a-name{font-size:10px;font-weight:800;margin-top:1px;background:rgba(255,255,255,.7);border-radius:8px;padding:0 2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}" +
+      ".a-avatar .a-name{font-size:10px;font-weight:800;margin-top:1px;background:rgba(255,255,255,.7);border-radius:8px;padding:0 2px;max-width:100%;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}" +
       ".a-avatar.me .a-body{outline:3px solid #4a86e8}" +
       ".a-avatar.rest .a-body{filter:grayscale(1);opacity:.6}" +
       ".a-avatar.small{transform:scale(.6)}" +
@@ -496,14 +500,14 @@
       "@keyframes astar{0%{transform:scale(1.35);color:#ff3b3b}50%{transform:scale(.85)}100%{transform:scale(1);color:#e08b00}}" +
       /* ★ 2026-09-21 新增：开场前「选角色」界面（30s 倒计时，超时自动选第一个）。
          触屏直接点；电视遥控器方向键移焦点、确认键选。 */
-      ".arena-pick{position:relative}" +
-      ".a-pick{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:8px}" +
+      ".arena-pick{position:relative;display:flex;flex-direction:column;min-height:100vh}" +
+      ".a-pick{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:8px;overflow:auto}" +
       ".a-pick-head{font-size:clamp(14px,2.4vw,20px);font-weight:900;color:#2f5fb0;background:rgba(255,255,255,.82);border-radius:12px;padding:6px 12px;text-align:center}" +
       ".a-pick-secs{display:inline-block;min-width:1.6em;color:#ef476f;font-weight:900}" +
-      ".a-pick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:min(560px,96%);margin-top:4px}" +
+      ".a-pick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(420px,94%);margin-top:4px}" +
       ".a-pick-card{display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border-radius:16px;padding:10px 6px;box-shadow:0 3px 10px rgba(0,0,0,.12);cursor:pointer;transition:transform .15s,box-shadow .15s,outline-color .15s;outline:3px solid transparent}" +
       ".a-pick-card:focus,.a-pick-card:hover{outline-color:#4a86e8;transform:translateY(-3px);box-shadow:0 6px 16px rgba(74,134,232,.35)}" +
-      ".a-pick-card .a-body{width:54px;height:54px;font-size:30px}" +
+      ".a-pick-card .a-body{width:50px;height:50px;font-size:28px}" +
       ".a-pick-name{font-size:12px;font-weight:800;color:#333}" +
       /* 装备覆盖层（枪/娃娃）：挂在头像右上 */
       ".a-avatar .a-equip{position:absolute;top:-6px;right:-6px;width:26px;height:26px;display:none}" +
