@@ -218,6 +218,30 @@ jobs:
           fi
           ls -la page/apk
 
+      # 【守住应用内升级的命门】下载直链 page/apk/ChinesePlayground.apk 曾经发过一份
+      # 陈旧构建：它内置的 app.js 根本没有 hotNowCheck / mountSubjectBar，三科也还停在 v1 知识圈，
+      # 用户在电视上「重装」这份包不仅解不开自更新死锁，反而把旧知识圈又装了回来。
+      # 这份 APK 不在下面的清单 purge 列表里（只清了 hot/pack/*），jsDelivr 按 12h TTL 缓存，
+      # 不显式清就一直发旧的。这里先校验它内置的 app.js 确实含热更修复，
+      # 不含直接红、且跳过发布，别等用户截图才发现「下载地址里是旧包」。
+      - name: 校验待发布的 APK 内置 app.js 含热更修复
+        run: |
+          APK="page/apk/ChinesePlayground.apk"
+          [ -f "$APK" ] || { echo "❌ 没有可发布的 APK（build 失败且仓库兜底也缺失）"; exit 1; }
+          rm -rf /tmp/apkchk && mkdir -p /tmp/apkchk
+          ( cd /tmp/apkchk && unzip -o -q "$GITHUB_WORKSPACE/$APK" 'assets/*' )
+          miss=0
+          for f in cn math en; do
+            js="/tmp/apkchk/assets/$f/js/app.js"
+            [ -f "$js" ] || { echo "❌ $f/js/app.js 缺失"; miss=1; continue; }
+            hc=$(grep -c hotNowCheck "$js"); ms=$(grep -c mountSubjectBar "$js"); mb=$(grep -c _hotBases "$js")
+            v1=$(find /tmp/apkchk/assets/$f -name 'game-battle.js' | wc -l)
+            echo "$f/js/app.js: hotNowCheck=$hc mountSubjectBar=$ms multi=$mb v1残留=$v1"
+            [ "$hc" -ge 1 ] && [ "$ms" -ge 1 ] && [ "$v1" -eq 0 ] || miss=1
+          done
+          [ "$miss" -eq 0 ] && echo "✅ 待发布 APK 内置 app.js 含热更修复且已无 v1 知识圈" || {
+            echo "❌ 待发布 APK 内置 app.js 缺少热更修复或仍含 v1 知识圈 —— 拒绝发布这份陈旧包"; exit 1; }
+
       - name: Publish to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -253,4 +277,16 @@ jobs:
             [ "$GOT" = "$WANT" ] && break
             curl -sS --max-time 30 "https://purge.jsdelivr.net/gh/$REPO@gh-pages/hot/pack/manifest.json" || true
             sleep 20
+          done
+
+      # 应用内升级 APK 的缓存清理合并进上面的「清 jsDelivr 缓存」步骤（已含 apk/ChinesePlayground.apk）。
+      - name: 清 jsDelivr 缓存（含应用内升级 APK）
+        continue-on-error: true
+        run: |
+          REPO="${{ github.repository }}"
+          sleep 20
+          for p in hot/pack/manifest.json hot/update.js hot/manifest.js apk/ChinesePlayground.apk; do
+            echo "== purge $p"
+            curl -sS --max-time 30 "https://purge.jsdelivr.net/gh/$REPO@gh-pages/$p" || true
+            echo
           done
