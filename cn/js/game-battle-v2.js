@@ -41,6 +41,11 @@
   var WALK_IN_MS = 5000;       /* 开场走 5 秒 */
   var WALK_BACK_MS = 3000;     /* 掉星回教室走 3 秒 */
   var INV_KEY = "arena_inventory_v2";
+  /* 头像槽位（百分比 left）：PLAY_ 在操场区，CLASS_ 在教室区。
+     ★ 2026-09-21 改：左右两片同屏（左 42% 教室 / 右 58% 操场），输了的走进教室并缩小，
+     不再像以前那样把头像 translateX 移出屏外（那样根本看不到教室）。 */
+  var PLAY_L = [44, 53, 62, 71, 80, 89];
+  var CLASS_L = [2, 9, 16, 23, 30, 37];
 
   /* ---------- 通用小工具 ---------- */
   function rnd(n) { return Math.floor(Math.random() * n); }
@@ -386,6 +391,25 @@
   function loseStar(p) { p.stars--; if (p.stars <= 0) { p.stars = 0; p.alive = false; p.resting = true; } }
   function starStr(n) { var k = Math.round(num(n, 0)); if (k < 0) k = 0; if (k > START_STARS) k = START_STARS; return "★".repeat(k) + "☆".repeat(START_STARS - k); }
 
+  /* 把头像放进某个区域（操场 / 教室）的对应槽位（改 left%，靠 CSS transition 走出走路感） */
+  function placeAvatar(i, zone) {
+    var el = avatarEls[i]; if (!el) return;
+    var L = (zone === "class") ? CLASS_L : PLAY_L;
+    el.style.left = L[i] + "%";
+  }
+  /* ★ 2026-09-21 丢星特效：星星先闪一下（放大变红），0.43s 后刷新成「少一颗星」的灰态（☆）。
+     before = 丢星前的星数，先短暂显示满星闪烁，再落到新数量。 */
+  function flashStar(i, before) {
+    var el = avatarEls[i]; if (!el) return;
+    var st = el.querySelector(".a-stars");
+    var k = Math.max(0, num(before, 0));
+    if (st) { st.textContent = "★".repeat(k) + "☆".repeat(START_STARS - k); st.classList.add("flash"); }
+    later(function () {
+      refreshAvatar(i); refreshTop();
+      if (st) st.classList.remove("flash");
+    }, 470);
+  }
+
   /* ★ 2026-09-21 修正（用户明确规则）：
    *   每人 5 星；真人答错掉光星也出局（不走"受保护"），走回教室 + 被批评 + 游戏结束。
    *   不再按"局"强制淘汰 AI；淘汰只发生在某人星掉到 0（自然发生）。
@@ -445,35 +469,48 @@
       ".a-top{display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:12px;font-weight:800;flex-wrap:wrap;margin-bottom:5px}" +
       ".a-top .pill{background:#fff;border:0;border-radius:999px;padding:4px 8px;box-shadow:0 2px 6px rgba(0,0,0,.08)}" +
       ".a-top .stars{color:#e08b00}" +
-      /* 舞台：教室 / 操场两层叠加，按 scene 切换可见。
-         ★ 2026-09-21 用户反馈「操场宽度占比高」：原 height 固定 230px 太占屏，
-         改为按视口高度自适应（手机≈150px、大屏最多 190px），把空间让给题目和选项。 */
+      /* 舞台：左 42% 教室 / 右 58% 操场，两片同屏可见（2026-09-21 修正：
+         之前输了的只被 translateX 移出屏外，根本看不到教室；现在留在屏内、走进教室区并缩小）。 */
       ".a-stage{position:relative;height:150px;max-height:22vh;border-radius:14px;overflow:hidden;background:#cfe8ff;box-shadow:0 4px 12px rgba(0,0,0,.1)}" +
       "@media(min-height:700px){.a-stage{height:180px}}" +
-      ".a-scene{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;padding-bottom:8px}" +
-      ".a-scene.on{display:flex}" +
-      ".a-classroom{background:linear-gradient(180deg,#fff3d6,#ffe2a8)}" +
-      ".a-classroom:before{content:'🏫 教室';position:absolute;top:8px;left:10px;font-weight:900;color:#a9743a}" +
-      ".a-playground{background:linear-gradient(180deg,#bfe9c0,#7fc98a)}" +
-      ".a-playground:before{content:'🏟️ 操场';position:absolute;top:8px;left:10px;font-weight:900;color:#2f7a3a}" +
-      /* 头像：flex 排开，走路靠 transform translateX（CSS 过渡） */
-      ".a-row{display:flex;gap:4px;justify-content:center;align-items:flex-end;width:100%;padding:0 2px;box-sizing:border-box;overflow:hidden}" +
-      ".a-avatar{position:relative;flex:1 1 0;min-width:0;max-width:56px;display:flex;flex-direction:column;align-items:center;transition:transform 5s linear}" +
-      ".a-avatar .a-body{position:relative;width:100%;max-width:48px;aspect-ratio:1/1;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 2px 5px rgba(0,0,0,.15)}" +
+      ".a-cz{position:absolute;top:0;bottom:0;left:0;width:42%;background:linear-gradient(180deg,#fff3d6,#ffe2a8);border-right:2px dashed #d9b46a}" +
+      ".a-cz:before{content:'🏫 教室';position:absolute;top:4px;left:6px;font-weight:900;font-size:11px;color:#a9743a}" +
+      ".a-pz{position:absolute;top:0;bottom:0;left:42%;right:0;background:linear-gradient(180deg,#bfe9c0,#7fc98a)}" +
+      ".a-pz:before{content:'🏟️ 操场';position:absolute;top:4px;left:6px;font-weight:900;font-size:11px;color:#2f7a3a}" +
+      /* 老师站在操场区中央（开场点名、结尾评价都用得上） */
+      ".a-teacher{position:absolute;top:6px;left:71%;transform:translateX(-50%);width:54px;height:54px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 2px 6px rgba(0,0,0,.2);z-index:3}" +
+      ".a-teacher img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
+      ".a-avs{position:absolute;inset:0;z-index:2}" +
+      /* 头像：绝对定位到各自「槽位」，切换场景靠改 left%；走进教室缩成 .small。
+         默认 transition 同时含 left / transform，开场用 JS 临时把 left 过渡拉长成「走 5 秒」。 */
+      ".a-avatar{position:absolute;bottom:6px;width:9%;display:flex;flex-direction:column;align-items:center;transition:left .8s ease,transform .3s ease;transform-origin:bottom center}" +
+      ".a-avatar .a-body{position:relative;width:100%;max-width:48px;aspect-ratio:1/1;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 2px 5px rgba(0,0,0,.15)}" +
       ".a-avatar .a-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
-      ".a-avatar .a-name{font-size:11px;font-weight:800;margin-top:2px;background:rgba(255,255,255,.7);border-radius:8px;padding:0 3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}" +
+      ".a-avatar .a-name{font-size:10px;font-weight:800;margin-top:1px;background:rgba(255,255,255,.7);border-radius:8px;padding:0 2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}" +
       ".a-avatar.me .a-body{outline:3px solid #4a86e8}" +
       ".a-avatar.rest .a-body{filter:grayscale(1);opacity:.6}" +
+      ".a-avatar.small{transform:scale(.6)}" +
       ".a-avatar .a-stars{font-size:11px;color:#e08b00;letter-spacing:1px;min-height:14px}" +
+      /* ★ 2026-09-21 丢星特效：星星闪一下（放大变红）再变灰色（☆） */
+      ".a-avatar .a-stars.flash{animation:astar .43s ease}" +
+      "@keyframes astar{0%{transform:scale(1.35);color:#ff3b3b}50%{transform:scale(.85)}100%{transform:scale(1);color:#e08b00}}" +
+      /* ★ 2026-09-21 新增：开场前「选角色」界面（30s 倒计时，超时自动选第一个）。
+         触屏直接点；电视遥控器方向键移焦点、确认键选。 */
+      ".arena-pick{position:relative}" +
+      ".a-pick{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:8px}" +
+      ".a-pick-head{font-size:clamp(14px,2.4vw,20px);font-weight:900;color:#2f5fb0;background:rgba(255,255,255,.82);border-radius:12px;padding:6px 12px;text-align:center}" +
+      ".a-pick-secs{display:inline-block;min-width:1.6em;color:#ef476f;font-weight:900}" +
+      ".a-pick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:min(560px,96%);margin-top:4px}" +
+      ".a-pick-card{display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border-radius:16px;padding:10px 6px;box-shadow:0 3px 10px rgba(0,0,0,.12);cursor:pointer;transition:transform .15s,box-shadow .15s,outline-color .15s;outline:3px solid transparent}" +
+      ".a-pick-card:focus,.a-pick-card:hover{outline-color:#4a86e8;transform:translateY(-3px);box-shadow:0 6px 16px rgba(74,134,232,.35)}" +
+      ".a-pick-card .a-body{width:54px;height:54px;font-size:30px}" +
+      ".a-pick-name{font-size:12px;font-weight:800;color:#333}" +
       /* 装备覆盖层（枪/娃娃）：挂在头像右上 */
       ".a-avatar .a-equip{position:absolute;top:-6px;right:-6px;width:26px;height:26px;display:none}" +
       ".a-avatar .a-equip.on{display:block}" +
       /* 罚站 ❌ 覆盖 */
       ".a-avatar .a-x{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:40px;color:#ef476f;font-weight:900;text-shadow:0 0 4px #fff}" +
       ".a-avatar.rest .a-x{display:flex}" +
-      /* 老师 */
-      ".a-teacher{position:absolute;top:30px;left:50%;transform:translateX(-50%);width:60px;height:60px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:0 2px 6px rgba(0,0,0,.2)}" +
-      ".a-teacher img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
       /* HUD 题目卡 */
       /* ★ 2026-09-21 用户反馈「选项溢出」：原来 1fr 1fr + 20px 字号 + 大内边距，
          长文本（语文词句/英语句子）会把卡片撑破、被屏幕裁掉。
@@ -511,7 +548,7 @@
     var rowHtml = players.map(function (p, i) {
       var eq = (p.equip === "gun") ? '<img class="a-equip on" src="' + T(IMG + p.equipImg) + '" onerror="this.remove()">'
         : (p.equip === "doll") ? '<img class="a-equip on" src="' + T(IMG + p.equipImg) + '" onerror="this.remove()">' : '<img class="a-equip">';
-      return '<div class="a-avatar ' + (p.isMe ? "me" : "") + '" data-i="' + i + '">' +
+      return '<div class="a-avatar ' + (p.isMe ? "me" : "") + '" data-i="' + i + '" style="left:' + PLAY_L[i] + '%">' +
         '<div class="a-body">' + faceHTML(p.emoji, p.img) +
           '<div class="a-x">❌</div>' + eq + '</div>' +
         '<div class="a-name">' + (p.isMe ? "你" : T(p.name)) + '</div>' +
@@ -528,31 +565,31 @@
         '<span class="pill">⏱ <b id="a-time">' + BASE_TIME + '</b></span>' +
       '</div>' +
       '<div class="a-stage">' +
-        '<div class="a-scene a-classroom on" id="a-classroom">' +
-          '<div class="a-teacher">' + faceHTML("👩‍🏫", TEACHER_IMG) + '</div>' +
-          '<div class="a-row">' + rowHtml + '</div>' +
-        '</div>' +
-        '<div class="a-scene a-playground" id="a-playground">' +
-          '<div class="a-row">' + rowHtml + '</div>' +
-        '</div>' +
+        '<div class="a-cz"></div>' +
+        '<div class="a-pz"></div>' +
+        '<div class="a-teacher" id="a-teacher">' + faceHTML("👩‍🏫", TEACHER_IMG) + '</div>' +
+        '<div class="a-avs">' + rowHtml + '</div>' +
         '<div class="a-cd" id="a-cd" style="display:none"></div>' +
       '</div>' +
       '<div id="a-hud"></div>' +
       '</div>';
     setApp(html);
-    /* 缓存头像 DOM 引用（两场景各一份，按 data-i 取） */
+    /* 缓存头像 DOM 引用（现在每个玩家只有一份，挂在 .a-avs 里） */
     avatarEls = [];
     var nodes = document.querySelectorAll(".arena .a-avatar");
     for (var n = 0; n < nodes.length; n++) avatarEls.push(nodes[n]);
-    /* 开场：头像先从左侧屏幕外走到各自槽位（教室层） */
+    /* 开场：头像先从左侧屏幕外走到操场各自槽位（left 过渡拉长成 5 秒） */
     for (var i = 0; i < avatarEls.length; i++) {
       var el = avatarEls[i];
-      el.style.transition = "transform " + (WALK_IN_MS / 1000) + "s linear";
-      el.style.transform = "translateX(-460px)";
+      el.style.transition = "left " + (WALK_IN_MS / 1000) + "s linear";
+      el.style.left = (PLAY_L[i] - 60) + "%";
     }
-    /* 强制重排后归位 → 触发过渡 */
+    /* 强制重排后归位 → 触发过渡；归位后把过渡恢复正常速度（掉星回教室用 .8s） */
     later(function () {
-      for (var j = 0; j < avatarEls.length; j++) avatarEls[j].style.transform = "translateX(0)";
+      for (var j = 0; j < avatarEls.length; j++) {
+        avatarEls[j].style.transition = "left .8s ease, transform .3s ease";
+        avatarEls[j].style.left = PLAY_L[j] + "%";
+      }
     }, 60);
   }
 
@@ -612,14 +649,11 @@
     refreshTop();
   }
 
-  /* ---------- 开场：教室→操场走 5s，老师倒计时 5..1 ---------- */
+  /* ---------- 开场：老师点名集合，倒计时 5..1（教室/操场同屏，无需切场景） ---------- */
   function startOpening() {
     S.phase = "opening";
     battleRender();
     later(function () {
-      /* 切到操场层（教室层淡出，头像保留在原位继续入场） */
-      var cls = document.getElementById("a-classroom"), pg = document.getElementById("a-playground");
-      if (cls) cls.classList.remove("on"); if (pg) pg.classList.add("on");
       S.phase = "countdown";
       countdown(5);
     }, WALK_IN_MS);
@@ -656,12 +690,12 @@
     S.chosen = idx; S.revealed = true;
     var me = S.players[0];
     if (correct) { me.score++; sfx("correct"); tts("答对啦，加一分"); }
-    else { loseStar(me); sfx("wrong"); later(function () {
+    else { var mb = me.stars; loseStar(me); flashStar(0, mb); sfx("wrong"); later(function () {
       try { var right = (q.opts || [])[q.correct]; tts(right ? T(right.label) : T(q.speakText)); } catch (e) {}
     }, 200); }
     for (var i = 1; i < S.players.length; i++) {
       var p = S.players[i]; if (!p.alive) continue;
-      if (Math.random() < SKILL) p.score++; else loseStar(p);
+      if (Math.random() < SKILL) p.score++; else { var pb = p.stars; loseStar(p); flashStar(i, pb); }
     }
     var fb = document.getElementById("afb");
     if (fb) fb.textContent = correct ? "✅ 答对啦！+1 分" : "❌ 答错了，加油";
@@ -672,18 +706,21 @@
     later(afterResolve, 1700);
   }
 
-  /* 掉星 → 头像走回教室（3s）+ ❌ 覆盖；老师逐个点名让其回教室好好学习
+  /* 掉光星 → 头像走进左侧教室区（left% 过渡）+ 缩小 + ❌ + 灰；老师逐个点名回教室好好学习。
+     ★ 2026-09-21 修正：以前是 translateX(-720px) 把头像移出屏外，根本看不到教室；
+     现在明确走进屏内的教室区，且只有「掉光星」的人进去，真人输了也不会把全场都拉去罚站。
      delayMs：同 round 多人同时掉星时错开播报，避免语音被引擎合并成一团 */
   function walkBack(i, delayMs) {
     var p = S.players[i]; p._walked = true;
     var el = avatarEls[i]; if (!el) return;
-    el.style.transition = "transform " + (WALK_BACK_MS / 1000) + "s linear";
-    el.style.transform = "translateX(-720px)";
+    el.style.transition = "left .8s ease, transform .3s ease";
+    el.classList.add("rest", "small");
+    placeAvatar(i, "class");
     /* 老师点名：某某，回教室好好学习（每个被淘汰的学生各播一次，靠 _walked 守卫，绝不漏、绝不重复） */
     var msg = T(p.isMe ? "你" : p.name) + "，回教室好好学习";
     if (delayMs && delayMs > 0) later(function () { tts(msg); }, delayMs);
     else tts(msg);
-    later(function () { refreshAvatar(i); }, WALK_BACK_MS + 50);
+    refreshAvatar(i);
   }
 
   function afterResolve() {
@@ -706,12 +743,7 @@
     S.phase = "over";
     if (S.tick) { clearInterval(S.tick); S.tick = null; }
     var me = S.players[0], meLost = !me.alive;
-    /* 舞台切回教室：输了的玩家也走回教室（若还没走过） */
-    try {
-      var pg = document.getElementById("a-playground"), cls = document.getElementById("a-classroom");
-      if (pg) pg.classList.remove("on");
-      if (cls) cls.classList.add("on");
-    } catch (e) {}
+    /* 教室 / 操场两片同屏常驻，无需切场景；真人输了且还没走过就走进教室（其余人留在原地） */
     if (meLost && !me._walked) walkBack(0, 0);
     /* 老师评价：满星表扬，否则一律批评（含中途掉光星出局）。延后一点避免和点名语音叠在一起 */
     var meFull = (me.stars >= START_STARS);
@@ -737,10 +769,12 @@
     var youWon = !!winner.isMe;
     var youPraised = meFull;                          /* 只有满星才受表扬 */
     S._praised = youPraised;
-    if (youWon) {
+    /* ★ 2026-09-21 修正（用户明确规则）：只有「满星且赢了」才发配件（碎片），
+       丢分了（不满星）哪怕也拿了第一，也不给配件 —— 这是鼓励真满星通关。 */
+    if (youPraised) {
       var v = attachPiece();
-      banner("🏆 冠军奖励 +1 配件（共 " + v.attachments + "）");
-      if (youPraised) championFX();                   /* 满星才放彩带皇冠 */
+      banner("🏆 满星冠军奖励 +1 配件（共 " + v.attachments + "）");
+      championFX();                                   /* 满星才放彩带皇冠 */
     }
     var rival = null;
     for (var i = 0; i < board.length; i++) if (!board[i].isMe) { rival = board[i]; break; }
@@ -785,6 +819,8 @@
   function battleStop() {
     runId++;
     clearTimers();
+    if (pickTimer) { try { clearInterval(pickTimer); } catch (e) {} pickTimer = null; }
+    if (pickKeyHandler) { try { document.body.removeEventListener("keydown", pickKeyHandler); } catch (e) {} pickKeyHandler = null; }
     S = null; avatarEls = [];
     window.__gameExit = null;
     try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
@@ -817,25 +853,105 @@
   window.arenaRestart = function () { battleStop(); startArena(); };
 
   /* ---------- 入口 ---------- */
+  /* ★ 2026-09-21 新增：开场前让真人优先选角色（30s 倒计时，超时自动选第 1 个）。
+   * 触屏直接点；电视遥控器方向键移焦点、确认键选择。选完把选中的学生排到 0 号位当真人。
+   * 模块级 pickTimer / pickKeyHandler 便于 arenaExit 时一并清掉，避免「退出后还能被按键复活」。 */
+  var pickTimer = null, pickKeyHandler = null;
+  function chooseHero(cb) {
+    var html =
+      '<div class="arena arena-pick">' +
+      '<div class="a-top">' +
+        '<button class="pill" onclick="arenaExit()" style="cursor:pointer">← 退出</button>' +
+        '<span class="pill">🏆 知识圈竞赛</span>' +
+        '<span class="pill">👥 6 人</span>' +
+      '</div>' +
+      '<div class="a-pick">' +
+        '<div class="a-pick-head">选一个你喜欢的角色 👇 <span class="a-pick-secs" id="a-pick-secs">30</span> 秒后自动选第一个</div>' +
+        '<div class="a-pick-grid">' +
+          STU_EMOJI.map(function (emo, i) {
+            return '<div class="a-pick-card" tabindex="0" data-i="' + i + '" onclick="arenaPick(' + i + ')">' +
+              '<div class="a-body">' + faceHTML(emo, STU_IMG[i]) + '</div>' +
+              '<div class="a-pick-name">' + T(STU_NAME[i]) + '</div>' +
+            '</div>';
+          }).join("") +
+        '</div>' +
+      '</div>' +
+      '</div>';
+    setApp(html);
+
+    var done = false, left = 30;
+    var secEl = document.getElementById("a-pick-secs");
+    pickTimer = setInterval(function () {
+      left--; if (secEl) secEl.textContent = left;
+      if (left <= 0) { clearInterval(pickTimer); pickTimer = null; doPick(0); }
+    }, 1000);
+
+    function doPick(i) {
+      if (done) return; done = true;
+      if (!stillMine()) return;                 // 已退出 → 不选
+      if (pickTimer) { clearInterval(pickTimer); pickTimer = null; }
+      if (pickKeyHandler) { try { document.body.removeEventListener("keydown", pickKeyHandler); } catch (e) {} pickKeyHandler = null; }
+      cb(i);
+    }
+    /* 触屏点击 */
+    window.arenaPick = function (i) { doPick(i); };
+
+    /* 电视遥控器：3 列网格，方向键移焦点、确认键选 */
+    function cards() {
+      var all = Array.prototype.slice.call(document.querySelectorAll("#app .a-pick-card"));
+      var vis = all.filter(function (el) { return el.offsetParent !== null; });
+      return vis.length ? vis : all;
+    }
+    function focusAt(el) { try { el.focus(); } catch (e) {} }
+    function ensure() {
+      var list = cards(); if (!list.length) return;
+      var cur = document.activeElement;
+      if (cur && list.indexOf(cur) >= 0) return;
+      focusAt(list[0]);
+    }
+    pickKeyHandler = function (e) {
+      if (!stillMine()) return;
+      var k = e.key, kc = e.keyCode || 0;
+      var list = cards(); if (!list.length) return;
+      var idx = list.indexOf(document.activeElement);
+      if (k === "ArrowRight" || kc === 39) { e.preventDefault(); focusAt(list[Math.min(list.length - 1, (idx < 0 ? 0 : idx) + 1)]); return; }
+      if (k === "ArrowLeft" || kc === 37) { e.preventDefault(); focusAt(list[Math.max(0, (idx < 0 ? 0 : idx) - 1)]); return; }
+      if (k === "ArrowDown" || kc === 40) { e.preventDefault(); focusAt(list[Math.min(list.length - 1, (idx < 0 ? 0 : idx) + 3)]); return; }
+      if (k === "ArrowUp" || kc === 38) { e.preventDefault(); focusAt(list[Math.max(0, (idx < 0 ? 0 : idx) - 3)]); return; }
+      var isEnter = (k === "Enter" || k === " " || k === "Spacebar" || kc === 13 || kc === 66 || kc === 23);
+      if (!isEnter) return;
+      e.preventDefault();
+      var el = document.activeElement;
+      if (el && el.getAttribute) { var d = el.getAttribute("data-i"); if (d !== null && d !== "") doPick(parseInt(d, 10)); }
+    };
+    document.body.addEventListener("keydown", pickKeyHandler);
+    ensure();
+    tts("选一个你喜欢的角色吧");
+  }
+
   function startArena() {
     buildBank();
     battleStop();
     ensureStyle();
     runId++;
-    /* 随机抽 1 个当真人，其余 5 个 AI */
-    var meIdx = rnd(6);
-    var players = [];
-    for (var i = 0; i < 6; i++) {
-      players.push({
-        name: STU_NAME[i], emoji: STU_EMOJI[i], img: STU_IMG[i],
-        isMe: (i === meIdx), alive: true, resting: false, _walked: false,
-        stars: START_STARS, score: 0, correct: 0, equip: null, equipImg: ""
-      });
-    }
-    S = { players: players, qn: 1, time: BASE_TIME, left: BASE_TIME, locked: false, q: null, chosen: -1, revealed: false, fb: "", tick: null, phase: "opening", hintUsed: false, showHint: false, excluded: null };
-    window.__gameExit = function () { if (!S) return false; window.arenaExit(); return true; };
-    mountStage();
-    startOpening();
+    /* 开场前先让真人选角色（30s 倒计时）。选中的学生排到 0 号位当真人，其余 5 个 AI。 */
+    chooseHero(function (heroIdx) {
+      var order = [heroIdx];
+      for (var k = 0; k < 6; k++) if (k !== heroIdx) order.push(k);
+      var players = [];
+      for (var i = 0; i < 6; i++) {
+        var si = order[i];
+        players.push({
+          name: STU_NAME[si], emoji: STU_EMOJI[si], img: STU_IMG[si],
+          isMe: (i === 0), alive: true, resting: false, _walked: false,
+          stars: START_STARS, score: 0, correct: 0, equip: null, equipImg: ""
+        });
+      }
+      S = { players: players, qn: 1, time: BASE_TIME, left: BASE_TIME, locked: false, q: null, chosen: -1, revealed: false, fb: "", tick: null, phase: "opening", hintUsed: false, showHint: false, excluded: null };
+      window.__gameExit = function () { if (!S) return false; window.arenaExit(); return true; };
+      mountStage();
+      startOpening();
+    });
   }
 
   try { if (typeof log === "function") log("arena registering"); } catch (e) {}
@@ -850,7 +966,7 @@
   };
   registerGame({
     id: "arena2",
-    name: "知识圈竞赛2",
+    name: "知识圈竞赛",
     icon: "🏆",
     desc: "6 人答题生存赛：老师带队去操场，答对活、掉星回教室罚站！",
     start: startArena
