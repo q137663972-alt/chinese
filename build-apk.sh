@@ -39,6 +39,15 @@ for d in cn math en; do
   fi
 done
 
+# ★ 空壳模式（EMPTY_SHELL=1）：APK 不打包 math/en 内置内容，数学/英语全部改由热更包下发，
+#   只保留 cn 作为「无网兜底」（防止首次没装包时选语文也白屏）。
+#   这样产出的就是 2.5.0「通用空壳」——APK 只认壳 + 选学科页，三科内容随热更包走。
+#   ⚠️ 空壳 APK 必须配合热更包使用：没装包时选「数学/英语」会因缺内置文件白屏（有包则正常）。
+if [ "${EMPTY_SHELL:-0}" = "1" ]; then
+  echo "════ 1.5/4 空壳模式：移除 math/en 内置内容（改由热更包下发） ════"
+  rm -rf "$ASSETS/math" "$ASSETS/en"
+fi
+
 # 完整性校验：boot.js 清单上的每个文件都必须真的躺在 assets 里。
 # 少了任何一个，启动都是 404 → 哨兵超时 → 回滚 → 无限重启的黑屏循环，
 # 而且只在装着资源包的旧机上复现，开发机上怎么跑都正常。
@@ -51,12 +60,17 @@ node --input-type=module -e '
 import fs from "node:fs";
 import path from "node:path";
 const A = process.argv[1];
-const { readBootManifest } = await import("file://" + process.argv[2] + "/tools/lib/boot-manifest.mjs");
-const M = readBootManifest(process.argv[2]);
-const bad = [...M.allDeclared()].filter((p) => !fs.existsSync(path.join(A, p)));
+const ROOT = process.argv[2];
+const EMPTY = process.argv[3] === "1";
+const { readBootManifest } = await import("file://" + ROOT + "/tools/lib/boot-manifest.mjs");
+const M = readBootManifest(ROOT);
+let declared = [...M.allDeclared()];
+/* 空壳模式下 math/en 不进 APK（改由热更包下发），校验时跳过这两科，否则必误报缺失 */
+if (EMPTY) declared = declared.filter((p) => !/^(math|en)\//.test(p));
+const bad = declared.filter((p) => !fs.existsSync(path.join(A, p)));
 if (bad.length) { console.error("❌ assets 缺文件：\n  " + bad.join("\n  ")); process.exit(1); }
-console.log("   assets 完整性校验通过（" + M.allDeclared().size + " 个文件）");
-' "$ASSETS" "$ROOT"
+console.log("   assets 完整性校验通过（" + declared.length + " 个文件）" + (EMPTY ? "  [空壳模式：已跳过 math/en]" : ""));
+' "$ASSETS" "$ROOT" "${EMPTY_SHELL:-0}"
 
 echo "   宿主 $(ls "$ROOT"/js/*.js | wc -l) js / $(ls "$ROOT"/css/*.css | wc -l) css" \
      "| cn $(ls "$ROOT"/cn/js/*.js | wc -l) | math $(ls "$ROOT"/math/js/*.js | wc -l) | en $(ls "$ROOT"/en/js/*.js | wc -l)"
