@@ -522,8 +522,17 @@ public class MainActivity extends Activity {
                 InputStream in;
                 if (HOST_HOT.equals(host)) {
                     File f = new File(getFilesDir(), "hot/" + path);
-                    if (!f.exists() || !isInside(hotDir(), f)) return null;
-                    in = new FileInputStream(f);
+                    if (f.exists() && isInside(hotDir(), f)) {
+                        in = new FileInputStream(f);
+                    } else {
+                        /* ★ 2026-09-21 兜底：热更目录里没有 → 回落到 APK 内置 assets。
+                           以前这里直接 return null，导致「首次安装、还没装热更包」时
+                           https://local.hot/math/img/battle/stu_01_chick.png 全部 404 ——
+                           表现是选人界面只有 emoji、没有原图头像（孩子们认不出角色）。
+                           热更包里有同名文件时仍然以热更为准（先查 files/hot/，见上）。 */
+                        try { in = getAssets().open(path); }
+                        catch (Exception e2) { return null; }   // assets 也没有，才是真的没有
+                    }
                 } else {
                     in = getAssets().open(path);
                 }

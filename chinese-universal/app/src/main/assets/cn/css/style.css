@@ -241,11 +241,12 @@ input[type=range]{width:150px}
 }
 
 /* 电视：overscan 留白（老电视会裁掉边缘 5%），容器不再限宽 */
-body.tv #app {
-  max-width: none;
-  padding: calc(4vh + env(safe-area-inset-top,0px)) calc(5vw + env(safe-area-inset-right,0px))
-           calc(4vh + env(safe-area-inset-bottom,0px)) calc(5vw + env(safe-area-inset-left,0px));
-}
+/* ★ 不要在这里写 body.tv #app 的 max-width —— 电视下的宽度唯一真源是 css/tv.css。
+   历史事故：这里原本是 max-width: 460px，后来又被改成 calc(1000px * var(--s,1))，
+   而 1080p 机顶盒的 CSS 视口只有 960px、--s=1.5 → 1000×1.5=1500px 比视口宽 56%，
+   整页左右溢出被裁，屏幕上就是首页两侧那两道竖直"接缝"。
+   CSS 宽度不能乘 --s（那是字号/间距的缩放），容器宽一律交给 css/tv.css 的
+   max-width:none 兜底，靠加载顺序取胜，三科才不会各走各的分支。 */
 body.tv { font-size: 20px; }
 body.tv .big-pic { width: calc(200px * var(--s,1)); width: clamp(200px, 26vmin, 320px); height: calc(200px * var(--s,1)); height: clamp(200px, 26vmin, 320px); }
 body.tv .opt { font-size: 40px; min-height: 150px; }
@@ -355,7 +356,8 @@ body.tv .big-emoji { font-size: 170px; }
  * 声明会被丢弃，表现为「画面缩小、田字格塌掉、边缘被裁」，就是这个坑。
  * ===================================================================== */
 body.tv { font-size: calc(20px * var(--s,1)); }
-body.tv #app { max-width: calc(1000px * var(--s,1)); padding: 3vh 4vw; }
+/* ★ 这里原本是 max-width: calc(1000px * var(--s,1)) —— 已删除，理由见本文件上方
+   「电视：overscan 留白」那段注释。容器宽度唯一真源在 css/tv.css。 */
 body.tv .topbar { margin-bottom: calc(16px * var(--s,1)); grid-gap: calc(12px * var(--s,1)); gap: calc(12px * var(--s,1)); }
 body.tv .topbar .back, body.tv .topbar .gear { width: calc(48px * var(--s,1)); height: calc(48px * var(--s,1)); font-size: calc(24px * var(--s,1)); border-radius: calc(16px * var(--s,1)); }
 body.tv .topbar .title { font-size: calc(26px * var(--s,1)); }

@@ -153,9 +153,14 @@ input[type=range]{width:150px}
 .foot{text-align:center;color:var(--sub);font-size:11px;margin-top:18px}
 
 /* ===================== 电视 / 机顶盒模式 ===================== */
-/* 横屏大屏：放宽宽度、放大字号与网格列数、提高对比度（手机/桌面不触发） */
+/* 横屏大屏：放宽宽度、放大字号与网格列数、提高对比度（手机/桌面不触发）
+   ★ 注意：这条断点带 (orientation: landscape)，所以手机横屏也会命中。
+      原来这里用 `#app { max-width: 100% }` 靠"碰巧命中"来放宽容器 ——
+      竖屏状态下一退回来就是 520px 手机容器，非常脆。
+      容器宽度的唯一真源已收到 css/tv.css 的 body.tv #app（max-width:none），
+      这里不再重复定义，避免三科又各写一套。 */
 @media (min-width: 900px), (orientation: landscape) {
-  #app { max-width: 100%; padding: 22px 30px 40px; }
+  #app { padding: 22px 30px 40px; }
   body { font-size: 20px; }
   .topbar { margin-bottom: 18px; }
   .topbar .back, .topbar .gear { width: 56px; height: 56px; font-size: 26px; border-radius: 18px; }

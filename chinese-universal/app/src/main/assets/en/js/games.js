@@ -783,9 +783,7 @@ window.getGame = function (id) {
   return null;
 };
 registerGame({ id:"listen", name:"听音选图", icon:"🔊", desc:"听发音，选正确的图", start: startListen });
-registerGame({ id:"picture", name:"看图识词", icon:"👀", desc:"看图片，选正确单词", start: startPicture });
 registerGame({ id:"spelling", name:"单词拼写", icon:"✏️", desc:"听一听，拼出单词", start: startSpelling });
-registerGame({ id:"memory", name:"翻牌配对", icon:"🃏", desc:"翻牌记忆，配对图与词", start: startMemory });
 registerGame({ id:"read", name:"跟读打分", icon:"🎤", desc:"跟着读，AI 来打分", start: startRead });
 registerGame({ id:"sentence", name:"连词成句", icon:"🧩", desc:"把词块排成一句话", start: startSentence });
 registerGame({ id:"fill", name:"句型填空", icon:"📝", desc:"给句型选个合适的词", start: startFill });

@@ -12,6 +12,11 @@
  */
 (function () {
   window.TV_TUNE = {
+    /* ★ 2026-09-21 新增：触屏「电视一体机」上原生桥 isTV() 会误报 false
+       （系统非 TV 模式、无 LEANBACK、但有触屏，三重判定全落空），
+       导致 body 被打成 phone、css/tv.css 整块失效、大屏上跑手机布局。
+       tv.js 里加了「大屏 + 横屏 + 16:9」几何复核来兜底；置 false 可关掉它。 */
+    tvForce: true,
     /* 电视 WebView 普遍把 CSS 视口报成物理分辨率的一半（1080p 报 960×540）。
        置 false 则直接用 CSS px 分档（个别虚报 dpr 的盒子可试）。 */
     dprFix: true,

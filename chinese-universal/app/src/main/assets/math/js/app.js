@@ -317,6 +317,12 @@ function renderHotDiag(){
   var ids = games.map(function (g) { return g.id; });
   var base = window.HOT_BASE || "(未知)";
   var source = localBuild ? ("热更包（build=" + localBuild + "）") : "内置版（无本地热更包）";
+  /* 【显示尺寸实测】电视上没有控制台，比例出问题时只能靠这行读数判断。
+     实现放在共享层 js/tv.js 的 window.tvDiagHtml()，三科共用一份，避免三份漂移。 */
+  var dim = (typeof window.tvDiagHtml === "function")
+    ? window.tvDiagHtml()
+    : '(当前不是电视模式，未采集显示参数)';
+
   app.innerHTML = topbar("热更自检", true) +
     '<div class="result-box" style="text-align:left;font-size:15px;line-height:2">' +
       '本机运行来源：' + source + '<br>' +
@@ -324,14 +330,31 @@ function renderHotDiag(){
       '远程最新 build：' + remoteBuild + '<br>' +
       '玩法列表（window.GAMES 实际注册）：' + (ids.length ? ids.join("、") : "（空）") + '<br>' +
       '玩法总数：' + ids.length + '<br>' +
+      '知识圈竞赛2(arena2)：' + (ids.indexOf("arena2") >= 0
+        ? '<b style="color:#1f7a45">✅ 已注册（游戏列表末尾可找到「知识圈竞赛2」）</b>'
+        : '<b style="color:#b3233f">❌ 未注册 —— 文件没被注入或执行报错</b>') + '<br>' +
+      'arena2 文件是否已下载：' + (typeof window.arenaAnswer === "function"
+        ? '<b style="color:#1f7a45">✅ math/js/game-battle-v2.js 已执行</b>'
+        : '<b style="color:#b3233f">❌ 未加载</b>') + '<br>' +
       '热更源：<span style="word-break:break-all">' + base + '</span><br>' +
       '连通性：<span id="hotCon">未测试</span><br>' +
       '<span style="color:var(--sub);font-size:13px">判读：本机运行来源=代码实际来自内置还是已装热更包；' +
       '玩法列表=这次热更真正注册进来的玩法。新增玩法要在这里出现才算生效。</span>' +
     '</div>' +
+    '<div class="result-box" style="text-align:left;font-size:15px;line-height:2;margin-top:12px">' +
+      '<b>📐 显示尺寸实测</b><br>' + dim +
+      '<span style="color:var(--sub);font-size:13px">比例不对时看「容器实测宽」与「横向溢出」两行：' +
+      '溢出为正说明页面比屏幕宽、两侧被裁。修显示参数只改 js/tv-tune.js 与 css/tv.css，' +
+      '两者都能热更，不用装包。</span>' +
+    '</div>' +
     '<div class="row" style="margin-top:12px">' +
       '<button class="btn ghost" onclick="hotTestConn()">🔌 测试连通</button>' +
-      '<button class="btn green" onclick="hotForceReload()">🔄 强制重新下载</button>' +
+      '<button class="btn green" onclick="hotForceReload()">⬇️ 立即下载更新</button>' +
+    '</div>' +
+    '<div id="hotNowMsg" style="text-align:left;font-size:14px;font-weight:800;margin-top:8px;min-height:20px"></div>' +
+    '<div style="text-align:left;color:var(--sub);font-size:12px;margin-top:4px">' +
+      '电视端请用「立即下载更新」：下载完<b>完全退出 App 再打开</b>才生效。' +
+      '自动热更也一直在跑，但它要下完约 4MB，过早关机就会中断。' +
     '</div>' +
     '<button class="btn pink" style="margin-top:10px" onclick="state.view=\'home\';render()">返回</button>';
 }
@@ -354,11 +377,17 @@ window.__hotDiag = function (txt) {
     el.textContent = "✅ 可达，线上 build=" + (m.build || "?");
   } catch (e) { el.textContent = "⚠️ 返回了非预期内容"; }
 };
+/* ★ 2026-09-21 修复「电视端热更永远不成功」：
+   原实现只调 AndroidHot.reset()（清空本地标记）就提示"关了重开"——
+   它根本没有发起任何下载！而 reset() 会把 K_CUR 等一并清空，
+   于是用户点完重开，反而退回内置版，看起来像"更新把东西弄没了"。
+   现在改成：真的去拉清单 + 真下载 + 进度可见 + 失败可重试。 */
 window.hotForceReload = function () {
   try {
     if (!window.AndroidHot) { toast("浏览器预览无法下载"); return; }
-    window.AndroidHot.reset();
-    toast("已清除本地标记，请关闭 App 再重新打开以拉取内容");
+    if (typeof window.hotNowCheck === "function") { window.hotNowCheck(); return; }
+    /* 兜底：v2 玩法文件没加载上时，至少别做"清空标记"这种有害动作 */
+    toast("下载器未就绪，请返回游戏列表重进一次后重试");
   } catch (e) { toast("操作失败"); }
 };
 /* 设置标题点 3 次的隐形入口：电视走顶栏 🛠️ 按钮，这个只是手机上的备用通道 */

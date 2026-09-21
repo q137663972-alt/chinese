@@ -44,10 +44,11 @@
   /* 头像槽位（百分比 left）：PLAY_ 在操场区，CLASS_ 在教室区。
      ★ 2026-09-21 改：左右两片同屏（左 42% 教室 / 右 58% 操场），输了的走进教室并缩小，
      不再像以前那样把头像 translateX 移出屏外（那样根本看不到教室）。 */
-  /* 操场区（右 58%）：单排 6 个，槽位铺满，避免头像/名字互相挤叠 */
-  var PLAY_L = [42, 52, 62, 72, 82, 92];
-  /* 教室区（左 34%，比之前小）：上下两排，每排 3 个 —— i<3 上排、i>=3 下排 */
-  var CLASS_L = [4, 13, 22, 8, 17, 26];
+  /* 操场区（右 66%）：上下两排，每排 3 个 —— i<3 上排、i>=3 下排。
+     ★ 2026-09-21 改：原先单排 6 个挤成一串，孩子看不清谁是谁；改成跟教室一致的两排。 */
+  var PLAY_L = [42, 56, 70, 42, 56, 70];
+  /* 教室区（左 34%）：上下两排，每排 3 个 —— i<3 上排、i>=3 下排 */
+  var CLASS_L = [4, 13, 22, 4, 13, 22];
 
   /* ---------- 通用小工具 ---------- */
   function rnd(n) { return Math.floor(Math.random() * n); }
@@ -398,8 +399,9 @@
     var el = avatarEls[i]; if (!el) return;
     var L = (zone === "class") ? CLASS_L : PLAY_L;
     el.style.left = L[i] + "%";
-    /* 教室区分上下两排：前 3 个站上排、后 3 个站下排；操场只有一排 */
-    el.style.bottom = (zone === "class") ? (i < 3 ? "70px" : "6px") : "6px";
+    /* 两个区都分上下两排：前 3 个站上排、后 3 个站下排。
+       ★ 2026-09-21 改：操场原先只有一排，6 个头像挤成一串；现在与教室一致排两排。 */
+    el.style.bottom = (i < 3 ? "70px" : "6px");
   }
   /* ★ 2026-09-21 丢星特效：星星先闪一下（放大变红），0.43s 后刷新成「少一颗星」的灰态（☆）。
      before = 丢星前的星数，先短暂显示满星闪烁，再落到新数量。 */
@@ -504,11 +506,12 @@
       ".a-pick{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:8px;overflow:auto}" +
       ".a-pick-head{font-size:clamp(14px,2.4vw,20px);font-weight:900;color:#2f5fb0;background:rgba(255,255,255,.82);border-radius:12px;padding:6px 12px;text-align:center}" +
       ".a-pick-secs{display:inline-block;min-width:1.6em;color:#ef476f;font-weight:900}" +
-      ".a-pick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(420px,94%);margin-top:4px}" +
-      ".a-pick-card{display:flex;flex-direction:column;align-items:center;gap:4px;background:#fff;border-radius:16px;padding:10px 6px;box-shadow:0 3px 10px rgba(0,0,0,.12);cursor:pointer;transition:transform .15s,box-shadow .15s,outline-color .15s;outline:3px solid transparent}" +
+      ".a-pick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:min(440px,94%);margin-top:4px}" +
+      /* ★ 2026-09-21 改：选人就该「看图选人」——放大头像图、去掉名字，别让文字挤占视线 */
+      ".a-pick-card{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;border-radius:16px;padding:6px;box-shadow:0 3px 10px rgba(0,0,0,.12);cursor:pointer;transition:transform .15s,box-shadow .15s,outline-color .15s;outline:3px solid transparent;overflow:hidden}" +
       ".a-pick-card:focus,.a-pick-card:hover{outline-color:#4a86e8;transform:translateY(-3px);box-shadow:0 6px 16px rgba(74,134,232,.35)}" +
-      ".a-pick-card .a-body{width:50px;height:50px;font-size:28px}" +
-      ".a-pick-name{font-size:12px;font-weight:800;color:#333}" +
+      ".a-pick-card .a-body{width:100%;aspect-ratio:1/1;font-size:clamp(30px,7vw,54px);border-radius:12px}" +
+      ".a-pick-card .a-body .a-photo{width:100%;height:100%;object-fit:contain;border-radius:12px}" +
       /* 装备覆盖层（枪/娃娃）：挂在头像右上 */
       ".a-avatar .a-equip{position:absolute;top:-6px;right:-6px;width:26px;height:26px;display:none}" +
       ".a-avatar .a-equip.on{display:block}" +
@@ -870,12 +873,11 @@
         '<span class="pill">👥 6 人</span>' +
       '</div>' +
       '<div class="a-pick">' +
-        '<div class="a-pick-head">选一个你喜欢的角色 👇 <span class="a-pick-secs" id="a-pick-secs">30</span> 秒后自动选第一个</div>' +
+        '<div class="a-pick-head">选一个角色 <span class="a-pick-secs" id="a-pick-secs">30</span> 秒</div>' +
         '<div class="a-pick-grid">' +
           STU_EMOJI.map(function (emo, i) {
-            return '<div class="a-pick-card" tabindex="0" data-i="' + i + '" onclick="arenaPick(' + i + ')">' +
+            return '<div class="a-pick-card" tabindex="0" data-i="' + i + '" onclick="arenaPick(' + i + ')" title="' + T(STU_NAME[i]) + '">' +
               '<div class="a-body">' + faceHTML(emo, STU_IMG[i]) + '</div>' +
-              '<div class="a-pick-name">' + T(STU_NAME[i]) + '</div>' +
             '</div>';
           }).join("") +
         '</div>' +

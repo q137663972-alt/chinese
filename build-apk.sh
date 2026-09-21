@@ -32,10 +32,13 @@ for d in cn math en; do
   mkdir -p "$ASSETS/$d/css" "$ASSETS/$d/js"
   cp -f "$ROOT/$d"/css/*.css "$ASSETS/$d/css/" 2>/dev/null || true
   cp -f "$ROOT/$d"/js/*.js   "$ASSETS/$d/js/"  2>/dev/null || true
-  # 图片至今只有语文有（看图识字 143 张 webp），写成通用循环，哪科有了自动带上
-  if ls "$ROOT/$d"/img/* >/dev/null 2>&1; then
+  # 图片至今只有语文有（看图识字 143 张 webp），写成通用循环，哪科有了自动带上。
+  # ★ 2026-09-21 修：原写法 cp -f "$d"/img/* 遇到 img/battle/ 这种**子目录**会静默跳过
+  #   （cp 报 "omitting directory"），数学场 17 张角色原图从来没进过 APK，
+  #   首次安装（无热更包）时选人界面就没有原图头像。改成 -R 递归整目录拷。
+  if [ -d "$ROOT/$d/img" ]; then
     mkdir -p "$ASSETS/$d/img"
-    cp -f "$ROOT/$d"/img/* "$ASSETS/$d/img/"
+    cp -Rf "$ROOT/$d"/img/. "$ASSETS/$d/img/"
   fi
 done
 

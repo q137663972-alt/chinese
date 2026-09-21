@@ -38,6 +38,21 @@ body{
 #app{width:100%;max-width:520px;min-height:100vh;position:relative;margin:0 auto;
      padding:calc(14px + env(safe-area-inset-top,0px)) calc(14px + env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) calc(14px + env(safe-area-inset-left,0px))}
 
+/* ★★ 2026-09-21 现场事故（手机版）：加进首页那条 #subjectBar 之后，
+      #app 被挤成屏幕右边一条（约 72%），左边一大片空白。
+      根因是这一对：
+        · #subjectBar 声明了 width:100%/max-width:100%
+        · body 是 `display:flex; justify-content:center` 的**横向弹性盒**
+      弹性盒里子项的 width:100% 是"解析后宽度"，会把该行可用空间算成
+      「视口宽 + #app 想要的 520px」；手机视口才约 393px，两者一除就得到一个
+      被放大的行宽，#app 按 max-width:520px 在那块虚拟空间里居中 →
+      整页被推到右边。
+      对策见 css/picker.css：#subjectBar 改成 position:fixed 并**不声明任何宽度**，
+      于是这一行的可用空间重新等于视口宽。这里不再动 #app ——
+      原先那句 body>#app{flex:1 1 auto} 对修这个问题没起作用（已验证），
+      留着反而多一处可能干扰学科样式的规则，删掉。
+      以后要往 body 里加兄弟节点，先想清楚它会不会改变这一行的可用空间。 */
+
 /* ------------------------------------------------- 通用组件（学科 css 也会重写一份，后来者胜） */
 .btn{
   border:none;border-radius:18px;padding:16px;font-size:17px;font-weight:700;color:#fff;cursor:pointer;
@@ -64,40 +79,14 @@ input[type=range]{width:150px}
 .toast.show{opacity:1;transform:translateX(-50%) scale(1)}
 .hidden{display:none!important}
 
-/* ------------------------------------------------- 选学科页 */
-.subj-head{text-align:center;padding:30px 10px 14px}
-.subj-head .logo{font-size:64px;line-height:1}
-.subj-head h1{font-size:28px;margin:10px 0 4px;background:linear-gradient(90deg,var(--pink),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
-.subj-head p{color:var(--sub);margin:0;font-size:14px}
-
-.subj-grid{display:grid;grid-template-columns:1fr;grid-gap:14px;gap:14px;margin-top:18px}
+/* ------------------------------------------------- 选学科页
+   ★ 2026-09-20：尺寸规则整段搬到 css/picker.css 了（旧机顶盒上原尺寸偏小、
+     而且选学科页常年要改文案，寄生在壳样式里不合适）。
+     这里只保留「卡片外观」——背景、描边、阴影、手型 ——
+     它属于壳的视觉语言，三科共用；尺寸与断点全在 picker.css。
+     注意：字体大小 / 内边距若两处都写，加载在后的 picker.css 会赢，不必在这儿重复。 */
 .subj-card{
-  background:var(--card);border-radius:22px;padding:18px 16px;box-shadow:var(--shadow);
-  display:flex;align-items:center;grid-gap:14px;gap:14px;cursor:pointer;
-  border:3px solid transparent;transition:transform .1s;
+  background:var(--card);box-shadow:var(--shadow);
+  display:flex;align-items:center;cursor:pointer;
+  border:3px solid transparent;
 }
-.subj-card:active{transform:scale(.98)}
-.subj-card .s-emoji{font-size:44px;line-height:1;flex:0 0 auto}
-.subj-card .s-body{flex:1;min-width:0}
-.subj-card .s-name{font-weight:800;font-size:20px}
-.subj-card .s-desc{color:var(--sub);font-size:12px;margin-top:3px;line-height:1.35}
-.subj-card .s-go{font-size:22px;color:var(--purple);flex:0 0 auto}
-.subj-card.cn  {border-color:#ffd9e1}
-.subj-card.math{border-color:#cdeaff}
-.subj-card.en  {border-color:#e2d8ff}
-.subj-tip{text-align:center;color:var(--sub);font-size:12px;margin-top:20px;line-height:1.6}
-.subj-foot{text-align:center;color:var(--sub);font-size:11px;margin-top:22px}
-
-/* ------------------------------------------------- 电视（body.tv 由 boot.js 加上） */
-/* 这里只补「tv.css 覆盖不到」的选学科页专属尺寸；通用焦点/滚动规则在 css/tv.css。 */
-body.tv .subj-head{padding:calc(24px * var(--s,1.2)) 10px calc(14px * var(--s,1.2))}
-body.tv .subj-head .logo{font-size:calc(72px * var(--s,1.2))}
-body.tv .subj-head h1{font-size:calc(34px * var(--s,1.2))}
-body.tv .subj-head p{font-size:calc(16px * var(--s,1.2))}
-body.tv .subj-grid{grid-gap:calc(16px * var(--s,1.2));gap:calc(16px * var(--s,1.2));margin-top:calc(20px * var(--s,1.2))}
-body.tv .subj-card{border-radius:calc(24px * var(--s,1.2));padding:calc(20px * var(--s,1.2)) calc(18px * var(--s,1.2))}
-body.tv .subj-card .s-emoji{font-size:calc(54px * var(--s,1.2))}
-body.tv .subj-card .s-name{font-size:calc(26px * var(--s,1.2))}
-body.tv .subj-card .s-desc{font-size:calc(15px * var(--s,1.2));margin-top:calc(4px * var(--s,1.2))}
-body.tv .subj-tip{font-size:calc(15px * var(--s,1.2))}
-body.tv .subj-foot{font-size:calc(13px * var(--s,1.2))}

@@ -22,13 +22,11 @@ window.getGame = function (id) {
 
 /* 内置 14 种玩法（都是函数声明，会提升，所以写在定义之前也没问题） */
 registerGame({ id:"listen",    name:"听音选字",   icon:"🔊", desc:"听读音，选出那个字",   start: startListen });
-registerGame({ id:"picture",   name:"看图识字",   icon:"👀", desc:"看图片，认出对应的字", start: startPicture });
 registerGame({ id:"pinyin",    name:"拼音配对",   icon:"🔤", desc:"读拼音，找出汉字",     start: startPinyin });
 registerGame({ id:"wordfill",  name:"组词填空",   icon:"📝", desc:"把词语补完整",         start: startWordFill });
 registerGame({ id:"eliminate", name:"生字消消乐", icon:"💥", desc:"字和词语配成一对消掉", start: startEliminate });
 registerGame({ id:"stroke",    name:"笔画数练习", icon:"✍️", desc:"数一数这字有几画",     start: startStroke });
 registerGame({ id:"write",     name:"笔顺演示",   icon:"🖌️", desc:"一笔一画看笔顺",       start: startWrite });
-registerGame({ id:"poemfill",  name:"诗句填空",   icon:"📜", desc:"接出古诗的下一句",     start: startPoemFill });
 registerGame({ id:"poemsort",  name:"连句成诗",   icon:"🧩", desc:"把打乱的诗句排好",     start: startPoemSort });
 registerGame({ id:"idiom",     name:"成语填空",   icon:"🏮", desc:"补字 / 看义猜成语",    start: startIdiom });
 registerGame({ id:"nearfar",   name:"近反义词",   icon:"⚖️", desc:"找出近义词和反义词",   start: startNearFar });
