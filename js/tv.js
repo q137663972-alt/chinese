@@ -135,6 +135,7 @@
   var lastFocus = null;
   var lastOkAt = 0;   // 确认键防抖时间戳
   var lastDirAt = 0;  // 方向键防抖时间戳（仅拦截「一次按下补发的第二个 keydown」，长按连发 e.repeat 放行）
+  var heldCodes = {}, downAt = {}; // 当前按下的键码 + 按下时刻：keyup 前再次 keydown = 同一次按键（连发/补发）直接丢弃；downAt 用于 keyup 丢包时 1.5s 自愈释放
 
   /* 电视没有手指滚动：焦点跳到屏幕外的元素时必须把它拉回视野，
      否则「焦点在下面但看不见」，表现为按钮像被切掉了。
@@ -540,23 +541,37 @@
       else if (k === "ArrowUp" || kc === 19) { e.preventDefault(); if (dirGuard(e)) return; nav("up"); }
       else if (k === "ArrowDown" || kc === 20) { e.preventDefault(); if (dirGuard(e)) return; nav("down"); }
       else if (k === "Enter" || k === " " || kc === 13 || kc === 23 || kc === 66) {
-        /* 三重防护，缺一个都会漏出「按一次点两下」：
+        /* 四重防护，缺一个都会漏出「按一次点两下」：
            ① e.repeat —— 安卓固件按住 OK 会持续发 keydown（长按连发），必须丢掉；
-           ② 500ms 防抖 —— 部分遥控器一次按下会补发第二个 keydown（间隔可能 >220ms，
-              故由 220ms 提到 500ms，覆盖绝大多数偶发重复按键）；
-           ③ 自己 click 并 preventDefault —— 以前对 <button> 是 return 交给浏览器，
-              浏览器默认 click 与某些固件补发的事件叠加就成了两次
-              （设置开关被点两次 = 开了又关，看着像失灵）。
-           只防确认键：方向键的长按连发必须保留，否则遥控器连续移动会卡顿。 */
+           ② heldCodes —— 一次物理按下在抬起(keyup)前，所有后续 keydown（固件补发 /
+               连发）都属「同一次按键」，直接丢；与间隔无关，彻底根治偶发双击
+               （部分固件补发的第二个 keydown 间隔 >500ms，纯时间窗兜不住）；
+           ③ 500ms 时间窗 —— 兜底覆盖「抬起后又极快补发」的罕见情况；
+           ④ 自己 click 并 preventDefault —— 浏览器默认 click 与补发事件叠加成两次。
+           只防确认键：方向键长按连发必须保留（见 dirGuard），故方向键不用 heldCodes。 */
         if (e.repeat) { e.preventDefault(); return; }
-        var now = Date.now();
-        if (now - lastOkAt < 500) { e.preventDefault(); return; }
-        lastOkAt = now;
+        var hk = kc || k;
+        var downT = downAt[hk] || 0;
+        /* ② heldCodes —— 一次物理按下在抬起(keyup)前，所有后续 keydown（固件补发 / 连发）
+              都属「同一次按键」，直接丢；与间隔无关，彻底根治偶发双击（纯 500ms 时间窗兜不住
+              >500ms 的补发）。downAt 提供 1.5s 自愈：万一遥控器 keyup 丢包，超过 1.5s 自动释放，
+              按键不会永久死掉。 */
+        var held = heldCodes[hk] && (Date.now() - downT < 1500);
+        if (held || (Date.now() - lastOkAt < 500)) { e.preventDefault(); return; }
+        heldCodes[hk] = true; downAt[hk] = Date.now();
+        lastOkAt = Date.now();
         if (act && act !== document.body) {
           e.preventDefault();
           try { act.click(); } catch (err) {}
         }
       }
+    }, true);
+
+    /* keyup 清除 heldCodes/downAt：抬起后才允许下一次确认键生效（区分「同一次按键的连发/补发」
+       与「用户真的又按了一次」）。方向键不用 heldCodes，这里清不掉也无妨。 */
+    document.addEventListener("keyup", function (e) {
+      var c = e.keyCode || 0; if (c) { delete heldCodes[c]; delete downAt[c]; }
+      var kk = e.key || ""; if (kk) { delete heldCodes[kk]; delete downAt[kk]; }
     }, true);
 
     document.addEventListener("keydown", unlockOnce, true);

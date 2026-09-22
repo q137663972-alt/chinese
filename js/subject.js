@@ -149,7 +149,7 @@
     focusAt(list[next]);
   }
 
-  var lastEnter = 0, lastDirAt = 0;
+  var lastEnter = 0, lastDirAt = 0, heldCodes = {}, downAt = {};
   function bindKeys() {
     if (window.__subjKeysBound) return;
     window.__subjKeysBound = true;
@@ -182,11 +182,17 @@
       }
       var isEnter = (k === "Enter" || k === " " || k === "Spacebar" || kc === 13 || kc === 66 || kc === 23);
       if (!isEnter) return;
-      /* 500ms 防抖：中兴/华为 IPTV 的遥控器在 keydown + ActionUp 各来一次，
-         不防抖就是「按一下跳两科」；原 220ms 太短，部分固件补发的重复按键间隔 >220ms 会漏防。 */
-      var now = Date.now();
-      if (now - lastEnter < 500) { e.preventDefault(); return; }
-      lastEnter = now;
+      /* 确认键防抖（双保险）：
+         ① heldCodes —— 一次物理按下在 keyup 前，后续 keydown（固件补发/连发）都属同一次按键，
+            直接丢；与间隔无关，彻底根治偶发双击（纯 500ms 时间窗兜不住 >500ms 的补发）。
+            downAt 提供 1.5s 自愈：keyup 万一丢包，超过 1.5s 自动释放，确认键不会永久死掉。
+         ② 500ms 时间窗 —— 兜底「抬起后又极快补发」的罕见情况。 */
+      var hk = kc || k;
+      var downT = downAt[hk] || 0;
+      var held = heldCodes[hk] && (Date.now() - downT < 1500);
+      if (held || (Date.now() - lastEnter < 500)) { e.preventDefault(); return; }
+      heldCodes[hk] = true; downAt[hk] = Date.now();
+      lastEnter = Date.now();
       e.preventDefault();
       var el = document.activeElement;
       if (!el) return;
@@ -194,6 +200,13 @@
       if (!key) return;
       try { localStorage.setItem(LAST_KEY, key); } catch (err) {}
       if (window.__setSubject) window.__setSubject(key);
+    }, false);
+
+    /* keyup 清除 heldCodes/downAt：抬起后才允许下一次确认键生效，区分「同一次按键的连发/补发」
+       与「用户真的又按了一次」。 */
+    document.addEventListener("keyup", function (e) {
+      var c = e.keyCode || 0; if (c) { delete heldCodes[c]; delete downAt[c]; }
+      var kk = e.key || ""; if (kk) { delete heldCodes[kk]; delete downAt[kk]; }
     }, false);
 
     /* 告诉原生壳：确认键由这里接管了，别再兜底 click 一次（否则按一下触发两次） */
