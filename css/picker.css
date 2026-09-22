@@ -25,6 +25,7 @@
 /* ---------------------------------------------------------------- 基础（手机） */
 .subj-head { text-align: center; padding: 26px 12px 12px; }
 .subj-head .logo { font-size: 60px; line-height: 1; }
+.subj-head .logo svg { display: block; }
 .subj-head h1 {
   font-size: 30px; margin: 10px 0 6px;
   background: linear-gradient(90deg, var(--pink, #ff8fb1), var(--purple, #9b7bff));
@@ -48,6 +49,7 @@
   outline: none;
 }
 .subj-card .s-emoji { font-size: 46px; line-height: 1; flex: 0 0 auto; }
+.subj-card .s-emoji svg { display: block; width: 46px; height: 46px; }
 .subj-card .s-body { flex: 1; min-width: 0; padding-left: 6px; }
 .subj-card .s-name { font-weight: 800; font-size: 22px; }
 .subj-card .s-desc { color: var(--sub, #8a90a8); font-size: 14px; margin-top: 4px; line-height: 1.4; }

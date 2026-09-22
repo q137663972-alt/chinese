@@ -38,12 +38,19 @@
   /* 学科清单 —— 唯一真源在这里。增删学科改这一处即可，不必动 APK。
      key 必须和 boot.js 的 SUBJS 里的键一致：那边没登记的 key，
      __setSubject 会直接拒绝（启动日志里会留一条 bad subject），点了没反应。 */
+  /* 学科图标用内联 SVG（不依赖设备 emoji 字体，老机顶盒/Android 缺彩色 emoji 字体会把
+     📖🔢🔤 回退成方块/黑白符号，看起来像"乱码"）。三科各画一个彩色小图标。 */
+  var ICON = {
+    cn:   '<svg viewBox="0 0 48 48" width="46" height="46" aria-hidden="true"><path d="M24 13C19 10 12 10 8 12v22c4-2 11-2 16 1 5-3 12-3 16-1V11c-4-2-11-2-16 0z" fill="#ff8fb1"/><path d="M24 13v22" stroke="#fff" stroke-width="2.5" fill="none"/></svg>',
+    math: '<svg viewBox="0 0 48 48" width="46" height="46" aria-hidden="true"><rect x="9" y="8" width="30" height="32" rx="7" fill="#5aa9ff"/><rect x="14" y="13" width="20" height="8" rx="2" fill="#fff"/><g fill="#fff"><circle cx="17" cy="28" r="2.4"/><circle cx="24" cy="28" r="2.4"/><circle cx="31" cy="28" r="2.4"/><circle cx="17" cy="35" r="2.4"/><circle cx="24" cy="35" r="2.4"/><circle cx="31" cy="35" r="2.4"/></g></svg>',
+    en:   '<svg viewBox="0 0 48 48" width="46" height="46" aria-hidden="true"><rect x="6" y="10" width="36" height="26" rx="13" fill="#b06bff"/><text x="24" y="29" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="800" fill="#fff">Aa</text></svg>'
+  };
   var SUBJECTS = [
-    { key: "cn",   emoji: "📖", name: "语文", cls: "cn",
+    { key: "cn",   emoji: ICON.cn,   name: "语文", cls: "cn",
       desc: "识字・拼音・古诗・成语・笔顺・看图识字", progress: "cn_progress" },
-    { key: "math", emoji: "🔢", name: "数学", cls: "math",
+    { key: "math", emoji: ICON.math, name: "数学", cls: "math",
       desc: "口算・竖式・口诀・应用题・图形・单位・分数", progress: "math_progress" },
-    { key: "en",   emoji: "🔤", name: "英语", cls: "en",
+    { key: "en",   emoji: ICON.en,   name: "英语", cls: "en",
       desc: "单词・拼读・听力・句型・对话・限时挑战", progress: "el_progress" }
   ];
 
@@ -79,7 +86,7 @@
 
     var html =
       '<div class="subj-head">' +
-        '<div class="logo">🎒</div>' +
+        '<div class="logo"><svg viewBox="0 0 48 48" width="60" height="60" aria-hidden="true"><rect x="13" y="18" width="22" height="24" rx="9" fill="#ffb347"/><path d="M17 18v-3a7 7 0 0 1 14 0v3" fill="none" stroke="#ffb347" stroke-width="4"/><rect x="20" y="27" width="8" height="8" rx="2" fill="#fff"/></svg></div>' +
         '<h1>学习乐园</h1>' +
         '<p>小学 1-6 年级 · 手机 / 平板 / 电视都能玩</p>' +
       '</div>' +

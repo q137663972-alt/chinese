@@ -95,9 +95,9 @@
   /* 题卡顶部的小标题：数学「算一算」、语文「选一选」、英语「Read & Choose」 */
   function subjectLabel() {
     var s = curSubj();
-    if (s === "cn") return "📖 选一选";
-    if (s === "en") return "🔤 Read & Choose";
-    return "🧮 算一算";
+    if (s === "cn") return "语文 · 选一选";
+    if (s === "en") return "英语 · Read & Choose";
+    return "数学 · 算一算";
   }
   /* 朗读文本。三级降级，保证任何机型都有声音：
      ① 原生 speak 桥 —— 但它在三科 tts.js 里都有 `if(!settings.tts) return` 门禁，
@@ -685,6 +685,8 @@
   function startOpening() {
     S.phase = "opening";
     battleRender();
+    /* 开场老师语音（与气泡文案一致）：同学们，去操场集合！ */
+    later(function () { tts("同学们，去操场集合！"); }, 400);
     later(function () {
       S.phase = "countdown";
       countdown(5);
@@ -721,10 +723,14 @@
     var q = S.q, correct = (idx === q.correct);
     S.chosen = idx; S.revealed = true;
     var me = S.players[0];
-    if (correct) { me.score++; sfx("correct"); tts("答对啦，加一分"); }
-    else { var mb = me.stars; loseStar(me); flashStar(0, mb); sfx("wrong"); later(function () {
-      try { var right = (q.opts || [])[q.correct]; tts(right ? T(right.label) : T(q.speakText)); } catch (e) {}
-    }, 200); }
+    var right = (q.opts || [])[q.correct];
+    var rightText = right ? T(right.label) : T(q.speakText);
+    if (correct) { me.score++; sfx("correct"); }
+    else { var mb = me.stars; loseStar(me); flashStar(0, mb); sfx("wrong"); }
+    /* 答后读正确答案（英语读英文单词）；选项不读（用户要求"只读题目、答后读答案"）。
+       出题时 707 已读题目（英语读英文单词），此处再读答案 = 题目+答案都朗读。 */
+    tts(rightText);
+    later(function () { tts(correct ? "答对啦，加一分" : "答错了，加油"); }, 950);
     for (var i = 1; i < S.players.length; i++) {
       var p = S.players[i]; if (!p.alive) continue;
       if (Math.random() < SKILL) p.score++; else { var pb = p.stars; loseStar(p); flashStar(i, pb); }
@@ -861,7 +867,7 @@
   /* ---------- 公开控制（挂在 window，供 onclick 调用） ---------- */
   window.arenaAnswer = arenaAnswer;
   window.arenaReplay = function () { if (S && S.q) tts(S.q.speakText); };
-  window.arenaTeacher = function () { tts("同学们，准备开始答题闯关！"); };
+  window.arenaTeacher = function () { tts("同学们，去操场集合！"); };
   window.arenaHint = function () {
     if (!S || !S.q || S.hintUsed || S.revealed) return;
     var wrongs = []; (S.q.opts || []).forEach(function (o, i) { if (i !== S.q.correct && i !== S.excluded) wrongs.push(i); });
