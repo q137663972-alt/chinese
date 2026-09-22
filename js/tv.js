@@ -249,6 +249,14 @@
     var vhp = (window.innerHeight || 720);
     st.setProperty("--tian", Math.round(Math.min(num(T.tianK, 340) * s, vhp * num(T.tianMaxVh, 0.42))) + "px");
     st.setProperty("--pic", Math.round(Math.min(num(T.picK, 260) * s, vhp * num(T.picMaxVh, 0.34))) + "px");
+
+    /* ★ 固定 1920×1080 画布的整体适配缩放（css/tv.css 用 transform: scale(var(--fit)) 铺满视口）。
+       不再靠 vh/vw：电视上 vh/vw 解释不一致，且画布用 transform 缩放后 vh 会与缩放叠加导致二次失真。
+       --fit = min(视口宽/1920, 视口高/1080) → 画布等比缩放到恰好放进真实视口、不滚动、不变形。
+       1080p 电视的 WebView 把 CSS 视口报成 960×540（dpr=2），fit=0.5 → 画布 1920×1080 × 0.5 = 960×540 正好铺满。 */
+    var fit = Math.min((window.innerWidth || 1920) / 1920, (window.innerHeight || 1080) / 1080);
+    fit = Math.min(Math.max(fit, num(T.minFit, 0.3)), num(T.maxFit, 3));
+    st.setProperty("--fit", String(fit));
   }
 
   // 方向键：几何最近邻（主轴距离 + 垂直偏移惩罚）
@@ -387,6 +395,8 @@
       var wide = ph ? (Math.round((pw / ph) * 100) / 100) : 0;
       var s = window.getComputedStyle(document.documentElement)
                 .getPropertyValue("--s").trim() || "(未设)";
+      var fit = window.getComputedStyle(document.documentElement)
+                .getPropertyValue("--fit").trim() || "(未设)";
       var vw = window.innerWidth, vh = window.innerHeight;
       var boxW = el.getBoundingClientRect().width;
       var over = boxW - vw;
@@ -396,7 +406,8 @@
             '请在地址后加 #tv 或反馈此页</span>') + '<br>' +
         '视口：' + vw + ' × ' + vh + ' CSS px　dpr=' + dpr + '<br>' +
         '屏幕：' + scw + ' × ' + sch + '　宽高比=' + wide + '（原判定 sw=' + ((DEV && DEV.sw) || 0) + '）<br>' +
-        '--s（整体缩放）：<span style="font-weight:700">' + s + '</span><br>' +
+        '--fit（画布适配缩放）：<span style="font-weight:700">' + fit + '</span><br>' +
+        '--s（旧逻辑缩放，已弃用）：' + s + '<br>' +
         '容器实测宽：' + Math.round(boxW) + 'px　max-width=' + cs.maxWidth +
         '　padding=' + cs.padding + '<br>' +
         '横向溢出：' + (over > 1
