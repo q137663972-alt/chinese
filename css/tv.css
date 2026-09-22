@@ -33,16 +33,35 @@ body.tv #app {
   left: 50%; top: 50%;
   width: 1920px; height: 1080px;
   box-sizing: border-box;
-  padding: 40px 60px;
+  /* 上 padding 让开顶部「换学科」条（条在画布内约 108px 高 + 4px 间距）；
+     条与 #app 同坐标系同缩放，所以这里写画布固定 px 即可，任何分辨率都对齐。
+     不接受 picker.css 的 padding-top:10vh（那是手机弹性盒思路，与画布体系冲突）。 */
+  padding: 112px 60px 40px;
   margin: 0;
   max-width: none;
   min-height: 0;
   overflow: hidden;                 /* 不滚动：所有界面已预算进 1080 高 */
+  /* 竖向弹性盒：顶栏 + 内容(flex:1) + 底部注脚 三段式，内容区吃掉全部余下高度，
+     底部 .foot 永远贴底完整可见、绝不被裁；内容本身超高时由各自 overflow 兜底。 */
+  display: flex;
+  flex-direction: column;
   transform: translate(-50%, -50%) scale(var(--fit, 0.5));
   transform-origin: center center;
 }
 body.tv #app > * { max-width: 100%; }
 body.tv img, body.tv svg, body.tv canvas { max-width: 100%; }
+
+/* 顶栏与底部注脚固定高度，中间主内容吃掉全部余下高度（绝不被裁、也不溢出画布）。
+   选择类界面的网格、游戏区、知识圈、结果框都是「主内容」；首页 hero 也是。 */
+body.tv #app > .topbar { flex: 0 0 auto; }
+body.tv #app > .foot { flex: 0 0 auto; }
+body.tv .hero,
+body.tv .grade-grid,
+body.tv .unit-grid,
+body.tv .mode-grid,
+body.tv #gameArea,
+body.tv .result-box,
+body.tv .battle { flex: 1 1 auto; min-height: 0; }
 
 /* ------------------------------------------------------------- 2. 顶栏 */
 body.tv .topbar {
@@ -93,16 +112,21 @@ body.tv #backupBox {
   max-height: 240px;
 }
 
-/* ------------------------------------------------------------ 3. 首页 */
-body.tv .hero { padding: 16px 10px 8px; }
-body.tv .mascot { font-size: 110px; }
-body.tv .hero h1 { font-size: 54px; margin: 8px 0 6px; }
-body.tv .hero p { font-size: 24px; margin: 6px 0 16px; }
-body.tv .stars-total {
-  font-size: 24px;
-  padding: 12px 24px;
+/* ------------------------------------------------------------ 3. 首页
+   画布固定 1080 高，首页内容本就不多，用 flex 把 hero 撑到中间偏上、占满余下高度，
+   避免「标题挤在最上面、下面一大片空白」。 */
+body.tv .hero {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  min-height: 600px; padding: 24px 10px;
 }
-body.tv .foot { font-size: 22px; margin-top: 16px; }
+body.tv .mascot { font-size: 220px; }
+body.tv .hero h1 { font-size: 96px; margin: 24px 0 14px; }
+body.tv .hero p { font-size: 36px; margin: 8px 0 22px; }
+body.tv .stars-total {
+  font-size: 32px;
+  padding: 16px 32px;
+}
+body.tv .foot { font-size: 24px; margin-top: 14px; }
 
 /* --------------------------------------------------- 4. 网格（选择类界面） */
 /* 电视横屏：年级 3 列、单元 5 列、玩法 4 列。间距用 margin（不用 gap） */
@@ -132,12 +156,12 @@ body.tv .unit-card {
 body.tv .unit-card .u-name { font-size: 26px; line-height: 1.3; }
 body.tv .unit-card .u-stars { font-size: 24px; }
 
-body.tv .mode-grid { grid-template-columns: repeat(4, 1fr); }
+body.tv .mode-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; grid-gap: 14px; }
 body.tv .mode-card {
-  margin: 12px;
-  padding: 20px 12px;
-  border-radius: 26px;
-  min-height: 130px;
+  margin: 8px;
+  padding: 16px 12px;
+  border-radius: 24px;
+  min-height: 96px;
 }
 body.tv .mode-card .m-icon { font-size: 56px; }
 body.tv .mode-card .m-name { font-size: 30px; }
@@ -186,9 +210,9 @@ body.tv .pinyin-sub { font-size: 26px; }
 /* 电视上答案是主视觉，两列放得下；间距用 margin（不用 gap） */
 body.tv .options { grid-template-columns: repeat(2, 1fr); }
 body.tv .opt {
-  margin: 14px;
+  margin: 12px;
   font-size: 32px;
-  min-height: 108px;
+  min-height: 100px;
   padding: 18px 12px;
   border-radius: 24px;
 }
@@ -360,36 +384,36 @@ body.tv .btn:focus { z-index: 6; }
 /* --------------------------------------------------- 14. 知识圈（TV 尺寸） */
 /* 玩法自带样式由 js/game-battle.js 注入到 <head> 末尾，顺序在本文件之后，
    所以这里必须提高特异性（body.tv .battle 打头）才能盖住它。间距用 margin 替 gap。 */
-body.tv .battle { max-width: 1000px; padding: 0; }
+body.tv .battle { max-width: 1500px; padding: 0; }
 body.tv .battle .b-top {
-  font-size: 22px;
+  font-size: 26px;
   margin-bottom: 18px;
 }
 body.tv .battle .b-top > * { margin: 8px; }
-body.tv .battle .b-top .pill { padding: 10px 18px; }
+body.tv .battle .b-top .pill { padding: 12px 22px; font-size: 28px; }
 body.tv .battle .b-players { margin: 18px 0; }
 body.tv .battle .b-chip {
   margin: 10px;
-  min-width: 100px;
-  font-size: 18px;
-  padding: 8px 12px;
+  min-width: 120px;
+  font-size: 22px;
+  padding: 10px 16px;
   border-radius: 16px;
 }
-body.tv .battle .b-chip .ce { font-size: 30px; }
-body.tv .battle .b-chip .cs { font-size: 18px; }
+body.tv .battle .b-chip .ce { font-size: 38px; }
+body.tv .battle .b-chip .cs { font-size: 22px; }
 body.tv .battle .b-q {
-  padding: 18px 16px;
+  padding: 22px 20px;
   border-radius: 22px;
   margin: 12px 0;
 }
-body.tv .battle .b-q .qtext { font-size: 34px; }
-body.tv .battle .b-q .qhint { font-size: 26px; }
+body.tv .battle .b-q .qtext { font-size: 44px; }
+body.tv .battle .b-q .qhint { font-size: 32px; }
 body.tv .battle .b-opts { margin: 18px 0; }
 body.tv .battle .b-opt {
   margin: 12px;
-  font-size: 28px;
-  min-height: 90px;
-  padding: 14px 12px;
+  font-size: 36px;
+  min-height: 116px;
+  padding: 18px 14px;
   border-radius: 20px;
 }
 body.tv .battle .b-timer { height: 16px; }
@@ -401,3 +425,35 @@ body.tv .battle .b-row button {
 }
 body.tv .battle .b-row button { padding: 14px 28px; }
 body.tv .b-banner .badge { font-size: 36px; }
+
+/* --------------------------------------------------- 15. 首页「换学科」条（纳入画布体系）
+   ★ 这是「换学科太大」+「热更检测看不到」+「部分页面不对」三者同源的根因：
+     #subjectBar 是 picker.css 里的 position:fixed 元素，用的是手机那套 --s≈1.5 尺寸，
+     既没进 1920 画布坐标系、又被我的画布缩放（--fit 只缩 #app）漏掉，
+     于是在真实视口上被放大成约 25% 屏高、还盖在顶栏（热更 🛠️ / 设置 ⚙️ 按钮）上方。
+     修法：把条也当成画布的一部分 —— 绝对定位到画布顶部、宽度 1920、与 #app 同一套
+     translate(-50%) + scale(var(--fit)) 变换，尺寸一律写画布固定 px（不再吃 --s）。
+     这样它和 #app 像素级对齐、大小随屏一致，且 #app 顶部已用 padding-top 让开它，互不遮挡。
+     特异性：body.tv #subjectBar (0,2,0) 高于 picker.css 的 #subjectBar (0,1,0)，本段必胜。 */
+body.tv #subjectBar {
+  position: absolute;
+  left: 50%; top: 0;
+  width: 1920px;
+  max-width: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 18px 60px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .12);
+  z-index: 35;
+  transform: translateX(-50%) scale(var(--fit));
+  transform-origin: top center;
+}
+body.tv #subjectBar .sb-cur { font-size: 28px; line-height: 1.4; color: var(--sub); }
+body.tv #subjectBar .sb-cur b { font-size: 34px; color: #2f3350; }
+body.tv #subjectBar .sb-btn {
+  font-size: 28px; font-weight: 800;
+  padding: 14px 28px; min-height: 60px; border-radius: 16px;
+  border: 2px solid #d9dcff; background: linear-gradient(90deg, #ffeff5, #f1ecff);
+  color: #6a4fd8; flex: 0 0 auto; white-space: nowrap; cursor: pointer; outline: none;
+}
