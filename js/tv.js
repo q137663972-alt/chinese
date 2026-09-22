@@ -134,6 +134,7 @@
 
   var lastFocus = null;
   var lastOkAt = 0;   // 确认键防抖时间戳
+  var lastDirAt = 0;  // 方向键防抖时间戳（仅拦截「一次按下补发的第二个 keydown」，长按连发 e.repeat 放行）
 
   /* 电视没有手指滚动：焦点跳到屏幕外的元素时必须把它拉回视野，
      否则「焦点在下面但看不见」，表现为按钮像被切掉了。
@@ -494,6 +495,16 @@
       return false;
     }
 
+    /* 方向键防抖：只拦「一次按下补发的第二个 keydown」，长按连发(e.repeat)必须放行，
+       否则遥控器按住方向键就动不了（连续移动靠 repeat 实现）。500ms 窗口覆盖绝大多数
+       固件偶发重复按键；超时（用户真想连按两步）则放行。 */
+    function dirGuard(e) {
+      if (e.repeat) return false;
+      if (Date.now() - lastDirAt < 500) return true;
+      lastDirAt = Date.now();
+      return false;
+    }
+
     document.addEventListener("keydown", function (e) {
       if (tryBack(e)) return;
 
@@ -511,6 +522,7 @@
         /* 支持 Android 遥控器 DPAD 键码：UP=19 / DOWN=20（e.key 常为 ""） */
         if (kd === "ArrowUp" || kd === "ArrowDown" || kdc === 19 || kdc === 20) {
           e.preventDefault();
+          if (dirGuard(e)) return;
           try { act.blur(); } catch (err) {}
           nav(kd === "ArrowUp" ? "up" : (kdc === 19 ? "up" : "down"));
         }
@@ -523,21 +535,22 @@
          e.key 多为空、keyCode 用 19/20/21/22/23，而不是 PC 的 ArrowUp(38)/Down(40)。
          原来只匹配 "ArrowUp" 等字符串 → 真机遥控器一个方向键都收不到，焦点动不了。
          现在一并认 DPAD 键码：UP=19 DOWN=20 LEFT=21 RIGHT=22 CENTER=23 ENTER=66。 */
-      if (k === "ArrowLeft" || kc === 21) { e.preventDefault(); nav("left"); }
-      else if (k === "ArrowRight" || kc === 22) { e.preventDefault(); nav("right"); }
-      else if (k === "ArrowUp" || kc === 19) { e.preventDefault(); nav("up"); }
-      else if (k === "ArrowDown" || kc === 20) { e.preventDefault(); nav("down"); }
+      if (k === "ArrowLeft" || kc === 21) { e.preventDefault(); if (dirGuard(e)) return; nav("left"); }
+      else if (k === "ArrowRight" || kc === 22) { e.preventDefault(); if (dirGuard(e)) return; nav("right"); }
+      else if (k === "ArrowUp" || kc === 19) { e.preventDefault(); if (dirGuard(e)) return; nav("up"); }
+      else if (k === "ArrowDown" || kc === 20) { e.preventDefault(); if (dirGuard(e)) return; nav("down"); }
       else if (k === "Enter" || k === " " || kc === 13 || kc === 23 || kc === 66) {
         /* 三重防护，缺一个都会漏出「按一次点两下」：
            ① e.repeat —— 安卓固件按住 OK 会持续发 keydown（长按连发），必须丢掉；
-           ② 220ms 防抖 —— 部分遥控器一次按下会补发第二个 keydown；
+           ② 500ms 防抖 —— 部分遥控器一次按下会补发第二个 keydown（间隔可能 >220ms，
+              故由 220ms 提到 500ms，覆盖绝大多数偶发重复按键）；
            ③ 自己 click 并 preventDefault —— 以前对 <button> 是 return 交给浏览器，
               浏览器默认 click 与某些固件补发的事件叠加就成了两次
               （设置开关被点两次 = 开了又关，看着像失灵）。
            只防确认键：方向键的长按连发必须保留，否则遥控器连续移动会卡顿。 */
         if (e.repeat) { e.preventDefault(); return; }
         var now = Date.now();
-        if (now - lastOkAt < 220) { e.preventDefault(); return; }
+        if (now - lastOkAt < 500) { e.preventDefault(); return; }
         lastOkAt = now;
         if (act && act !== document.body) {
           e.preventDefault();

@@ -149,7 +149,7 @@
     focusAt(list[next]);
   }
 
-  var lastEnter = 0;
+  var lastEnter = 0, lastDirAt = 0;
   function bindKeys() {
     if (window.__subjKeysBound) return;
     window.__subjKeysBound = true;
@@ -165,15 +165,27 @@
            不代表 tv.js 在岗；绝不能用它当"交给 tv.js"的开关，否则本页键盘导航会被自己关掉。 */
       var k = e.key;
       var kc = e.keyCode || 0;
-      /* 遥控器 DPAD：KEYCODE_DPAD_UP=19 / DOWN=20（部分 WebView 的 e.key 为空，只认 keyCode） */
-      if (k === "ArrowUp" || kc === 38 || kc === 19) { e.preventDefault(); move("up"); return; }
-      if (k === "ArrowDown" || kc === 40 || kc === 20) { e.preventDefault(); move("down"); return; }
+      /* 遥控器 DPAD：KEYCODE_DPAD_UP=19 / DOWN=20（部分 WebView 的 e.key 为空，只认 keyCode）
+         方向键同样加 500ms 防抖，但放行长按连发(e.repeat)以保证连续移动；
+         只拦「一次按下补发的第二个 keydown」，否则焦点会跳两步。 */
+      if (k === "ArrowUp" || kc === 38 || kc === 19) {
+        e.preventDefault();
+        if (!e.repeat && Date.now() - lastDirAt < 500) return;
+        if (!e.repeat) lastDirAt = Date.now();
+        move("up"); return;
+      }
+      if (k === "ArrowDown" || kc === 40 || kc === 20) {
+        e.preventDefault();
+        if (!e.repeat && Date.now() - lastDirAt < 500) return;
+        if (!e.repeat) lastDirAt = Date.now();
+        move("down"); return;
+      }
       var isEnter = (k === "Enter" || k === " " || k === "Spacebar" || kc === 13 || kc === 66 || kc === 23);
       if (!isEnter) return;
-      /* 220ms 防抖：中兴/华为 IPTV 的遥控器在 keydown + ActionUp 各来一次，
-         不防抖就是「按一下跳两科」。 */
+      /* 500ms 防抖：中兴/华为 IPTV 的遥控器在 keydown + ActionUp 各来一次，
+         不防抖就是「按一下跳两科」；原 220ms 太短，部分固件补发的重复按键间隔 >220ms 会漏防。 */
       var now = Date.now();
-      if (now - lastEnter < 220) { e.preventDefault(); return; }
+      if (now - lastEnter < 500) { e.preventDefault(); return; }
       lastEnter = now;
       e.preventDefault();
       var el = document.activeElement;
