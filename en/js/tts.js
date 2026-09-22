@@ -3,9 +3,13 @@
 var isWeChat = /micromessenger/i.test(navigator.userAgent);
 var voiceReady = false;
 
-function pickVoice(){
+function pickVoice(lang){
   if(!('speechSynthesis' in window)) return null;
   var vs = speechSynthesis.getVoices();
+  if(!vs.length) return null;
+  /* 按文本语种选嗓音：中文文本必须用中文嗓音（否则英文嗓音读不出中文→静音）；
+     英文文本优先英文嗓音，缺英文嗓音时退回任意可用嗓音，保证英文题也能出声。 */
+  if(lang && lang.toLowerCase().indexOf('zh') === 0) return vs.find(function(v){ return v.lang && /^zh/i.test(v.lang); }) || vs[0] || null;
   return vs.find(function(v){ return v.lang && v.lang.toLowerCase().indexOf('en') === 0; }) || vs[0] || null;
 }
 if('speechSynthesis' in window){
@@ -54,7 +58,7 @@ function speak(text, lang){
       function sayNext(){
         if(ci >= clauses.length) return;
         var u = new SpeechSynthesisUtterance(clauses[ci++]);
-        var v = pickVoice();
+        var v = pickVoice(lang);
         if(v){ u.voice = v; } else { u.lang = lang || 'en-US'; }
         u.rate = settings.rate; u.pitch = 1;
         var done = false;
