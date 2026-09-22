@@ -457,3 +457,213 @@ body.tv #subjectBar .sb-btn {
   border: 2px solid #d9dcff; background: linear-gradient(90deg, #ffeff5, #f1ecff);
   color: #6a4fd8; flex: 0 0 auto; white-space: nowrap; cursor: pointer; outline: none;
 }
+
+/* --------------------------------------------------- 16. 知识圈竞赛 v2（.arena / .a-*）
+   ★★ 2026-09-22 现场事故：电视上「教室/操场里一个人都没有」「没有选角色界面」★★
+   根因：本段之前**只**给 v1 的 .battle 写了 TV 尺寸（见第 14 节），
+     而现在真正上线的是 v2（js/game-battle-v2.js 注册 id=arena2，类是 .arena/.a-*）。
+     v2 的自带样式由 JS 注入到 <head> 末尾、顺序在 css/tv.css 之后，且全是**手机尺寸**：
+       · .arena{max-width:560px}   → 在 1920 画布上只占 29% 宽
+       · .a-stage{height:150px}    → 屏高 14%，两排站不下
+       · .a-avatar{width:14%} + .a-body{max-width:34px} → 头像直径实测仅 17px（屏宽 0.9%）
+       · .a-name{font-size:9px}    → 3 米外完全看不见
+       · .a-pick-grid{grid-template-columns:repeat(3,1fr);gap:10px;width:min(440px,94%)}
+       · .a-pick-card .a-body{aspect-ratio:1/1}
+     结果：孩子看到的就是「两个空框 + 一排小到看不清的 emoji」，而选角色界面因为
+     卡片只有 70×70px、30 秒读秒一过就自动选了第 1 个，看起来像「根本没有选人界面」。
+   本段把它们整体放大到电视尺寸，并遵守本文件红线：
+     · 只用 body.tv 前缀（手机/平板零影响）；特异性 (0,2,0)+ 高于注入式的类选择器；
+     · 间距一律 margin（不用 gap）；尺寸一律固定 px（不用 clamp/min/max/aspect-ratio）——
+       给 .a-body 直接写死 width/height，绕开安卓 8 WebView 不认 aspect-ratio 的问题。 */
+
+/* 外壳：撑满画布可用宽度；竖向必须收在 1080 内（下面是实测预算） */
+body.tv .arena {
+  max-width: 1800px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+/* 顶栏（退出 / 剩N / 星 / 分 / 时间）：放大 + 用 margin 做间隔 */
+body.tv .arena .a-top { font-size: 28px; margin-bottom: 8px; }
+body.tv .arena .a-top .pill {
+  font-size: 28px;
+  padding: 8px 24px;
+  border-radius: 999px;
+  margin: 0 6px;
+}
+body.tv .arena .a-top .pill b { font-size: 32px; }
+
+/* ---------- 舞台：教室(左) / 操场(右)，两排 3 列 ----------
+   ★ 高度预算（画布 1080 为硬上限）：
+     padding-top 112 + a-top 74 + 舞台 340 + 12
+     + 题卡 190 + 12 + 计时 20 + 20 + 选项2排 212 + 反馈 40 + 底排 76 + padding-bottom 40
+     ≈ 1148 → 实测收在 1040 内（见 verify 脚本输出的 arena.bottom）。
+     舞台从 460 压到 300：这是为了给下方「题卡 + 4 个选项 + 底排按钮」腾出空间 ——
+     4 个选项是硬需求（2 行×2 列），压不得。 */
+body.tv .arena .a-stage {
+  position: relative;
+  height: 300px;
+  max-height: none;          /* 覆盖注入样式的 max-height:22vh —— 画布体系里禁用 vh */
+  border-radius: 22px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+/* 教室 / 操场标签放大 */
+body.tv .arena .a-cz:before,
+body.tv .arena .a-pz:before { font-size: 26px; top: 10px; left: 14px; }
+body.tv .arena .a-cz { border-right-width: 4px; }
+
+/* 老师：圆形头像，别再压住右侧学生（放在操场右上角） */
+body.tv .arena .a-teacher {
+  position: absolute;
+  top: 10px; right: 12px;
+  width: 100px; height: 100px;
+  font-size: 56px;
+  border-radius: 50%;
+  z-index: 6;
+}
+
+/* ---------- 学生头像 ----------
+   槽位 left% 由 JS 给（PLAY_L = 40/55/70 或 CLASS_L = 4/12/20），
+   bottom 也由 JS 给（上排 70px / 下排 4px）—— 但那是**手机** 150px 舞台高度的量级，
+   在 340px 的 TV 舞台上必须重算，否则两排会挤在一起或被顶边裁掉。
+   一档纵向 = 头像 92 + 名字 ~28 + 星星 ~24 = 144px，留余量：
+     下排 bottom:14px  → 占 14..158
+     上排 bottom:152px → 占 152..296  ≤ 300 ✓（顶边留 4px，不被 overflow:hidden 削到）
+   ⚠️ bottom 必须 !important：JS 把 bottom 写在元素内联 style 上，内联优先级高于样式表。
+   同时用两种选择器兜住：data-i（JS 明确给的排位，最稳）+ 内联 bottom 值。 */
+body.tv .arena .a-avs { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+body.tv .arena .a-avatar {
+  position: absolute;
+  width: 156px;                 /* 固定宽（不用 %，避免随舞台宽度漂移） */
+  margin-left: -78px;           /* left% 指中心 → 左移半个宽，保证两排对齐不重叠 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+body.tv .arena .a-avatar[data-i="0"],
+body.tv .arena .a-avatar[data-i="1"],
+body.tv .arena .a-avatar[data-i="2"],
+body.tv .arena .a-avatar[style*="bottom: 70px"] { bottom: 152px !important; }
+body.tv .arena .a-avatar[data-i="3"],
+body.tv .arena .a-avatar[data-i="4"],
+body.tv .arena .a-avatar[data-i="5"],
+body.tv .arena .a-avatar[style*="bottom: 4px"]  { bottom: 14px  !important; }
+/* 真的走进教室（JS 只改 left，不删 bottom）→ 保持原位；缩小交给 .small */
+body.tv .arena .a-avatar.small { transform: scale(.6); }
+
+/* 头像圆：固定尺寸，不依赖 aspect-ratio（安卓 8 WebView 不认） */
+body.tv .arena .a-avatar .a-body {
+  width: 92px; height: 92px; max-width: none;
+  border-radius: 50%;
+  font-size: 48px;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .18);
+}
+body.tv .arena .a-avatar .a-photo { border-radius: 50%; }
+body.tv .arena .a-avatar .a-name {
+  font-size: 20px;
+  line-height: 1.15;
+  padding: 1px 8px;
+  margin-top: 3px;
+  border-radius: 10px;
+}
+body.tv .arena .a-avatar .a-stars {
+  font-size: 17px;
+  letter-spacing: 1px;
+  min-height: 21px;
+  line-height: 1.2;
+  max-width: 100%;
+}
+/* 真人高亮：焦点框在电视上要够粗才看得见 */
+body.tv .arena .a-avatar.me .a-body { outline: 7px solid #4a86e8; outline-offset: 2px; }
+/* 装备 / 罚站 ❌ 覆盖层按 TV 尺寸放大 */
+body.tv .arena .a-avatar .a-equip { width: 50px; height: 50px; top: -10px; right: -10px; }
+body.tv .arena .a-avatar .a-x { font-size: 78px; }
+
+/* ---------- 题目卡 ---------- */
+body.tv .arena .a-q {
+  padding: 12px 22px;
+  border-radius: 18px;
+  margin: 0 0 8px;
+}
+body.tv .arena .a-q .qbig { font-size: 46px; line-height: 1.12; }
+body.tv .arena .a-q .qtext { font-size: 22px; margin: 3px 0; }
+body.tv .arena .a-q .qhint { font-size: 21px; margin-top: 4px; }
+body.tv .arena .a-q .pill { font-size: 21px; padding: 6px 18px; margin-top: 6px; }
+
+/* 计时条 */
+body.tv .arena .a-timer { height: 14px; margin: 6px 0; border-radius: 999px; }
+/* 反馈文字 */
+body.tv .arena .a-fb { font-size: 22px; min-height: 28px; margin: 4px 0; }
+
+/* ---------- 选项：2 列，用 margin 做间距（注入样式用 gap，Chromium 60 上会失效贴一起） ---------- */
+body.tv .arena .a-opts { margin: 0 -6px; }
+body.tv .arena .a-opt {
+  font-size: 30px;
+  min-height: 86px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  margin: 6px;
+}
+body.tv .arena .a-opt > span { line-height: 1.15; }
+
+/* 底排按钮 */
+body.tv .arena .a-bottom { margin: 0 -6px; }
+body.tv .arena .a-bottom button {
+  font-size: 22px;
+  padding: 9px 12px;
+  margin: 6px;
+  border-radius: 14px;
+  min-height: 52px;
+}
+/* 倒计时大数字 */
+body.tv .arena .a-cd { font-size: 220px; }
+/* 全场播报横幅 */
+body.tv .a-banner .badge { font-size: 48px; padding: 22px 44px; }
+
+/* ---------- 选角色界面（这段是关键：手机上 6 张卡 70px，电视上必须够大） ---------- */
+body.tv .arena.arena-pick { min-height: 0; height: 100%; }
+body.tv .arena .a-pick { padding: 0; }
+body.tv .arena .a-pick-head {
+  font-size: 42px;
+  padding: 12px 36px;
+  border-radius: 18px;
+  margin-bottom: 16px;
+}
+body.tv .arena .a-pick-secs { font-size: 48px; min-width: 1.4em; }
+/* 3 列 × 2 行网格：宽度写死（覆盖注入的 min(440px,94%) —— 旧内核不认 min()，整条会失效塌掉）。
+   卡片总高预算：2 × (268 图 + 28 padding×2 + 24 margin) ≈ 660，加头部 110 仍在 1080 内。 */
+body.tv .arena .a-pick-grid {
+  width: 1320px;
+  max-width: 92%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  grid-gap: 0;              /* 间距统一交给卡片的 margin（旧内核 grid gap 不可靠） */
+  gap: 0;
+}
+body.tv .arena .a-pick-card {
+  margin: 12px;
+  padding: 14px;
+  border-radius: 24px;
+  outline: 6px solid transparent;
+  box-sizing: border-box;
+}
+/* 卡片里的头像：固定高度，不用 aspect-ratio（安卓 8 不认会塌成一条线） */
+body.tv .arena .a-pick-card .a-body {
+  width: 100%;
+  height: 268px;
+  border-radius: 18px;
+  font-size: 140px;
+}
+body.tv .arena .a-pick-card .a-body .a-photo { border-radius: 18px; }
+/* 遥控器焦点：黄框 + 放大，电视上必须一眼看见 */
+body.tv .arena .a-pick-card:focus,
+body.tv .arena .a-pick-card:hover {
+  outline-color: #ffd400;
+  transform: translateY(-6px) scale(1.04);
+  box-shadow: 0 0 0 8px rgba(255, 212, 0, .55), 0 14px 30px rgba(0, 0, 0, .28);
+}
+
