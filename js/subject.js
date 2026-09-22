@@ -39,7 +39,7 @@
      key 必须和 boot.js 的 SUBJS 里的键一致：那边没登记的 key，
      __setSubject 会直接拒绝（启动日志里会留一条 bad subject），点了没反应。 */
   /* 学科图标用内联 SVG（不依赖设备 emoji 字体，老机顶盒/Android 缺彩色 emoji 字体会把
-     📖🔢🔤 回退成方块/黑白符号，看起来像"乱码"）。三科各画一个彩色小图标。 */
+     书本/数字/字母图标 回退成方块/黑白符号，看起来像"乱码"）。三科各画一个彩色小图标。 */
   var ICON = {
     cn:   '<svg viewBox="0 0 48 48" width="46" height="46" aria-hidden="true"><path d="M24 13C19 10 12 10 8 12v22c4-2 11-2 16 1 5-3 12-3 16-1V11c-4-2-11-2-16 0z" fill="#ff8fb1"/><path d="M24 13v22" stroke="#fff" stroke-width="2.5" fill="none"/></svg>',
     math: '<svg viewBox="0 0 48 48" width="46" height="46" aria-hidden="true"><rect x="9" y="8" width="30" height="32" rx="7" fill="#5aa9ff"/><rect x="14" y="13" width="20" height="8" rx="2" fill="#fff"/><g fill="#fff"><circle cx="17" cy="28" r="2.4"/><circle cx="24" cy="28" r="2.4"/><circle cx="31" cy="28" r="2.4"/><circle cx="17" cy="35" r="2.4"/><circle cx="24" cy="35" r="2.4"/><circle cx="31" cy="35" r="2.4"/></g></svg>',
@@ -108,7 +108,7 @@
     }
     html +=
       '</div>' +
-      '<div class="subj-tip">随时可以在右上角 ⚙️ 设置里「🔄 换学科」，进度各自独立保存</div>' +
+      '<div class="subj-tip">随时可以在右上角设置里「换学科」，进度各自独立保存</div>' +
       '<div class="subj-foot">离线可玩 · 首次打开联网后会静默更新内容</div>';
 
     var app = document.getElementById("app");
