@@ -435,7 +435,7 @@
   function championFX() {
     if (S._fx) return; S._fx = true;
     sfx("win");
-    tts("太棒了，你是本局的知识王者！");
+    tts("太棒了，你是本局的知识王者！", "zh-CN");
     try {
       var colors = ["#ff5b5b", "#ffd23f", "#5fd08a", "#4a86e8", "#b06bff", "#ff9f43"];
       for (var i = 0; i < 44; i++) {
@@ -686,7 +686,7 @@
     S.phase = "opening";
     battleRender();
     /* 开场老师语音（与气泡文案一致）：同学们，去操场集合！ */
-    later(function () { tts("同学们，去操场集合！"); }, 400);
+    later(function () { tts("同学们，去操场集合！", "zh-CN"); }, 400);
     later(function () {
       S.phase = "countdown";
       countdown(5);
@@ -756,8 +756,8 @@
     placeAvatar(i, "class");
     /* 老师点名：某某，回教室好好学习（每个被淘汰的学生各播一次，靠 _walked 守卫，绝不漏、绝不重复） */
     var msg = T(p.isMe ? "你" : p.name) + "，回教室好好学习";
-    if (delayMs && delayMs > 0) later(function () { tts(msg); }, delayMs);
-    else tts(msg);
+    if (delayMs && delayMs > 0) later(function () { tts(msg, "zh-CN"); }, delayMs);
+    else tts(msg, "zh-CN");
     refreshAvatar(i);
   }
 
@@ -788,7 +788,7 @@
     var talk = meFull
       ? "太棒了，你满星通关，是当之无愧的第一名！"
       : "你没拿满星，老师要批评你，下次要全对哦！";
-    later(function () { tts(talk); }, meLost ? 3200 : 500);
+    later(function () { tts(talk, "zh-CN"); }, meLost ? 3200 : 500);
     /* 等回教室动画走完再出结算面板，别让面板盖住动画 */
     later(function () { if (S) battleRender(); }, meLost ? 3400 : 1600);
   }
@@ -850,7 +850,7 @@
     var talk = S._praised
       ? "太棒了，你满星通关，是当之无愧的第一名！"
       : "你没拿满星，老师要批评你，下次要全对哦！";
-    tts(talk);
+    tts(talk, "zh-CN");
   };
 
   /* ---------- 退出：一次收干净 ---------- */
@@ -867,7 +867,7 @@
   /* ---------- 公开控制（挂在 window，供 onclick 调用） ---------- */
   window.arenaAnswer = arenaAnswer;
   window.arenaReplay = function () { if (S && S.q) tts(S.q.speakText); };
-  window.arenaTeacher = function () { tts("同学们，去操场集合！"); };
+  window.arenaTeacher = function () { tts("同学们，去操场集合！", "zh-CN"); };
   window.arenaHint = function () {
     if (!S || !S.q || S.hintUsed || S.revealed) return;
     var wrongs = []; (S.q.opts || []).forEach(function (o, i) { if (i !== S.q.correct && i !== S.excluded) wrongs.push(i); });

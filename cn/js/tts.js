@@ -60,10 +60,23 @@ function speak(text, lang){
   if(!isWeChat && !window.__isTV && ('speechSynthesis' in window)){
     try{
       speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(text);
-      u.lang = lang || 'zh-CN'; u.rate = settings.rate; u.pitch = 1;
-      var v = pickVoice(); if(v) u.voice = v;
-      speechSynthesis.speak(u);
+      /* 按中文标点切成短句、逐句 onend 串联朗读：部分安卓 WebView 一次性朗读带标点的
+         长句会在标点处截断（只读出前半句，如"同学们，"之后没了）。逐句衔接可根治；
+         缺对应语种嗓音时退回可用嗓音，避免英文题因无 en 嗓音而整段静音。 */
+      var clauses = String(text).match(/[^，。！？；、\n]+[，。！？；、]?/g) || [String(text)];
+      var ci = 0;
+      function sayNext(){
+        if(ci >= clauses.length) return;
+        var u = new SpeechSynthesisUtterance(clauses[ci++]);
+        var v = pickVoice();
+        if(v){ u.voice = v; } else { u.lang = lang || 'zh-CN'; }
+        u.rate = settings.rate; u.pitch = 1;
+        var done = false;
+        var adv = function(){ if(done) return; done = true; sayNext(); };
+        u.onend = adv; u.onerror = adv;
+        speechSynthesis.speak(u);
+      }
+      sayNext();
       return;
     }catch(e){ /* 原生失败则落到音频兜底 */ }
   }
