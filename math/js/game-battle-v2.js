@@ -26,7 +26,7 @@
     "stu_01_chick.png", "stu_02_police_dog.png", "stu_03_paw_rubble.png",
     "stu_04_paw_skye.png", "stu_05_white_bear.png", "stu_06_brown_bear.png"
   ];
-  var STU_NAME = ["萌鸡小队", "拉布拉多警长", "汪汪队工程犬", "汪汪队紫犬", "白熊", "棕熊"];
+  var STU_NAME = ["萌鸡", "拉布拉多警长", "小砾", "天天", "团子", "熊二"];
   var STU_EMOJI = ["🐤", "🐶", "🐾", "🐱", "🐻‍❄️", "🐻"];
   var TEACHER_IMG = "char_teacher_user.png";
   var GUN_IMG = ["gun_01_revolver.png", "gun_02_golden_rose_smg.png", "gun_03_platinum_rifle.png", "gun_04_pinkblue_sniper.png", "gun_05_golden_deagle.png"];
