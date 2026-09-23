@@ -174,7 +174,30 @@
     }
     return false;
   }
+  /* 「换学科」条 #subjectBar 不在 .topbar 内（它插在 #app 之前、由 app.js 单独挂载），
+     inTopbar() 漏判它 —— 于是进入页面时 DOM 顺序里第一个主内容焦点就会落在「换学科」按钮上，
+     遥控一按确认就切了学科。它与 .topbar 一样属于「顶部 chrome」，必须一并排除在默认焦点之外。 */
+  function isInSubjectBar(el) {
+    var p = el, i = 0;
+    while (p && p.nodeType === 1 && i < 4) {
+      if (p.id === "subjectBar") return true;
+      p = p.parentNode; i++;
+    }
+    return false;
+  }
+  function inChrome(el) { return inTopbar(el) || isInSubjectBar(el); }
+
+  /* TV 下「换学科」条仅首页显示：进入年级/单元/玩法/游戏等子页面就隐藏，
+     既不让它占用顶部、也避免遥控默认焦点误落在换学科上触发切换。
+     首页用 #app 内的 .hero 标记识别；用 inline display 覆盖，不破坏 picker 的 flex 布局。 */
+  function syncSubjectBar() {
+    var bar = document.getElementById("subjectBar");
+    if (!bar) return;
+    var isHome = !!document.querySelector("#app .hero");
+    bar.style.display = isHome ? "flex" : "none";
+  }
   function ensureFocus(force) {
+    syncSubjectBar();                 // 先按当前页面同步「换学科」条显隐（TV 仅首页显示）
     var root = scope();
     if (!force) {
       var act = document.activeElement;
@@ -189,7 +212,7 @@
     if (!list.length) return;
     /* 弹层里：直接落在第一个可操作元素（朗读开关），不要跑到背景页面去 */
     if (root !== document) { focusAt(list[0]); return; }
-    var main = list.filter(function (el) { return !inTopbar(el); });
+    var main = list.filter(function (el) { return !inChrome(el); });
     /* 答题界面：默认焦点直接落在第一个答案选项上，遥控器不用先跨过题干；
        选择类界面（年级/单元/玩法）没有 .opt，就落在第一张卡片上。 */
     var opts = main.filter(function (el) { return el.classList && el.classList.contains("opt"); });
@@ -292,27 +315,29 @@
        改为两级：① 优先横向重叠的（保持原有「就近够到正上方那个」的手感）；
        ② 没有重叠时，退一步把整条顶栏当候选 —— 只要它在屏幕上方就够得着。 */
     if (dir === "up") {
+      /* 顶部 chrome（顶栏的 ←/🛠️/⚙️ + 换学科条的 🔄）全部纳入「向上」吸附候选池：
+         从主内容按上 → 先够到最近的顶栏按钮；若已经在顶栏按钮上，再按上 →
+         够到更靠上的换学科条（subjectBar 在顶栏之上）。这样 TV 首页既不会默认聚焦换学科，
+         又能用遥控器逐级走到它去切换学科。 */
       var bars = $all("#app .topbar");
+      var sbBar = document.getElementById("subjectBar");
+      if (sbBar && sbBar.offsetParent !== null) bars = bars.concat([sbBar]);
+      var upPool = [];
       for (var bi = 0; bi < bars.length; bi++) {
         var bar = bars[bi];
         if (bar.offsetParent === null) continue;
         var br = bar.getBoundingClientRect();
         if (r0.top < br.bottom - 2) continue;        // 已经在顶栏里/之上了
-        var tops = $all(".gear, .back", bar).filter(function (el) {
+        var tops = $all(".gear, .back, .sb-btn", bar).filter(function (el) {
           if (el.offsetParent === null || el === cur) return false;
           /* 只收「确实在当前元素上方」的，避免横向拉到同排或更低的按钮 */
           return el.getBoundingClientRect().top < r0.top;
         });
-        if (!tops.length) continue;
-        var overlap = tops.filter(function (el) {
-          var cr = el.getBoundingClientRect();
-          return cr.left < r0.right && cr.right > r0.left;   // 横向有重叠
-        });
-        /* ① 有横向重叠的 → 从中取横向最接近的（例如从右下方按上 → 先够到 ⚙️ 而不是 🛠️） */
-        /* ② 没有 → 从整条顶栏里取几何最接近的，保证「按上一定能到顶栏」 */
-        var pool = overlap.length ? overlap : tops;
-        var pick = pool[0], pd = Infinity;
-        pool.forEach(function (el) {
+        upPool = upPool.concat(tops);
+      }
+      if (upPool.length) {
+        var pick = upPool[0], pd = Infinity;
+        upPool.forEach(function (el) {
           var cr = el.getBoundingClientRect();
           var d = Math.abs((cr.left + cr.width / 2) - cx);
           if (d < pd) { pd = d; pick = el; }
