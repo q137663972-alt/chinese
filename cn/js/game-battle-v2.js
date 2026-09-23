@@ -927,41 +927,50 @@
       if (done) return; done = true;
       if (!stillMine()) return;                 // 已退出 → 不选
       if (pickTimer) { clearInterval(pickTimer); pickTimer = null; }
-      if (pickKeyHandler) { try { document.body.removeEventListener("keydown", pickKeyHandler); } catch (e) {} pickKeyHandler = null; }
+      if (pickKeyHandler) { try { document.removeEventListener("keydown", pickKeyHandler, true); } catch (e) {} pickKeyHandler = null; }
       cb(i);
     }
     /* 触屏点击 */
     window.arenaPick = function (i) { doPick(i); };
 
-    /* 电视遥控器：3 列网格，方向键移焦点、确认键选 */
+    /* 电视遥控器：3 列网格，方向键移焦点、确认键选。
+       ★★ 2026-09-23 修「一次跳两格 / 选不中角色 / 直接开打」：
+         早期用 document.activeElement 推算焦点位置，但 js/tv.js 的 ensureFocus
+         （MutationObserver 触发）也会在背后挪一次焦点，于是"我挪一格 + tv.js 再挪一格"
+         叠加成一次跳两格，确认键还常落在错误的卡上 → 孩子根本选不中 → 30s 自动选第 1 个。
+         改用「内部 selIdx」独立记账：每次方向键只把 selIdx 自增/自减 1 再聚焦，
+         完全不读 activeElement，tv.js 怎么挪都不影响我们记的位置。 */
+    var selIdx = 0;
     function cards() {
       var all = Array.prototype.slice.call(document.querySelectorAll("#app .a-pick-card"));
       var vis = all.filter(function (el) { return el.offsetParent !== null; });
       return vis.length ? vis : all;
     }
-    function focusAt(el) { try { el.focus(); } catch (e) {} }
+    function applyFocus() {
+      var list = cards(); if (!list.length) return;
+      if (selIdx < 0) selIdx = 0; if (selIdx >= list.length) selIdx = list.length - 1;
+      try { list[selIdx].focus(); } catch (e) {}
+    }
     function ensure() {
       var list = cards(); if (!list.length) return;
-      var cur = document.activeElement;
-      if (cur && list.indexOf(cur) >= 0) return;
-      focusAt(list[0]);
+      selIdx = 0; applyFocus();
     }
     pickKeyHandler = function (e) {
       if (!stillMine()) return;
       var k = e.key, kc = e.keyCode || 0;
       var list = cards(); if (!list.length) return;
-      var idx = list.indexOf(document.activeElement);
-      if (k === "ArrowRight" || kc === 39) { e.preventDefault(); focusAt(list[Math.min(list.length - 1, (idx < 0 ? 0 : idx) + 1)]); return; }
-      if (k === "ArrowLeft" || kc === 37) { e.preventDefault(); focusAt(list[Math.max(0, (idx < 0 ? 0 : idx) - 1)]); return; }
-      if (k === "ArrowDown" || kc === 40) { e.preventDefault(); focusAt(list[Math.min(list.length - 1, (idx < 0 ? 0 : idx) + 3)]); return; }
-      if (k === "ArrowUp" || kc === 38) { e.preventDefault(); focusAt(list[Math.max(0, (idx < 0 ? 0 : idx) - 3)]); return; }
+      /* 捕获阶段 + stopPropagation：比 tv.js 挂在 document 上的冒泡监听器更早执行并拦下，
+         方向键/确认键完全由本处理器接管；返回键(Esc/Backspace)不拦，放行给 tv.js 照常返回。 */
+      if (k === "ArrowRight" || kc === 39) { e.preventDefault(); e.stopPropagation(); selIdx = Math.min(list.length - 1, selIdx + 1); applyFocus(); return; }
+      if (k === "ArrowLeft" || kc === 37) { e.preventDefault(); e.stopPropagation(); selIdx = Math.max(0, selIdx - 1); applyFocus(); return; }
+      if (k === "ArrowDown" || kc === 40) { e.preventDefault(); e.stopPropagation(); selIdx = Math.min(list.length - 1, selIdx + 3); applyFocus(); return; }
+      if (k === "ArrowUp" || kc === 38) { e.preventDefault(); e.stopPropagation(); selIdx = Math.max(0, selIdx - 3); applyFocus(); return; }
       var isEnter = (k === "Enter" || k === " " || k === "Spacebar" || kc === 13 || kc === 66 || kc === 23);
       if (!isEnter) return;
-      e.preventDefault();
-      var el = document.activeElement;
-      if (el && el.getAttribute) { var d = el.getAttribute("data-i"); if (d !== null && d !== "") doPick(parseInt(d, 10)); }
+      e.preventDefault(); e.stopPropagation();
+      doPick(selIdx);
     };
-    document.body.addEventListener("keydown", pickKeyHandler);
+    document.addEventListener("keydown", pickKeyHandler, true);
     ensure();
     tts("选一个你喜欢的角色吧");
   }
