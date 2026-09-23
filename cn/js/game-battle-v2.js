@@ -41,6 +41,9 @@
   var WALK_IN_MS = 5000;       /* 开场走 5 秒 */
   var WALK_BACK_MS = 3000;     /* 掉星回教室走 3 秒 */
   var INV_KEY = "arena_inventory_v2";
+  /* 失败者出现后切断游戏的时长（ms）：插入老师「某某回教室罚站」再下一题（Req 6）。
+     用户提到 20s，这里取更合适的 8s（含走回教室动画+语音）；要 20s 改成 20000 即可。 */
+  var PENALTY_PAUSE_MS = 8000;
   /* 头像槽位（百分比 left）：PLAY_ 在操场区，CLASS_ 在教室区。
      ★ 2026-09-21 改：左右两片同屏（左 42% 教室 / 右 58% 操场），输了的走进教室并缩小，
      不再像以前那样把头像 translateX 移出屏外（那样根本看不到教室）。 */
@@ -253,14 +256,21 @@
         return finalizeQ({ q: qs2, a: r2, opts: shuffle(opts2), say: qs2, tip: "联系成语里的字来想" });
       }
       if (kind === 3) {
-        /* 量词搭配：一(__)名词 */
+        /* 量词搭配：一(__)名词 —— 支持多个正确量词（如云：朵/片 都算对） */
         var lc = fromLib("LIANGCI", 0); if (!lc) return null;
         var l1 = pick(lc); if (!l1 || !l1.n || !l1.l) return null;
-        var r3 = l1.l, opts3 = [r3];
-        (l1.o || []).forEach(function (x) { if (opts3.length < 4 && opts3.indexOf(x) < 0) opts3.push(x); });
+        /* l 可为字符串或数组：字符串原样，数组表示多个都被接受的答案 */
+        var llist = (Array.isArray(l1.l) ? l1.l : [l1.l]).map(function (x) { return String(x); });
+        var r3 = pick(llist);                       /* 抽一个作主答案（保证出现在选项里） */
+        var opts3 = llist.slice();                  /* 所有正确量词都进选项 */
+        (l1.o || []).forEach(function (x) {         /* 干扰项，去重、不覆盖已入选的正确项 */
+          x = String(x);
+          if (opts3.length < 4 && opts3.indexOf(x) < 0) opts3.push(x);
+        });
         if (opts3.length < 4) return null;
         var qs3 = "一（　）" + l1.n + "　该填哪个量词？";
-        return finalizeQ({ q: qs3, a: r3, opts: shuffle(opts3), say: "一" + l1.n + "的量词是什么", tip: "想想平时怎么说话" });
+        /* alt = 全部正确量词，判定/高亮/小结都按集合处理 */
+        return finalizeQ({ q: qs3, a: r3, alt: llist, opts: shuffle(opts3), say: "一" + l1.n + "的量词是什么", tip: "想想平时怎么说话" });
       }
       /* 古诗：给上句选下句 */
       var pm = fromLib("POEMS", 0); if (!pm) return null;
@@ -355,15 +365,23 @@
     var qText = T(q.q); if (!qText) qText = "算一算";
     var opts = (q.opts || []).map(function (o) { return { label: T(o), val: T(o) }; });
     if (opts.length < 2) opts = [{ label: T(q.a), val: T(q.a) }];
-    var correct = idx(opts, function (o) { return String(o.val) === String(q.a); });
-    if (correct < 0) correct = 0;
+    /* 正确集合：优先用调用方传的 alt（多个正确项，如量词「一朵云/一片云」都算对），
+       否则按单一 q.a 判定。避免只认一个正确项而把孩子的其他合理答案判错、造成误解。 */
+    var altList = Array.isArray(q.alt) ? q.alt.map(function (x) { return String(x); }) : [];
+    var aStr = String(q.a);
+    var correctSet = [];
+    opts.forEach(function (o, i) {
+      var v = String(o.val);
+      if (altList.indexOf(v) >= 0 || v === aStr) correctSet.push(i);
+    });
+    if (!correctSet.length) correctSet = [0];
     return {
       qText: qText,
       vert: (isVert && typeof vertHTML === "function") ? vertHTML(q.v) : "",
       /* speakText 允许调用方指定（英语题要读英文单词，不能读中文题干） */
       speakText: T(q.speakText) || T(q.say) || qText,
       hint: T(hint),
-      opts: opts, correct: correct
+      opts: opts, correctSet: correctSet
     };
   }
 
@@ -659,7 +677,7 @@
     var timeLeft = Math.max(0, Math.ceil(num(S.left, 0)));
     var optsHtml = (q.opts || []).map(function (o, i) {
       var cls = "a-opt";
-      if (S.revealed) { if (i === q.correct) cls += " correct"; else if (S.chosen === i) cls += " wrong"; else if (S.excluded === i) cls += " excl"; }
+      if (S.revealed) { if (q.correctSet.indexOf(i) >= 0) cls += " correct"; else if (S.chosen === i) cls += " wrong"; else if (S.excluded === i) cls += " excl"; }
       else if (S.excluded === i) cls += " excl";
       return '<button class="' + cls + '" onclick="arenaAnswer(' + i + ')"><span>' + T(o && o.label) + "</span></button>";
     }).join("");
@@ -720,10 +738,10 @@
   function arenaAnswer(idx) {
     if (!S || S.locked) return;
     S.locked = true; if (S.tick) clearInterval(S.tick);
-    var q = S.q, correct = (idx === q.correct);
+    var q = S.q, correct = (q.correctSet || []).indexOf(idx) >= 0;
     S.chosen = idx; S.revealed = true;
     var me = S.players[0];
-    var right = (q.opts || [])[q.correct];
+    var right = (q.opts || [])[(q.correctSet && q.correctSet[0]) || 0];
     var rightText = right ? T(right.label) : T(q.speakText);
     if (correct) { me.score++; sfx("correct"); }
     else { var mb = me.stars; loseStar(me); flashStar(0, mb); sfx("wrong"); }
@@ -870,7 +888,7 @@
   window.arenaTeacher = function () { tts("同学们，去操场集合！", "zh-CN"); };
   window.arenaHint = function () {
     if (!S || !S.q || S.hintUsed || S.revealed) return;
-    var wrongs = []; (S.q.opts || []).forEach(function (o, i) { if (i !== S.q.correct && i !== S.excluded) wrongs.push(i); });
+    var wrongs = []; (S.q.opts || []).forEach(function (o, i) { if (S.q.correctSet.indexOf(i) < 0 && i !== S.excluded) wrongs.push(i); });
     if (!wrongs.length) return;
     S.excluded = pick(wrongs); S.hintUsed = true; battleRender();
   };
@@ -1006,7 +1024,14 @@
     var out = [], subj = curSubj();
     for (var i = 0; i < (n || 5); i++) {
       var q = makeQuestion();
-      out.push({ q: q.qText, a: q.opts[q.correct] && q.opts[q.correct].label, subj: subj, opts: q.opts.length });
+      /* opts: 全部选项标签；correct: 正确项标签集合（量词题可能多个，如云=片/朵） */
+      out.push({
+        q: q.qText,
+        a: q.opts[q.correctSet[0]] && q.opts[q.correctSet[0]].label,
+        subj: subj,
+        opts: q.opts.map(function (o) { return o.label; }),
+        correct: q.correctSet.map(function (i) { return q.opts[i].label; })
+      });
     }
     return { subj: subj, samples: out };
   };

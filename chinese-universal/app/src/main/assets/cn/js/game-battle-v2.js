@@ -26,7 +26,7 @@
     "stu_01_chick.png", "stu_02_police_dog.png", "stu_03_paw_rubble.png",
     "stu_04_paw_skye.png", "stu_05_white_bear.png", "stu_06_brown_bear.png"
   ];
-  var STU_NAME = ["萌鸡小队", "拉布拉多警长", "汪汪队工程犬", "汪汪队紫犬", "白熊", "棕熊"];
+  var STU_NAME = ["萌鸡", "拉布拉多警长", "小砾", "天天", "团子", "熊二"];
   var STU_EMOJI = ["🐤", "🐶", "🐾", "🐱", "🐻‍❄️", "🐻"];
   var TEACHER_IMG = "char_teacher_user.png";
   var GUN_IMG = ["gun_01_revolver.png", "gun_02_golden_rose_smg.png", "gun_03_platinum_rifle.png", "gun_04_pinkblue_sniper.png", "gun_05_golden_deagle.png"];
@@ -41,14 +41,25 @@
   var WALK_IN_MS = 5000;       /* 开场走 5 秒 */
   var WALK_BACK_MS = 3000;     /* 掉星回教室走 3 秒 */
   var INV_KEY = "arena_inventory_v2";
+  /* 失败者出现后切断游戏的时长（ms）：插入老师「某某回教室罚站」再下一题（Req 6）。
+     用户提到 20s，这里取更合适的 8s（含走回教室动画+语音）；要 20s 改成 20000 即可。 */
+  var PENALTY_PAUSE_MS = 8000;
   /* 头像槽位（百分比 left）：PLAY_ 在操场区，CLASS_ 在教室区。
      ★ 2026-09-21 改：左右两片同屏（左 42% 教室 / 右 58% 操场），输了的走进教室并缩小，
      不再像以前那样把头像 translateX 移出屏外（那样根本看不到教室）。 */
   /* 操场区（右 66%）：上下两排，每排 3 个 —— i<3 上排、i>=3 下排。
-     ★ 2026-09-21 改：原先单排 6 个挤成一串，孩子看不清谁是谁；改成跟教室一致的两排。 */
-  var PLAY_L = [42, 56, 70, 42, 56, 70];
-  /* 教室区（左 34%）：上下两排，每排 3 个 —— i<3 上排、i>=3 下排 */
-  var CLASS_L = [4, 13, 22, 4, 13, 22];
+     ★ 2026-09-21 改：原先单排 6 个挤成一串，孩子看不清谁是谁；改成跟教室一致的两排。
+     ★★ 2026-09-21 修「人物叠到一起」：原先两排共用同一组 left，且开场走位漏设 bottom，
+        于是 #0/#3、#1/#4、#2/#5 落到同一矩形（实测 32×64px 完全重合）。
+        现在：上下两排用**同一组列位**（干净 3×2 网格，行与行之间只差 bottom、不差 left），
+        bottom 由 bottomOf() 统一给出，开场走位与 placeAvatar 共用，杜绝「漏设一种」的不一致。 */
+  var PLAY_L = [40, 55, 70, 40, 55, 70];
+  /* 教室区（左 34%）：同样的 3×2 网格 */
+  var CLASS_L = [4, 12, 20, 4, 12, 20];
+  /* 排位（0=上排 / 1=下排）与对应 bottom 像素。开场走位和 placeAvatar 必须共用这一份，
+     否则又会出现「一个位置一个不设」的不一致 —— 那正是本次叠人的根因。 */
+  function rowOf(i) { return (i < 3) ? 0 : 1; }
+  function bottomOf(i) { return (i < 3) ? "70px" : "4px"; }
 
   /* ---------- 通用小工具 ---------- */
   function rnd(n) { return Math.floor(Math.random() * n); }
@@ -87,9 +98,9 @@
   /* 题卡顶部的小标题：数学「算一算」、语文「选一选」、英语「Read & Choose」 */
   function subjectLabel() {
     var s = curSubj();
-    if (s === "cn") return "📖 选一选";
-    if (s === "en") return "🔤 Read & Choose";
-    return "🧮 算一算";
+    if (s === "cn") return "语文 · 选一选";
+    if (s === "en") return "英语 · Read & Choose";
+    return "数学 · 算一算";
   }
   /* 朗读文本。三级降级，保证任何机型都有声音：
      ① 原生 speak 桥 —— 但它在三科 tts.js 里都有 `if(!settings.tts) return` 门禁，
@@ -245,14 +256,21 @@
         return finalizeQ({ q: qs2, a: r2, opts: shuffle(opts2), say: qs2, tip: "联系成语里的字来想" });
       }
       if (kind === 3) {
-        /* 量词搭配：一(__)名词 */
+        /* 量词搭配：一(__)名词 —— 支持多个正确量词（如云：朵/片 都算对） */
         var lc = fromLib("LIANGCI", 0); if (!lc) return null;
         var l1 = pick(lc); if (!l1 || !l1.n || !l1.l) return null;
-        var r3 = l1.l, opts3 = [r3];
-        (l1.o || []).forEach(function (x) { if (opts3.length < 4 && opts3.indexOf(x) < 0) opts3.push(x); });
+        /* l 可为字符串或数组：字符串原样，数组表示多个都被接受的答案 */
+        var llist = (Array.isArray(l1.l) ? l1.l : [l1.l]).map(function (x) { return String(x); });
+        var r3 = pick(llist);                       /* 抽一个作主答案（保证出现在选项里） */
+        var opts3 = llist.slice();                  /* 所有正确量词都进选项 */
+        (l1.o || []).forEach(function (x) {         /* 干扰项，去重、不覆盖已入选的正确项 */
+          x = String(x);
+          if (opts3.length < 4 && opts3.indexOf(x) < 0) opts3.push(x);
+        });
         if (opts3.length < 4) return null;
         var qs3 = "一（　）" + l1.n + "　该填哪个量词？";
-        return finalizeQ({ q: qs3, a: r3, opts: shuffle(opts3), say: "一" + l1.n + "的量词是什么", tip: "想想平时怎么说话" });
+        /* alt = 全部正确量词，判定/高亮/小结都按集合处理 */
+        return finalizeQ({ q: qs3, a: r3, alt: llist, opts: shuffle(opts3), say: "一" + l1.n + "的量词是什么", tip: "想想平时怎么说话" });
       }
       /* 古诗：给上句选下句 */
       var pm = fromLib("POEMS", 0); if (!pm) return null;
@@ -347,15 +365,23 @@
     var qText = T(q.q); if (!qText) qText = "算一算";
     var opts = (q.opts || []).map(function (o) { return { label: T(o), val: T(o) }; });
     if (opts.length < 2) opts = [{ label: T(q.a), val: T(q.a) }];
-    var correct = idx(opts, function (o) { return String(o.val) === String(q.a); });
-    if (correct < 0) correct = 0;
+    /* 正确集合：优先用调用方传的 alt（多个正确项，如量词「一朵云/一片云」都算对），
+       否则按单一 q.a 判定。避免只认一个正确项而把孩子的其他合理答案判错、造成误解。 */
+    var altList = Array.isArray(q.alt) ? q.alt.map(function (x) { return String(x); }) : [];
+    var aStr = String(q.a);
+    var correctSet = [];
+    opts.forEach(function (o, i) {
+      var v = String(o.val);
+      if (altList.indexOf(v) >= 0 || v === aStr) correctSet.push(i);
+    });
+    if (!correctSet.length) correctSet = [0];
     return {
       qText: qText,
       vert: (isVert && typeof vertHTML === "function") ? vertHTML(q.v) : "",
       /* speakText 允许调用方指定（英语题要读英文单词，不能读中文题干） */
       speakText: T(q.speakText) || T(q.say) || qText,
       hint: T(hint),
-      opts: opts, correct: correct
+      opts: opts, correctSet: correctSet
     };
   }
 
@@ -400,8 +426,9 @@
     var L = (zone === "class") ? CLASS_L : PLAY_L;
     el.style.left = L[i] + "%";
     /* 两个区都分上下两排：前 3 个站上排、后 3 个站下排。
-       ★ 2026-09-21 改：操场原先只有一排，6 个头像挤成一串；现在与教室一致排两排。 */
-    el.style.bottom = (i < 3 ? "70px" : "6px");
+       ★ 2026-09-21 改：操场原先只有一排，6 个头像挤成一串；现在与教室一致排两排。
+       ★ 2026-09-21 修叠人：bottom 与 left 必须**成对**设置 —— 只设 left 会让两排落回同一行。 */
+    el.style.bottom = bottomOf(i);
   }
   /* ★ 2026-09-21 丢星特效：星星先闪一下（放大变红），0.43s 后刷新成「少一颗星」的灰态（☆）。
      before = 丢星前的星数，先短暂显示满星闪烁，再落到新数量。 */
@@ -426,7 +453,7 @@
   function championFX() {
     if (S._fx) return; S._fx = true;
     sfx("win");
-    tts("太棒了，你是本局的知识王者！");
+    tts("太棒了，你是本局的知识王者！", "zh-CN");
     try {
       var colors = ["#ff5b5b", "#ffd23f", "#5fd08a", "#4a86e8", "#b06bff", "#ff9f43"];
       for (var i = 0; i < 44; i++) {
@@ -483,20 +510,29 @@
       ".a-cz:before{content:'🏫 教室';position:absolute;top:4px;left:6px;font-weight:900;font-size:11px;color:#a9743a}" +
       ".a-pz{position:absolute;top:0;bottom:0;left:34%;right:0;background:linear-gradient(180deg,#bfe9c0,#7fc98a)}" +
       ".a-pz:before{content:'🏟️ 操场';position:absolute;top:4px;left:6px;font-weight:900;font-size:11px;color:#2f7a3a}" +
-      /* 老师站在操场区中央（开场点名、结尾评价都用得上） */
-      ".a-teacher{position:absolute;top:6px;left:67%;transform:translateX(-50%);width:50px;height:50px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 2px 6px rgba(0,0,0,.2);z-index:3}" +
+      /* 老师站到操场**最右侧**（不再是 67% 居中）。
+         ★ 2026-09-22 修：原先 left:67% 正好压在「拉布拉多警长 / 汪汪队工程犬 / 白熊 / 棕熊」
+         几个学生头像上（实测与 4 人横向重叠），孩子看不清谁是谁。挪到右缘、并缩小，
+         避开两排学生（上排左起 40/55/70%，下排 40/55/70% 的卡片右缘到 76%+卡片宽）。 */
+      ".a-teacher{position:absolute;top:4px;right:2px;width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 2px 6px rgba(0,0,0,.2);z-index:4}" +
       ".a-teacher img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
       ".a-avs{position:absolute;inset:0;z-index:2}" +
       /* 头像：绝对定位到各自「槽位」，切换场景靠改 left% / bottom%；走进教室缩成 .small。
          默认 transition 同时含 left / bottom / transform，开场用 JS 临时把 left 过渡拉长成「走 5 秒」。 */
-      ".a-avatar{position:absolute;bottom:6px;width:10%;display:flex;flex-direction:column;align-items:center;transition:left .8s ease,bottom .8s ease,transform .3s ease;transform-origin:bottom center}" +
+      /* 头像宽 10% 太窄（stage 320px 时只有 32px），名字「拉布拉多警长」「汪汪队工程犬」
+         一律被省略成「汪…」，孩子分不清谁是谁。放宽到 14%（留出邻座间隙）。 */
+      ".a-avatar{position:absolute;bottom:6px;width:14%;display:flex;flex-direction:column;align-items:center;transition:left .8s ease,bottom .8s ease,transform .3s ease;transform-origin:bottom center}" +
       ".a-avatar .a-body{position:relative;width:100%;max-width:34px;aspect-ratio:1/1;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 2px 5px rgba(0,0,0,.15)}" +
       ".a-avatar .a-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}" +
-      ".a-avatar .a-name{font-size:10px;font-weight:800;margin-top:1px;background:rgba(255,255,255,.7);border-radius:8px;padding:0 2px;max-width:100%;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}" +
+      ".a-avatar .a-name{font-size:9px;font-weight:800;margin-top:1px;background:rgba(255,255,255,.7);border-radius:8px;padding:0 2px;max-width:100%;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}" +
       ".a-avatar.me .a-body{outline:3px solid #4a86e8}" +
       ".a-avatar.rest .a-body{filter:grayscale(1);opacity:.6}" +
       ".a-avatar.small{transform:scale(.6)}" +
-      ".a-avatar .a-stars{font-size:11px;color:#e08b00;letter-spacing:1px;min-height:14px}" +
+      /* ★ 2026-09-22 修「星星太宽、挨到一起」：a-stars 原先 font-size:11px + letter-spacing:1px，
+         4 颗星宽约 4×(11+1)=48px，而卡片本身只有 48px 宽、相邻卡片首尾相接（间隙实测 0px），
+         于是两个人的 ★★★★ 看起来连成一条。
+         现在：字号收到 8px、去掉字距、并限宽到 90%（不撑满卡片），两侧留出可见空隙。 */
+      ".a-avatar .a-stars{font-size:8px;color:#e08b00;letter-spacing:0;min-height:11px;line-height:1.1;max-width:92%;white-space:nowrap}" +
       /* ★ 2026-09-21 丢星特效：星星闪一下（放大变红）再变灰色（☆） */
       ".a-avatar .a-stars.flash{animation:astar .43s ease}" +
       "@keyframes astar{0%{transform:scale(1.35);color:#ff3b3b}50%{transform:scale(.85)}100%{transform:scale(1);color:#e08b00}}" +
@@ -555,7 +591,7 @@
     var rowHtml = players.map(function (p, i) {
       var eq = (p.equip === "gun") ? '<img class="a-equip on" src="' + T(IMG + p.equipImg) + '" onerror="this.remove()">'
         : (p.equip === "doll") ? '<img class="a-equip on" src="' + T(IMG + p.equipImg) + '" onerror="this.remove()">' : '<img class="a-equip">';
-      return '<div class="a-avatar ' + (p.isMe ? "me" : "") + '" data-i="' + i + '" style="left:' + PLAY_L[i] + '%">' +
+      return '<div class="a-avatar ' + (p.isMe ? "me" : "") + '" data-i="' + i + '" style="left:' + PLAY_L[i] + '%;bottom:' + bottomOf(i) + '">' +
         '<div class="a-body">' + faceHTML(p.emoji, p.img) +
           '<div class="a-x">❌</div>' + eq + '</div>' +
         '<div class="a-name">' + (p.isMe ? "你" : T(p.name)) + '</div>' +
@@ -585,17 +621,24 @@
     avatarEls = [];
     var nodes = document.querySelectorAll(".arena .a-avatar");
     for (var n = 0; n < nodes.length; n++) avatarEls.push(nodes[n]);
-    /* 开场：头像先从左侧屏幕外走到操场各自槽位（left 过渡拉长成 5 秒） */
+    /* 开场：头像先从左侧屏幕外走到操场各自槽位（left 过渡拉长成 5 秒）
+       ★★ 2026-09-21 修「人物叠到一起」根因：这里原先**只设 left、没设 bottom**，
+        mountStage 建 DOM 时也没给 bottom（只有 placeAvatar 会给，而开场根本没调它），
+        于是 6 个头像全停在 CSS 默认的 bottom:6px 这一行；两排共用同一组 left，
+        #0/#3、#1/#4、#2/#5 就落成完全相同的矩形（实测 32×64px 重合）。
+        现在：先把 bottom 直接落位（不做过渡，避免开场"从下往上飘"），再走 left。 */
     for (var i = 0; i < avatarEls.length; i++) {
       var el = avatarEls[i];
+      el.style.bottom = bottomOf(i);
       el.style.transition = "left " + (WALK_IN_MS / 1000) + "s linear";
       el.style.left = (PLAY_L[i] - 60) + "%";
     }
     /* 强制重排后归位 → 触发过渡；归位后把过渡恢复正常速度（掉星回教室用 .8s） */
     later(function () {
       for (var j = 0; j < avatarEls.length; j++) {
-        avatarEls[j].style.transition = "left .8s ease, transform .3s ease";
+        avatarEls[j].style.transition = "left .8s ease, bottom .8s ease, transform .3s ease";
         avatarEls[j].style.left = PLAY_L[j] + "%";
+        avatarEls[j].style.bottom = bottomOf(j);
       }
     }, 60);
   }
@@ -634,7 +677,7 @@
     var timeLeft = Math.max(0, Math.ceil(num(S.left, 0)));
     var optsHtml = (q.opts || []).map(function (o, i) {
       var cls = "a-opt";
-      if (S.revealed) { if (i === q.correct) cls += " correct"; else if (S.chosen === i) cls += " wrong"; else if (S.excluded === i) cls += " excl"; }
+      if (S.revealed) { if (q.correctSet.indexOf(i) >= 0) cls += " correct"; else if (S.chosen === i) cls += " wrong"; else if (S.excluded === i) cls += " excl"; }
       else if (S.excluded === i) cls += " excl";
       return '<button class="' + cls + '" onclick="arenaAnswer(' + i + ')"><span>' + T(o && o.label) + "</span></button>";
     }).join("");
@@ -660,6 +703,8 @@
   function startOpening() {
     S.phase = "opening";
     battleRender();
+    /* 开场老师语音（与气泡文案一致）：同学们，去操场集合！ */
+    later(function () { tts("同学们，去操场集合！", "zh-CN"); }, 400);
     later(function () {
       S.phase = "countdown";
       countdown(5);
@@ -693,13 +738,17 @@
   function arenaAnswer(idx) {
     if (!S || S.locked) return;
     S.locked = true; if (S.tick) clearInterval(S.tick);
-    var q = S.q, correct = (idx === q.correct);
+    var q = S.q, correct = (q.correctSet || []).indexOf(idx) >= 0;
     S.chosen = idx; S.revealed = true;
     var me = S.players[0];
-    if (correct) { me.score++; sfx("correct"); tts("答对啦，加一分"); }
-    else { var mb = me.stars; loseStar(me); flashStar(0, mb); sfx("wrong"); later(function () {
-      try { var right = (q.opts || [])[q.correct]; tts(right ? T(right.label) : T(q.speakText)); } catch (e) {}
-    }, 200); }
+    var right = (q.opts || [])[(q.correctSet && q.correctSet[0]) || 0];
+    var rightText = right ? T(right.label) : T(q.speakText);
+    if (correct) { me.score++; sfx("correct"); }
+    else { var mb = me.stars; loseStar(me); flashStar(0, mb); sfx("wrong"); }
+    /* 答后读正确答案（英语读英文单词）；选项不读（用户要求"只读题目、答后读答案"）。
+       出题时 707 已读题目（英语读英文单词），此处再读答案 = 题目+答案都朗读。 */
+    tts(rightText);
+    later(function () { tts(correct ? "答对啦，加一分" : "答错了，加油"); }, 950);
     for (var i = 1; i < S.players.length; i++) {
       var p = S.players[i]; if (!p.alive) continue;
       if (Math.random() < SKILL) p.score++; else { var pb = p.stars; loseStar(p); flashStar(i, pb); }
@@ -725,8 +774,8 @@
     placeAvatar(i, "class");
     /* 老师点名：某某，回教室好好学习（每个被淘汰的学生各播一次，靠 _walked 守卫，绝不漏、绝不重复） */
     var msg = T(p.isMe ? "你" : p.name) + "，回教室好好学习";
-    if (delayMs && delayMs > 0) later(function () { tts(msg); }, delayMs);
-    else tts(msg);
+    if (delayMs && delayMs > 0) later(function () { tts(msg, "zh-CN"); }, delayMs);
+    else tts(msg, "zh-CN");
     refreshAvatar(i);
   }
 
@@ -757,7 +806,7 @@
     var talk = meFull
       ? "太棒了，你满星通关，是当之无愧的第一名！"
       : "你没拿满星，老师要批评你，下次要全对哦！";
-    later(function () { tts(talk); }, meLost ? 3200 : 500);
+    later(function () { tts(talk, "zh-CN"); }, meLost ? 3200 : 500);
     /* 等回教室动画走完再出结算面板，别让面板盖住动画 */
     later(function () { if (S) battleRender(); }, meLost ? 3400 : 1600);
   }
@@ -819,7 +868,7 @@
     var talk = S._praised
       ? "太棒了，你满星通关，是当之无愧的第一名！"
       : "你没拿满星，老师要批评你，下次要全对哦！";
-    tts(talk);
+    tts(talk, "zh-CN");
   };
 
   /* ---------- 退出：一次收干净 ---------- */
@@ -836,10 +885,10 @@
   /* ---------- 公开控制（挂在 window，供 onclick 调用） ---------- */
   window.arenaAnswer = arenaAnswer;
   window.arenaReplay = function () { if (S && S.q) tts(S.q.speakText); };
-  window.arenaTeacher = function () { tts("同学们，准备开始答题闯关！"); };
+  window.arenaTeacher = function () { tts("同学们，去操场集合！", "zh-CN"); };
   window.arenaHint = function () {
     if (!S || !S.q || S.hintUsed || S.revealed) return;
-    var wrongs = []; (S.q.opts || []).forEach(function (o, i) { if (i !== S.q.correct && i !== S.excluded) wrongs.push(i); });
+    var wrongs = []; (S.q.opts || []).forEach(function (o, i) { if (S.q.correctSet.indexOf(i) < 0 && i !== S.excluded) wrongs.push(i); });
     if (!wrongs.length) return;
     S.excluded = pick(wrongs); S.hintUsed = true; battleRender();
   };
@@ -896,41 +945,50 @@
       if (done) return; done = true;
       if (!stillMine()) return;                 // 已退出 → 不选
       if (pickTimer) { clearInterval(pickTimer); pickTimer = null; }
-      if (pickKeyHandler) { try { document.body.removeEventListener("keydown", pickKeyHandler); } catch (e) {} pickKeyHandler = null; }
+      if (pickKeyHandler) { try { document.removeEventListener("keydown", pickKeyHandler, true); } catch (e) {} pickKeyHandler = null; }
       cb(i);
     }
     /* 触屏点击 */
     window.arenaPick = function (i) { doPick(i); };
 
-    /* 电视遥控器：3 列网格，方向键移焦点、确认键选 */
+    /* 电视遥控器：3 列网格，方向键移焦点、确认键选。
+       ★★ 2026-09-23 修「一次跳两格 / 选不中角色 / 直接开打」：
+         早期用 document.activeElement 推算焦点位置，但 js/tv.js 的 ensureFocus
+         （MutationObserver 触发）也会在背后挪一次焦点，于是"我挪一格 + tv.js 再挪一格"
+         叠加成一次跳两格，确认键还常落在错误的卡上 → 孩子根本选不中 → 30s 自动选第 1 个。
+         改用「内部 selIdx」独立记账：每次方向键只把 selIdx 自增/自减 1 再聚焦，
+         完全不读 activeElement，tv.js 怎么挪都不影响我们记的位置。 */
+    var selIdx = 0;
     function cards() {
       var all = Array.prototype.slice.call(document.querySelectorAll("#app .a-pick-card"));
       var vis = all.filter(function (el) { return el.offsetParent !== null; });
       return vis.length ? vis : all;
     }
-    function focusAt(el) { try { el.focus(); } catch (e) {} }
+    function applyFocus() {
+      var list = cards(); if (!list.length) return;
+      if (selIdx < 0) selIdx = 0; if (selIdx >= list.length) selIdx = list.length - 1;
+      try { list[selIdx].focus(); } catch (e) {}
+    }
     function ensure() {
       var list = cards(); if (!list.length) return;
-      var cur = document.activeElement;
-      if (cur && list.indexOf(cur) >= 0) return;
-      focusAt(list[0]);
+      selIdx = 0; applyFocus();
     }
     pickKeyHandler = function (e) {
       if (!stillMine()) return;
       var k = e.key, kc = e.keyCode || 0;
       var list = cards(); if (!list.length) return;
-      var idx = list.indexOf(document.activeElement);
-      if (k === "ArrowRight" || kc === 39) { e.preventDefault(); focusAt(list[Math.min(list.length - 1, (idx < 0 ? 0 : idx) + 1)]); return; }
-      if (k === "ArrowLeft" || kc === 37) { e.preventDefault(); focusAt(list[Math.max(0, (idx < 0 ? 0 : idx) - 1)]); return; }
-      if (k === "ArrowDown" || kc === 40) { e.preventDefault(); focusAt(list[Math.min(list.length - 1, (idx < 0 ? 0 : idx) + 3)]); return; }
-      if (k === "ArrowUp" || kc === 38) { e.preventDefault(); focusAt(list[Math.max(0, (idx < 0 ? 0 : idx) - 3)]); return; }
+      /* 捕获阶段 + stopPropagation：比 tv.js 挂在 document 上的冒泡监听器更早执行并拦下，
+         方向键/确认键完全由本处理器接管；返回键(Esc/Backspace)不拦，放行给 tv.js 照常返回。 */
+      if (k === "ArrowRight" || kc === 39) { e.preventDefault(); e.stopPropagation(); selIdx = Math.min(list.length - 1, selIdx + 1); applyFocus(); return; }
+      if (k === "ArrowLeft" || kc === 37) { e.preventDefault(); e.stopPropagation(); selIdx = Math.max(0, selIdx - 1); applyFocus(); return; }
+      if (k === "ArrowDown" || kc === 40) { e.preventDefault(); e.stopPropagation(); selIdx = Math.min(list.length - 1, selIdx + 3); applyFocus(); return; }
+      if (k === "ArrowUp" || kc === 38) { e.preventDefault(); e.stopPropagation(); selIdx = Math.max(0, selIdx - 3); applyFocus(); return; }
       var isEnter = (k === "Enter" || k === " " || k === "Spacebar" || kc === 13 || kc === 66 || kc === 23);
       if (!isEnter) return;
-      e.preventDefault();
-      var el = document.activeElement;
-      if (el && el.getAttribute) { var d = el.getAttribute("data-i"); if (d !== null && d !== "") doPick(parseInt(d, 10)); }
+      e.preventDefault(); e.stopPropagation();
+      doPick(selIdx);
     };
-    document.body.addEventListener("keydown", pickKeyHandler);
+    document.addEventListener("keydown", pickKeyHandler, true);
     ensure();
     tts("选一个你喜欢的角色吧");
   }
@@ -966,7 +1024,14 @@
     var out = [], subj = curSubj();
     for (var i = 0; i < (n || 5); i++) {
       var q = makeQuestion();
-      out.push({ q: q.qText, a: q.opts[q.correct] && q.opts[q.correct].label, subj: subj, opts: q.opts.length });
+      /* opts: 全部选项标签；correct: 正确项标签集合（量词题可能多个，如云=片/朵） */
+      out.push({
+        q: q.qText,
+        a: q.opts[q.correctSet[0]] && q.opts[q.correctSet[0]].label,
+        subj: subj,
+        opts: q.opts.map(function (o) { return o.label; }),
+        correct: q.correctSet.map(function (i) { return q.opts[i].label; })
+      });
     }
     return { subj: subj, samples: out };
   };
