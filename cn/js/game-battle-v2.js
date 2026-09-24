@@ -762,7 +762,9 @@
   function startOpening() {
     S.phase = "opening";
     battleRender();
-    /* 开场老师语音已移到「开始游戏」点击手势内（arenaWhStart）播放，此处不再播，避免重复 / 被打断 */
+    /* 开场老师语音：放在 battleStop（beginArena 内）执行完之后最稳——语音引擎已就绪，
+       用户进操场即听到「同学们，去操场集合！」，紧接着倒计时。 */
+    try { say("同学们，去操场集合！", "zh-CN"); } catch (e) {}
     later(function () {
       S.phase = "countdown";
       countdown(5);
@@ -844,8 +846,9 @@
     /* 老师点名：某某，回教室罚站（每个被淘汰的学生各播一次，靠 _walked 守卫，绝不漏、绝不重复）。
        ★ 2026-09-22：用 queue 排队播放 —— 这条台词绝不能因为后面的得分反馈 / 读题语音而消失。 */
     var msg = T(p.isMe ? "你" : p.name) + "，回教室罚站";
-    if (delayMs && delayMs > 0) later(function () { tts(msg, "zh-CN", "queue"); }, delayMs);
-    else tts(msg, "zh-CN", "queue");
+    /* 直接 setTimeout 播，不走 later 的 stillMine 守卫——否则淘汰者触发 endGame / 切场景时
+       stillMine() 返回 false 会把这条点名台词静默吞掉（用户反馈「罚站没声音」的根因之一）。 */
+    setTimeout(function () { try { tts(msg, "zh-CN", "queue"); } catch (e) {} }, delayMs > 0 ? delayMs : 0);
     refreshAvatar(i);
   }
 
@@ -1137,10 +1140,9 @@
   window.arenaWhEquip = function (type, img) { equipItem(type, img); renderWarehouse(); };
   window.arenaWhStart = function () {
     var v = readInv();
-    /* 在「开始游戏」点击手势内播开场语音：autoplay 策略要求手势上下文，否则 <audio> 被静默拒绝；
-       说完（按语音时长估算 ~2.6s）再真正进入开场，避免进场动画打断语音（用户要求「说完再进下一步」）。 */
-    try { say("同学们，去操场集合！", "zh-CN"); } catch (e) {}
-    setTimeout(function () { beginArena(whHero, v.equipped); }, 2600);
+    /* 点击「开始游戏」即进场（短延迟让仓库界面先收起）；开场老师语音改在 startOpening 开头播，
+       那里 battleStop 已执行完、语音引擎已就绪，避免「手势内播却被后续逻辑打断」导致整段哑掉。 */
+    setTimeout(function () { beginArena(whHero, v.equipped); }, 400);
   };
 
   /* 真正开打：应用佩戴、建 S、上台、开场（"同学们，去操场集合！"在此播放，Req 5） */
