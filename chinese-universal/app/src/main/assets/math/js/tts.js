@@ -26,29 +26,78 @@ if('speechSynthesis' in window){
   speechSynthesis.onvoiceschanged = function(){ voiceReady = true; };
 }
 
-/* —— 音频兜底：有道词典 TTS 返回 MP3；中文 le=zh，英文 type=2 —— */
-var ttsAudio = new Audio(); ttsAudio.preload = 'none';
-var audioQueue = [], audioBusy = false;
+/* —— 音频兜底：有道词典 TTS 返回 MP3；中文 le=zh，英文 type=2 ——
+   ★★ 2026-09-22 重写播放核心（根治「只读前半句 / 后半程台词全部无声」）
+   旧实现：一个共享 Audio + audioBusy 标志，靠 onended 串起下一段。
+   安卓 WebView 上 onended 经常不触发（或被后来的 src 覆盖吞掉），audioBusy 便永久停在 true：
+     ① 第一段「同学们，」播完，onended 不来 →「去操场集合！」永远不播   ← 用户反馈的现象
+     ② 此后每次 speakAudio 都被 `if(audioBusy) return` 挡掉 → 罚站点名、得分反馈全部无声
+   新实现三重保险：
+     ① 每段用一个独立 Audio 对象（互不覆盖，ended 回调归属明确）
+     ② ended / error / play 被拒 / 时长兜底定时器 四路推进，任一路先到就继续下一段
+     ③ 打断令牌 _aToken：被新场景打断的旧队列回调见到令牌变了立即退出，绝不与新队列抢播
+   另加 mode 参数：'cut'（默认，清队立刻播，用于开场/读题等场景切换）、
+   'queue'（排队不打断，用于罚站点名、得分反馈这类绝不能丢的台词）。 */
+var _aQ = [], _aBusy = false, _aCur = null, _aToken = 0;
 
 function youdaoURL(w, lang){
   return 'https://dict.youdao.com/dictvoice?audio=' + encodeURIComponent(w) +
          (isEnLang(lang) ? '&type=2' : '&le=zh');
 }
-function flushAudio(){
-  if(audioBusy) return;
-  var url = audioQueue.shift();
-  if(!url){ audioBusy = false; return; }
-  audioBusy = true; ttsAudio.src = url;
-  var p = ttsAudio.play();
-  if(p && p.catch) p.catch(function(){ audioBusy = false; flushAudio(); });
+/* 按文本长度估算播放时长：onended 不触发时靠它兜底推进（宁可早一点，也不卡死整条队列） */
+function estMs(s, lang){
+  s = String(s);
+  if(isEnLang(lang)) return 1300 + s.split(/\s+/).length * 420;   /* 英文按词算 */
+  return 1200 + s.length * 260;                                   /* 中文按字算 */
 }
-ttsAudio.onended = function(){ audioBusy = false; flushAudio(); };
-ttsAudio.onerror = function(){ audioBusy = false; flushAudio(); };
 
-/* 按语种切分：中文按标点+12字；英文按句子边界、按词且不切碎单词（有道对超长串会拒）。 */
+/* 播一段：无论发生什么，next() 最多触发一次，且一定会让队列继续往下走 */
+function playOne(url, token, cap){
+  var a = new Audio();
+  _aCur = a;
+  try { a.preload = 'auto'; } catch (e) {}
+  try { a.src = url; } catch (e) {}                        /* ★ 必设：漏了就等于整场静音 */
+  var done = false, guard = null;
+  function next(){
+    if (done) return; done = true;
+    if (guard) clearTimeout(guard);
+    if (_aCur === a) _aCur = null;
+    if (token !== _aToken) return;                         /* 已被新场景打断 → 交给新令牌的队列 */
+    _aBusy = false;
+    setTimeout(function () { flushAudio(token); }, 50);    /* 段间留 50ms：安卓上连播不间隔会互吞 */
+  }
+  a.onended = next; a.onerror = next;
+  guard = setTimeout(next, cap);
+  a.onloadedmetadata = function () {                       /* 拿到真实时长就换成精确兜底 */
+    try {
+      var d = a.duration;
+      if (isFinite(d) && d > 0 && d < 40) { if (guard) clearTimeout(guard); guard = setTimeout(next, d * 1000 + 900); }
+    } catch (e) {}
+  };
+  try {
+    var p = a.play();
+    if (p && p.catch) p.catch(function () { setTimeout(next, 300); });   /* 被拒 → 跳过，绝不卡住整条队列 */
+  } catch (e) { setTimeout(next, 300); }
+}
+
+function flushAudio(token){
+  if (token !== _aToken || _aBusy) return;
+  var it = _aQ.shift();
+  if (!it) return;
+  _aBusy = true;
+  playOne(it.u, token, it.cap);
+}
+
+/* 按语种切分：中文按标点+12字；英文按句子边界、按词且不切碎单词（有道对超长串会拒）。
+   ★ 2026-09-22 新增「短文本整段一次合成」：单次请求 → 单段 MP3 →
+     从根上就不可能再出现「只读出前半句」（"同学们，去操场集合！"以前被按逗号切成两段靠 onended 衔接，
+     安卓一旦丢回调，后半句就永久不播）。 */
 function splitText(text, lang){
   text = String(text);
-  if(isEnLang(lang)){
+  var _en = isEnLang(lang);
+  if(_en && text.length <= 160) return [text];
+  if(!_en && text.replace(/[\s，。！？；、,.!?;:：]/g, "").length <= 24) return [text];
+  if(_en){
     var parts = text.match(/[^.!?]+[.!?]?/g) || [text];
     var out = [];
     parts.forEach(function(p){
@@ -71,14 +120,26 @@ function splitText(text, lang){
   });
   return cout.length ? cout : [text];
 }
-function speakAudio(text, times, lang){
-  audioQueue = [];
+/* mode='queue'：把这段话排到队尾、不打断已在播的内容（罚站点名 / 得分反馈等绝不能丢的台词）；
+   默认 'cut'：清空待播队列并停掉当前段（开场、读题等场景切换）。 */
+function speakAudio(text, times, lang, mode){
+  text = String(text === undefined || text === null ? "" : text);
+  if(!text) return;
   var L = lang || TTS_DEFAULT_LANG;
   var n = times || 1;
-  for (var i = 0; i < n; i++) {
-    splitText(text, L).forEach(function(seg){ audioQueue.push(youdaoURL(seg, L)); });
+  if(mode !== 'queue'){
+    _aToken++;
+    _aQ = [];
+    try { if(_aCur) _aCur.pause(); } catch(e){}
+    _aCur = null; _aBusy = false;
   }
-  audioBusy = false; flushAudio();
+  var token = _aToken;
+  var segs = splitText(text, L);
+  for(var i = 0; i < n; i++){
+    for(var j = 0; j < segs.length; j++) _aQ.push({ u: youdaoURL(segs[j], L), cap: estMs(segs[j], L) });
+  }
+  if(_aQ.length > 8) _aQ = _aQ.slice(_aQ.length - 8);   /* 防止积压太久导致语音严重滞后 */
+  flushAudio(token);
 }
 
 function speak(text, lang){

@@ -111,16 +111,21 @@
     try { if (typeof settings !== "undefined" && settings && !settings.tts) return false; } catch (e) {}
     return true;
   }
-  function tts(text, lang) {
+  function tts(text, lang, mode) {
     text = T(text); if (!text) return;
     if (!lang) lang = curLang();
     /* ★ 根治「只读前半句 / 台词被吞」（Req 1&2）：安卓 WebView 的 Web Speech onend 极不稳定，
        分句链常断在第一句（"同学们，"后面断掉）。统一优先用有道 MP3 串行队列 —— 整段合成、
        按音频 onended 串联，可靠且按 lang 自动切中/英文音；TV 端读两遍（遥控器操作慢、常没听清）。
-       不再依赖 Web Speech 分句链，手机 / TV 同时生效。 */
+       不再依赖 Web Speech 分句链，手机 / TV 同时生效。
+       ★ 2026-09-22 补：mode = 'queue'（排队不打断）/ 'cut'（默认，清队立刻播）。
+       以前每条语音都无条件清空音频队列，"答错了，加油"（延迟 950ms）正好把刚刚入队的
+       「某某，回教室罚站」清掉了 → 罚站台词听不到。现在关键台词走 queue。
+       旧版 tts.js 不认第 4 个参数时会自动退化为原有行为，绝不会因此变哑。 */
+    var m = (mode === "queue") ? "queue" : "cut";
     try {
       if (typeof window.speakAudio === "function") {
-        window.speakAudio(text, (window.__isTV ? 2 : 1), lang);
+        window.speakAudio(text, (window.__isTV ? 2 : 1), lang, m);
         return;
       }
     } catch (e) {}
@@ -411,13 +416,30 @@
     if (html.indexOf("undefined") >= 0) { try { console.warn("[arena] 渲染出现 undefined，已清理"); } catch (e) {} html = html.split("undefined").join(""); }
     var el = appEl(); if (el) el.innerHTML = html;
   }
-  function banner(text) {
+  /* 屏幕中部的提示条（兑换成功/碎片不足/装备已切换…）。
+     ★ 2026-09-22 修「提示永远不消失」：原来用 later() 延迟移除，而 later 的第一道守卫是
+       `if (tk !== runId || !S) return;` —— 仓库 / 兑换界面（选角之后、正式开打之前）S 还是 null，
+       回调永远不执行，于是「还需 3 个碎片才能兑换」就永久糊在屏幕中间挡住内容。
+     现在改用独立 setTimeout 自动消失（默认 2.4 秒），定时器登记进 bannerTimers，
+     退出 / 重开时一并清掉并摘除残留节点，同时只保留最新一条，绝不叠罗汉。 */
+  var bannerTimers = [];
+  function clearBanners() {
+    for (var i = 0; i < bannerTimers.length; i++) { try { clearTimeout(bannerTimers[i]); } catch (e) {} }
+    bannerTimers = [];
+    try {
+      var old = document.querySelectorAll(".a-banner");
+      for (var j = 0; j < old.length; j++) if (old[j].parentNode) old[j].parentNode.removeChild(old[j]);
+    } catch (e) {}
+  }
+  function banner(text, ms) {
     if (!document.body) return;
+    clearBanners();
     var b = document.createElement("div");
     b.className = "a-banner";
     b.innerHTML = '<span class="badge">' + T(text) + "</span>";
     document.body.appendChild(b);
-    later(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 1400);
+    var life = num(ms, 2400); if (life < 800) life = 2400;
+    bannerTimers.push(setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, life));
   }
 
   function alivePlayers() { return S.players.filter(function (p) { return p.alive; }); }
@@ -457,7 +479,7 @@
   function championFX() {
     if (S._fx) return; S._fx = true;
     sfx("win");
-    tts("太棒了，你是本局的知识王者！", "zh-CN");
+    tts("太棒了，你是本局的知识王者！", "zh-CN", "queue");
     try {
       var colors = ["#ff5b5b", "#ffd23f", "#5fd08a", "#4a86e8", "#b06bff", "#ff9f43"];
       for (var i = 0; i < 44; i++) {
@@ -518,6 +540,12 @@
     var s = document.createElement("style");
     s.id = "arena-style";
     s.textContent =
+      /* ★ 2026-09-22：知识圈的「选角 / 仓库」页在手机上必须一屏看完（底部有「开始游戏」）。
+         壳层 css/shell.css 给 #app 定了 min-height:100vh，而它上方还有一条「当前学科」栏，
+         两者相加必然超出可视区 → 底部按钮被顶到屏幕外、页面还得往下滚才能点。
+         这里用 body 上的临时类把 #app 的满屏高度让开（只在知识圈停留在选角/仓库时生效，
+         且明确排除 .tv：TV 是固定 1920×1080 画布，尺寸另由 css/tv.css 接管）。 */
+      "body.a-wh-open:not(.tv) #app{min-height:auto}" +
       ".arena{max-width:560px;margin:0 auto;padding:6px;font-family:inherit;position:relative;box-sizing:border-box;width:100%;overflow-x:hidden}" +
       ".a-top{display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:12px;font-weight:800;flex-wrap:wrap;margin-bottom:5px}" +
       ".a-top .pill{background:#fff;border:0;border-radius:999px;padding:4px 8px;box-shadow:0 2px 6px rgba(0,0,0,.08)}" +
@@ -558,7 +586,7 @@
       "@keyframes astar{0%{transform:scale(1.35);color:#ff3b3b}50%{transform:scale(.85)}100%{transform:scale(1);color:#e08b00}}" +
       /* ★ 2026-09-21 新增：开场前「选角色」界面（30s 倒计时，超时自动选第一个）。
          触屏直接点；电视遥控器方向键移焦点、确认键选。 */
-      ".arena-pick{position:relative;display:flex;flex-direction:column;min-height:100vh}" +
+      ".arena-pick{position:relative;display:flex;flex-direction:column;min-height:100%}" +
       ".a-pick{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:8px;overflow:auto}" +
       ".a-pick-head{font-size:clamp(14px,2.4vw,20px);font-weight:900;color:#2f5fb0;background:rgba(255,255,255,.82);border-radius:12px;padding:6px 12px;text-align:center}" +
       ".a-pick-secs{display:inline-block;min-width:1.6em;color:#ef476f;font-weight:900}" +
@@ -603,9 +631,14 @@
       ".a-crown{display:inline-block;animation:acr .7s ease both}" +
       "@keyframes acr{0%{transform:scale(.3) rotate(-20deg);opacity:0}60%{transform:scale(1.25) rotate(8deg);opacity:1}100%{transform:scale(1) rotate(0)}}" +
       /* Req 4 仓库 / 兑换商店界面（手机 + TV 通用；TV 放大见 tv.css）。
-         注意：机顶盒 Chromium 60 不支持 gap/aspect-ratio，间距一律用 margin。 */
-      ".arena-wh{max-width:560px;margin:0 auto;padding:6px;font-family:inherit;width:100%;box-sizing:border-box;min-height:100vh;display:flex;flex-direction:column}" +
-      ".arena-wh .a-wh-body{flex:1;overflow:auto;padding:6px 2px}" +
+         注意：机顶盒 Chromium 60 不支持 gap/aspect-ratio，间距一律用 margin。
+         ★★ 2026-09-22 修「手机端仓库界面上下溢出、底部按钮被顶到屏幕外」：
+         原来是 min-height:100vh + .a-wh-body{flex:1;overflow:auto}。手机浏览器里 100vh
+         把地址栏也算进去，再叠上页面顶部的「当前学科」栏，整体必然高过可视区 →
+         「▶ 开始游戏」掉到屏幕外、中间还留一大片空白（用户截图即是此现象）。
+         现在高度交给内容自然撑开（父级有确定高度时 100% 依然生效），body 不再抢高度、不做内部滚动。 */
+      ".arena-wh{max-width:560px;margin:0 auto;padding:6px;font-family:inherit;width:100%;box-sizing:border-box;min-height:100%;display:flex;flex-direction:column}" +
+      ".arena-wh .a-wh-body{flex:1 1 auto;padding:6px 2px}" +
       ".arena-wh .a-wh-sec{background:#fff;border-radius:14px;padding:10px;margin:8px 0;box-shadow:0 3px 10px rgba(0,0,0,.08)}" +
       ".arena-wh .a-wh-title{font-size:15px;font-weight:900;color:#2f5fb0;margin-bottom:8px}" +
       ".arena-wh .a-wh-row{display:flex;flex-wrap:wrap}" +
@@ -782,7 +815,9 @@
     /* 答后读正确答案（英语读英文单词）；选项不读（用户要求"只读题目、答后读答案"）。
        出题时 707 已读题目（英语读英文单词），此处再读答案 = 题目+答案都朗读。 */
     tts(rightText);
-    later(function () { tts(correct ? "答对啦，加一分" : "答错了，加油"); }, 950);
+    /* ★ 2026-09-22：得分反馈改为「排队」而不是「清队」——
+       以前它延迟 950ms 播、并且会把队列清空，正好把紧随其后入队的「某某，回教室罚站」清没了。 */
+    later(function () { tts(correct ? "答对啦，加一分" : "答错了，加油", null, "queue"); }, 900);
     for (var i = 1; i < S.players.length; i++) {
       var p = S.players[i]; if (!p.alive) continue;
       if (Math.random() < SKILL) p.score++; else { var pb = p.stars; loseStar(p); flashStar(i, pb); }
@@ -794,7 +829,8 @@
        ★ 2026-09-22 用户明确规则：掉了一颗星但还剩星的人留在操场继续答题，绝不走进教室/罚站。
        （resting 与 stars<=0 等价，这里用 stars<=0 显式表达「掉光」语义，避免误读成「掉星即罚站」） */
     var nth = 0;
-    S.players.forEach(function (p, k) { if (p.stars <= 0 && !p._walked) { walkBack(k, nth * 1400); nth++; } });
+    /* ★ 2026-09-22：点名延后到 900ms 之后（排在「答错了，加油」后面），多人同时掉光就再各错开 1.5s */
+    S.players.forEach(function (p, k) { if (p.stars <= 0 && !p._walked) { walkBack(k, 1250 + nth * 1500); nth++; } });
     /* 本轮有人掉光星（淘汰）→ 下一题前插入「罚站」插播窗口（Req 6：切断游戏、播老师「某某回教室罚站」） */
     S._penalty = (nth > 0);
     later(afterResolve, S._penalty ? PENALTY_PAUSE_MS : 1700);
@@ -814,10 +850,11 @@
     el.style.transition = "left .8s ease, transform .3s ease";
     el.classList.add("rest", "small");
     placeAvatar(i, "class");
-    /* 老师点名：某某，回教室好好学习（每个被淘汰的学生各播一次，靠 _walked 守卫，绝不漏、绝不重复） */
+    /* 老师点名：某某，回教室罚站（每个被淘汰的学生各播一次，靠 _walked 守卫，绝不漏、绝不重复）。
+       ★ 2026-09-22：用 queue 排队播放 —— 这条台词绝不能因为后面的得分反馈 / 读题语音而消失。 */
     var msg = T(p.isMe ? "你" : p.name) + "，回教室罚站";
-    if (delayMs && delayMs > 0) later(function () { tts(msg, "zh-CN"); }, delayMs);
-    else tts(msg, "zh-CN");
+    if (delayMs && delayMs > 0) later(function () { tts(msg, "zh-CN", "queue"); }, delayMs);
+    else tts(msg, "zh-CN", "queue");
     refreshAvatar(i);
   }
 
@@ -849,7 +886,7 @@
     var talk = meFull
       ? "太棒了，你满星通关，是当之无愧的第一名！"
       : "你没拿满星，老师要批评你，下次要全对哦！";
-    later(function () { tts(talk, "zh-CN"); }, meLost ? 3200 : 500);
+    later(function () { tts(talk, "zh-CN", "queue"); }, meLost ? 3200 : 500);
     /* 等回教室动画走完再出结算面板，别让面板盖住动画 */
     later(function () { if (S) battleRender(); }, meLost ? 3400 : 1600);
   }
@@ -872,7 +909,7 @@
        丢分了（不满星）哪怕也拿了第一，也不给配件 —— 这是鼓励真满星通关。 */
     if (youPraised) {
       var v = attachPiece();
-      banner("🏆 满星冠军奖励 +1 配件（共 " + v.attachments + "）");
+      banner("🏆 满星冠军奖励 +1 碎片（共 " + v.pieces + " 个）");
       championFX();                                   /* 满星才放彩带皇冠 */
     }
     var rival = null;
@@ -918,6 +955,8 @@
   function battleStop() {
     runId++;
     clearTimers();
+    clearBanners();                 /* 提示条也一并收掉，退出后不留残影 */
+    try { document.body.classList.remove("a-wh-open"); } catch (e) {}   /* 还回壳层 #app 的满屏高度 */
     if (pickTimer) { try { clearInterval(pickTimer); } catch (e) {} pickTimer = null; }
     if (pickKeyHandler) { try { document.body.removeEventListener("keydown", pickKeyHandler); } catch (e) {} pickKeyHandler = null; }
     S = null; avatarEls = [];
@@ -983,6 +1022,8 @@
       '</div>' +
       '</div>';
     setApp(html);
+    /* 让开壳层 #app 的 100vh（见 ensureStyle 注释）：本页要一屏看完，手机上不能有溢出滚动 */
+    try { document.body.classList.add("a-wh-open"); } catch (e) {}
 
     var done = false, left = 30;
     var secEl = document.getElementById("a-pick-secs");
@@ -1107,6 +1148,7 @@
 
   /* 真正开打：应用佩戴、建 S、上台、开场（"同学们，去操场集合！"在此播放，Req 5） */
   function beginArena(heroIdx, equipped) {
+    try { document.body.classList.remove("a-wh-open"); } catch (e) {}   /* 正式开打：还回壳层 #app 的满屏高度 */
     var order = [heroIdx];
     for (var k = 0; k < 6; k++) if (k !== heroIdx) order.push(k);
     var players = [];
