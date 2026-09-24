@@ -57,6 +57,10 @@ function playOne(url, token, cap){
   _aCur = a;
   try { a.preload = 'auto'; } catch (e) {}
   try { a.src = url; } catch (e) {}                        /* ★ 必设：漏了就等于整场静音 */
+  /* ★ 2026-09-24 出声探测：把 Audio 交给调用方（game-battle-v2 的 say）挂 playing/timeupdate 监听，
+     用于判定「这次到底有没有真的出声」。play() 被 autoplay 拒绝时它永远收不到信号，
+     调用方便据此回退系统语音兜底 —— 这是「有的台词有声、有的永久静音」的根治点。 */
+  try { if (typeof window.__ttsProbe === "function") window.__ttsProbe(a); } catch (e) {}
   var done = false, guard = null;
   function next(){
     if (done) return; done = true;

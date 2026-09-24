@@ -128,28 +128,37 @@
       return true;
     } catch (e) { return false; }
   }
-  /* 独立语音函数：有道 MP3(speakAudio) 优先 —— 但它是队列式的，遇到 _aBusy 卡死或
-     非手势上下文被 autoplay 拒绝时会「静默什么都不播」。所以在调用后主动验活：
-     若短时间内该段仍未出声，立即回退系统语音兜底，确保老师台词一定有声音。 */
+  /* 独立语音函数：有道 MP3(speakAudio) 优先，系统语音(speechSynthesis) 兜底。
+     ★ 2026-09-24 关键修正：此前用「队列忙不忙」当验活信号是错的——
+       安卓 WebView 上 <audio>.play() 被 autoplay 拒绝时，队列看起来照样「忙」（_aBusy=true），
+       于是验活误判为正常、兜底永不触发 → 台词永久静音（用户三次反馈的根因）。
+     现在改为「真实出声才认」：监听 <audio> 的 playing 事件，限期内没等到就回退系统语音。
+     系统语音不受 <audio> 的 autoplay 限制，是这条链路的必出保底。 */
   function say(text, lang, mode) {
     text = T(text); if (!text) return;
     if (!lang) lang = curLang();
     if (!ttsOn()) return;
     var m = (mode === "queue") ? "queue" : "cut";
     if (typeof window.speakAudio !== "function") { sysSpeak(text, lang); return; }
-    /* 计时验活：调用 speakAudio 与片刻后检查「是否真的在播」 */
-    var t0 = Date.now(), played = false;
+    var spoke = false;
+    /* 探测钩子：speakAudio 内部每新建一个 Audio 都会登记，我们在其上挂 playing 监听 */
+    var prevHook = window.__ttsProbe;
     try {
-      if (window.speakAudio(text, (window.__isTV ? 2 : 1), lang, m) !== false) played = true;
-    } catch (e) { played = false; }
-    if (!played) { sysSpeak(text, lang); return; }
-    /* speakAudio 队列若已卡死（_aCur 为空且无待播、或仍停在旧段），回退系统语音 */
+      window.__ttsProbe = function (a) {
+        try {
+          a.addEventListener("playing", function () { spoke = true; });
+          a.addEventListener("timeupdate", function () { spoke = true; });
+          if (a.readyState >= 3) spoke = true;    /* 已可播（缓存命中） */
+        } catch (e) {}
+        if (typeof prevHook === "function") { try { prevHook(a); } catch (e) {} }
+      };
+      window.speakAudio(text, (window.__isTV ? 2 : 1), lang, m);
+    } catch (e) { spoke = false; }
+    /* 1.2s 内若仍无任何"真的出声"迹象 → 回退系统语音兜底 */
     setTimeout(function () {
-      try {
-        var busy = (typeof window.__ttsBusy === "function") ? window.__ttsBusy() : null;
-        if (busy === false) sysSpeak(text, lang);   /* 明确没在播 → 兜底 */
-      } catch (e) {}
-    }, 700);
+      window.__ttsProbe = prevHook || null;
+      if (!spoke) sysSpeak(text, lang);
+    }, 1200);
   }
   /* 兼容旧调用点（arenaTeacher / arenaReplay 等直接调 tts） */
   function tts(text, lang, mode) { say(text, lang, mode); }
@@ -759,7 +768,8 @@
       var cls = "a-opt";
       if (S.revealed) { if (q.correctSet.indexOf(i) >= 0) cls += " correct"; else if (S.chosen === i) cls += " wrong"; else if (S.excluded === i) cls += " excl"; }
       else if (S.excluded === i) cls += " excl";
-      return '<button class="' + cls + '" onclick="arenaAnswer(' + i + ')"><span>' + T(o && o.label) + "</span></button>";
+      /* ★ 2026-09-24 加 tabindex：电视端遥控器要能逐项选中；首个选项（答案 A）默认获得焦点。 */
+      return '<button class="' + cls + '" tabindex="' + (i === 0 ? "0" : "-1") + '" data-opt="' + i + '" onclick="arenaAnswer(' + i + ')"><span>' + T(o && o.label) + "</span></button>";
     }).join("");
     hud.innerHTML =
       '<div class="a-q">' +
@@ -771,12 +781,18 @@
       '<div class="a-timer"><i style="width:' + (num(S.left, 0) / (S.time || BASE_TIME) * 100) + '%"></i></div>' +
       '<div class="a-opts">' + optsHtml + "</div>" +
       '<div class="a-fb" id="afb">' + T(S.fb) + "</div>" +
-      '<div class="a-bottom">' +
-        '<button onclick="arenaHint()"' + (S.hintUsed ? " disabled style=\"opacity:.4\"" : "") + ">💡 提示" + (S.hintUsed ? "(已用)" : "") + "</button>" +
-        '<button onclick="arenaEquip()">🎒 装备</button>' +
-        '<button onclick="arenaExchange()">🎁 兑换(' + readInv().pieces + ")</button>" +
-      "</div>";
+      /* ★ 2026-09-24 用户要求：答题页去掉底部「提示 / 装备 / 兑换」三颗按钮，页面更干净；
+         相关功能仍在（装备/兑换在选角后的仓库页，提示逻辑保留但不露出入口）。 */
+      "";
     refreshTop();
+    /* ★ 2026-09-24 用户要求：答题时光标（遥控器焦点）默认定位到答案 A（第一个选项）。
+       只在「答题中」且尚未作答时抢一次焦点，作答后不动，避免把焦点从反馈上抢走。 */
+    if (S.phase === "play" && !S.locked) {
+      try {
+        var f = hud.querySelector('.a-opt[data-opt="0"]');
+        if (f && document.activeElement !== f) f.focus();
+      } catch (e) {}
+    }
   }
 
   /* ---------- 开场：老师点名集合，倒计时 5..1（教室/操场同屏，无需切场景） ---------- */
@@ -796,10 +812,8 @@
     if (n <= 0) { if (cd) cd.style.display = "none"; showQuestion(); return; }
     if (cd) { cd.style.display = "flex"; cd.textContent = T(n); }
     sfx("tick");
-    /* ★ 2026-09-24 用户要求：倒计时每个数字念两遍（5,5,4,4,3,3…），孩子听得更清楚。
-       两次之间错开 520ms，避免被合成引擎合并成一串。 */
+    /* ★ 2026-09-24 用户澄清：倒计时只念一遍 5,4,3,2,1（此前误加为念两遍，已改回）。 */
     tts(T(String(n)));
-    later(function () { tts(T(String(n))); }, 520);
     later(function () { countdown(n - 1); }, 1000);
   }
 
