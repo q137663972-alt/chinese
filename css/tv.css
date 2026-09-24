@@ -40,7 +40,8 @@ body.tv #app {
   margin: 0;
   max-width: none;
   min-height: 0;
-  overflow: hidden;                 /* 不滚动：所有界面已预算进 1080 高 */
+  overflow-x: hidden;               /* 不横向滚：画布靠 transform 缩放铺满 */
+  overflow-y: auto;                 /* 内容超高时纵向可滚，底部按钮始终够得到 */
   /* 竖向弹性盒：顶栏 + 内容(flex:1) + 底部注脚 三段式，内容区吃掉全部余下高度，
      底部 .foot 永远贴底完整可见、绝不被裁；内容本身超高时由各自 overflow 兜底。 */
   display: flex;
