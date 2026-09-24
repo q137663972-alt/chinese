@@ -116,49 +116,26 @@
   /* 独立语音函数：优先有道 MP3（用户手机实测可用），但 <audio> 受 autoplay 限制——
      必须在用户手势 / 已解锁会话内调用，否则被静默拒绝；系统语音引擎兜底。
      单独封装，开场 / 罚站 / 得分反馈统一走它（用户要求「封装一个单独的函数」）。 */
-  /* 系统语音兜底（speechSynthesis）。手机 WebView 上不受 <audio> 的 autoplay 限制，
-     作为 speakAudio 的必出保底通道。 */
-  function sysSpeak(text, lang) {
-    try {
-      if (!window.speechSynthesis) return false;
-      var u = new SpeechSynthesisUtterance(text);
-      u.lang = lang; u.rate = 1; u.pitch = 1; u.volume = 1;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-      return true;
-    } catch (e) { return false; }
-  }
-  /* 独立语音函数：有道 MP3(speakAudio) 优先，系统语音(speechSynthesis) 兜底。
-     ★ 2026-09-24 关键修正：此前用「队列忙不忙」当验活信号是错的——
-       安卓 WebView 上 <audio>.play() 被 autoplay 拒绝时，队列看起来照样「忙」（_aBusy=true），
-       于是验活误判为正常、兜底永不触发 → 台词永久静音（用户三次反馈的根因）。
-     现在改为「真实出声才认」：监听 <audio> 的 playing 事件，限期内没等到就回退系统语音。
-     系统语音不受 <audio> 的 autoplay 限制，是这条链路的必出保底。 */
+  /* 独立语音函数：回到最初能出声的机制 —— 系统语音引擎(speechSynthesis) 直连优先，
+     整句一次播（不再分句，根治「半句」）；有道 MP3 仅兜底。
+     ★ 2026-09-24 复盘：最早用户能听到「同学们」半句，正是 speechSynthesis 出的声；
+       后来几版把它换走、又用有道队列+探测兜底，反而把这条唯一能出声的引擎绕丢了。
+       本次直接用 window.speechSynthesis（不依赖 _nativeSpeak 变量在文件加载瞬间求值是否为 null），
+       避免 BUILTIN 注入顺序导致退化成被 autoplay 拒的有道 Audio。 */
   function say(text, lang, mode) {
     text = T(text); if (!text) return;
     if (!lang) lang = curLang();
     if (!ttsOn()) return;
-    var m = (mode === "queue") ? "queue" : "cut";
-    if (typeof window.speakAudio !== "function") { sysSpeak(text, lang); return; }
-    var spoke = false;
-    /* 探测钩子：speakAudio 内部每新建一个 Audio 都会登记，我们在其上挂 playing 监听 */
-    var prevHook = window.__ttsProbe;
     try {
-      window.__ttsProbe = function (a) {
-        try {
-          a.addEventListener("playing", function () { spoke = true; });
-          a.addEventListener("timeupdate", function () { spoke = true; });
-          if (a.readyState >= 3) spoke = true;    /* 已可播（缓存命中） */
-        } catch (e) {}
-        if (typeof prevHook === "function") { try { prevHook(a); } catch (e) {} }
-      };
-      window.speakAudio(text, (window.__isTV ? 2 : 1), lang, m);
-    } catch (e) { spoke = false; }
-    /* 1.2s 内若仍无任何"真的出声"迹象 → 回退系统语音兜底 */
-    setTimeout(function () {
-      window.__ttsProbe = prevHook || null;
-      if (!spoke) sysSpeak(text, lang);
-    }, 1200);
+      if (window.speechSynthesis) {
+        var u = new SpeechSynthesisUtterance(text);
+        u.lang = lang; u.rate = 1; u.pitch = 1; u.volume = 1;
+        window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+        return;
+      }
+    } catch (e) {}
+    /* 兜底：有道 MP3（仅当系统语音不可用时） */
+    try { if (typeof window.speakAudio === "function") window.speakAudio(text, (window.__isTV ? 2 : 1), lang, mode === "queue" ? "queue" : "cut"); } catch (e) {}
   }
   /* 兼容旧调用点（arenaTeacher / arenaReplay 等直接调 tts） */
   function tts(text, lang, mode) { say(text, lang, mode); }
