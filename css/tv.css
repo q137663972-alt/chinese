@@ -622,6 +622,16 @@ body.tv .arena .a-cd { font-size: 220px; }
 /* 全场播报横幅 */
 body.tv .a-banner .badge { font-size: 48px; padding: 22px 44px; }
 
+/* ---------- 仓库 / 兑换商店界面 TV 适配（Req 4：手机+电视通用，这里只放大尺寸/字号） ---------- */
+body.tv .arena.arena-wh { width: 1320px; max-width: none; margin: 0 auto; }
+body.tv .arena-wh .a-wh-sec { padding: 20px; margin: 16px 0; border-radius: 20px; }
+body.tv .arena-wh .a-wh-title { font-size: 30px; margin-bottom: 16px; }
+body.tv .arena-wh .a-wh-btn { font-size: 32px; padding: 26px; min-width: 260px; border-radius: 18px; margin: 10px; }
+body.tv .arena-wh .a-wh-item { width: 200px; height: 200px; border-width: 6px; border-radius: 22px; margin: 10px; }
+body.tv .arena-wh .a-wh-item img { width: 120px; height: 120px; }
+body.tv .arena-wh .a-wh-item span { font-size: 24px; margin-top: 6px; }
+body.tv .arena-wh .a-wh-eq { font-size: 28px; margin-top: 12px; }
+
 /* ---------- 选角色界面（这段是关键：手机上 6 张卡 70px，电视上必须够大） ---------- */
 body.tv .arena.arena-pick { min-height: 0; height: 100%; }
 body.tv .arena .a-pick { padding: 0; }

@@ -114,22 +114,26 @@
   function tts(text, lang) {
     text = T(text); if (!text) return;
     if (!lang) lang = curLang();
-    /* ★ 2026-09-21 英语（及所有科）无声的真正根因：
-       三科 tts.js 的 speak() 第一行都是「if(!settings.tts || !text) return;」——
-       只要设置里关了朗读、或 settings 未初始化，就静默返回。
-       手机上数学科还能靠别的路径出声，英语科则全程无声 → 表现为「只有英语没声音」。
-       这里不再依赖那个开关：优先学科音频兜底，再退浏览器合成。 */
-    var bridged = false;
-    if (ttsOn() && _nativeSpeak) { try { _nativeSpeak(text, lang); bridged = true; } catch (e) { bridged = false; } }
-    if (bridged) return;
-    try { if (typeof window.speakAudio === "function") { window.speakAudio(text); return; } } catch (e) {}
+    /* ★ 根治「只读前半句 / 台词被吞」（Req 1&2）：安卓 WebView 的 Web Speech onend 极不稳定，
+       分句链常断在第一句（"同学们，"后面断掉）。统一优先用有道 MP3 串行队列 —— 整段合成、
+       按音频 onended 串联，可靠且按 lang 自动切中/英文音；TV 端读两遍（遥控器操作慢、常没听清）。
+       不再依赖 Web Speech 分句链，手机 / TV 同时生效。 */
+    try {
+      if (typeof window.speakAudio === "function") {
+        window.speakAudio(text, (window.__isTV ? 2 : 1), lang);
+        return;
+      }
+    } catch (e) {}
+    /* 兜底：Web Speech 整句（不 split），最后退原生 speak */
     try {
       if (window.speechSynthesis) {
         var u = new SpeechSynthesisUtterance(text);
         u.lang = lang; u.rate = 1; u.pitch = 1; u.volume = 1;
         window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+        return;
       }
     } catch (e) {}
+    try { if (_nativeSpeak) _nativeSpeak(text, lang); } catch (e) {}
   }
   /* 音效：正确/错误/倒计时/出局/夺冠，用振荡器即时合成 */
   function sfx(type) {
@@ -444,7 +448,7 @@
   }
 
   /* ★ 2026-09-21 修正（用户明确规则）：
-   *   每人 5 星；真人答错掉光星也出局（不走"受保护"），走回教室 + 被批评 + 游戏结束。
+   *   每人 4 星；真人答错掉光星也出局（不走"受保护"），走回教室 + 被批评 + 游戏结束。
    *   不再按"局"强制淘汰 AI；淘汰只发生在某人星掉到 0（自然发生）。
    *   8 题后判定：满星 → 真人必第一（受表扬）；不满星 → 星 >= 存活 AI 最高星则第一但被批评；
    *   否则 AI 赢、真人被批评。详见 renderOver()。 */
@@ -471,24 +475,40 @@
 
   /* ---------- 装备 / 库存（localStorage 持久化，简单可桩） ---------- */
   function readInv() {
-    /* ★ 2026-09-21 修复「兑换(undefined)」：
-       JSON.parse("{}") 返回 {} 是真值对象，原写法直接 return 了它，
-       attachments/finished 都是 undefined → 界面显示 undefined、++ 变 NaN。
-       这里必须逐字段补默认值，而不是只判断外层是不是对象。 */
+    /* ★ 2026-09-21 修复「兑换(undefined)」+ Req 4 扩展：
+       逐字段补默认值；兼容旧字段（attachments 记碎片、finished 记成品总数），
+       新增 guns/dolls/equipped 分别收藏枪与娃娃、记录当前佩戴。 */
     var v = null;
     try { v = JSON.parse(localStorage.getItem(INV_KEY) || "null"); } catch (e) { v = null; }
     if (!v || typeof v !== "object") v = {};
-    v.attachments = Math.max(0, num(v.attachments, 0));
+    v.pieces = Math.max(0, num(v.pieces, num(v.attachments, 0)));   /* 碎片（兼容旧 attachments） */
+    v.guns = Array.isArray(v.guns) ? v.guns : [];
+    v.dolls = Array.isArray(v.dolls) ? v.dolls : [];
+    v.equipped = (v.equipped && (v.equipped.type === "gun" || v.equipped.type === "doll") && v.equipped.img) ? v.equipped : null;
     v.finished = Math.max(0, num(v.finished, 0));
     return v;
   }
   function saveInv(v) { try { localStorage.setItem(INV_KEY, JSON.stringify(v)); } catch (e) {} }
-  /* 收集 3 个配件 → 兑换 1 个成品（枪/娃娃）。桩：玩家胜负时调 attach() */
-  function attachPiece() { var v = readInv(); v.attachments++; saveInv(v); return v; }
-  function exchangePiece() {
+  /* 满星冠军奖励 +1 碎片（原 attachPiece，保留命名兼容） */
+  function attachPiece() { var v = readInv(); v.pieces++; saveInv(v); return v; }
+  /* 兑换：3 碎片换 1 件成品（gun 或 doll），分别进入对应收藏列表 */
+  function exchangePiece(type) {
     var v = readInv();
-    if (v.attachments >= 3) { v.attachments -= 3; v.finished++; saveInv(v); banner("🎉 集齐 3 配件，兑换 1 成品！"); }
-    else banner("还需 " + (3 - v.attachments) + " 个配件才能兑换");
+    if (v.pieces < 3) { banner("还需 " + (3 - v.pieces) + " 个碎片才能兑换"); return v; }
+    v.pieces -= 3;
+    var img = (type === "gun") ? pick(GUN_IMG) : pick(DOLL_IMG);
+    if (type === "gun") v.guns.push(img); else v.dolls.push(img);
+    v.finished = num(v.finished, 0) + 1;
+    saveInv(v);
+    banner("🎉 兑换成功！获得" + (type === "gun" ? "🔫 枪" : "🧸 娃娃"));
+    return v;
+  }
+  /* 佩戴 / 卸下：点击已佩戴的件则卸下，否则换上 */
+  function equipItem(type, img) {
+    var v = readInv();
+    if (v.equipped && v.equipped.type === type && v.equipped.img === img) { v.equipped = null; }
+    else { v.equipped = { type: type, img: img }; }
+    saveInv(v);
     return v;
   }
 
@@ -581,7 +601,21 @@
       ".a-confetti{position:fixed;top:-24px;width:10px;height:14px;z-index:9998;pointer-events:none;animation:acf 2.8s linear forwards}" +
       "@keyframes acf{0%{transform:translateY(-24px) rotate(0);opacity:1}100%{transform:translateY(106vh) rotate(720deg);opacity:0}}" +
       ".a-crown{display:inline-block;animation:acr .7s ease both}" +
-      "@keyframes acr{0%{transform:scale(.3) rotate(-20deg);opacity:0}60%{transform:scale(1.25) rotate(8deg);opacity:1}100%{transform:scale(1) rotate(0)}}";
+      "@keyframes acr{0%{transform:scale(.3) rotate(-20deg);opacity:0}60%{transform:scale(1.25) rotate(8deg);opacity:1}100%{transform:scale(1) rotate(0)}}" +
+      /* Req 4 仓库 / 兑换商店界面（手机 + TV 通用；TV 放大见 tv.css）。
+         注意：机顶盒 Chromium 60 不支持 gap/aspect-ratio，间距一律用 margin。 */
+      ".arena-wh{max-width:560px;margin:0 auto;padding:6px;font-family:inherit;width:100%;box-sizing:border-box;min-height:100vh;display:flex;flex-direction:column}" +
+      ".arena-wh .a-wh-body{flex:1;overflow:auto;padding:6px 2px}" +
+      ".arena-wh .a-wh-sec{background:#fff;border-radius:14px;padding:10px;margin:8px 0;box-shadow:0 3px 10px rgba(0,0,0,.08)}" +
+      ".arena-wh .a-wh-title{font-size:15px;font-weight:900;color:#2f5fb0;margin-bottom:8px}" +
+      ".arena-wh .a-wh-row{display:flex;flex-wrap:wrap}" +
+      ".arena-wh .a-wh-btn{margin:5px;flex:1;min-width:120px;border:0;border-radius:12px;padding:12px;font-size:16px;font-weight:900;background:linear-gradient(180deg,#ffe9a8,#ffd23f);color:#7a5a00;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,.12)}" +
+      ".arena-wh .a-wh-item{margin:5px;position:relative;width:84px;height:84px;border:3px solid #e3e9f5;border-radius:14px;background:#f3f7ff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;outline:none}" +
+      ".arena-wh .a-wh-item img{width:48px;height:48px;object-fit:contain}" +
+      ".arena-wh .a-wh-item span{font-size:12px;font-weight:800;margin-top:2px}" +
+      ".arena-wh .a-wh-item.on{border-color:#37b26a;background:#d8f5e3}" +
+      ".arena-wh .a-wh-empty{color:#999;font-size:13px;font-weight:800;padding:8px 0}" +
+      ".arena-wh .a-wh-eq{text-align:center;font-size:14px;font-weight:800;color:#e08b00;margin-top:6px}";
     (document.head || document.documentElement).appendChild(s);
   }
 
@@ -694,7 +728,7 @@
       '<div class="a-bottom">' +
         '<button onclick="arenaHint()"' + (S.hintUsed ? " disabled style=\"opacity:.4\"" : "") + ">💡 提示" + (S.hintUsed ? "(已用)" : "") + "</button>" +
         '<button onclick="arenaEquip()">🎒 装备</button>' +
-        '<button onclick="arenaExchange()">🎁 兑换(' + readInv().attachments + ")</button>" +
+        '<button onclick="arenaExchange()">🎁 兑换(' + readInv().pieces + ")</button>" +
       "</div>";
     refreshTop();
   }
@@ -756,10 +790,14 @@
     var fb = document.getElementById("afb");
     if (fb) fb.textContent = correct ? "✅ 答对啦！+1 分" : "❌ 答错了，加油";
     battleRender();
-    /* 处理掉星回教室罚站动画：本轮所有掉星（输了的）学生都走回教室，老师逐个点名 */
+    /* 回教室罚站：只有「4 星掉光（stars 减到 0，即淘汰出局）」的学生才走回教室 + 老师点名罚站。
+       ★ 2026-09-22 用户明确规则：掉了一颗星但还剩星的人留在操场继续答题，绝不走进教室/罚站。
+       （resting 与 stars<=0 等价，这里用 stars<=0 显式表达「掉光」语义，避免误读成「掉星即罚站」） */
     var nth = 0;
-    S.players.forEach(function (p, k) { if (p.resting && !p._walked) { walkBack(k, nth * 1400); nth++; } });
-    later(afterResolve, 1700);
+    S.players.forEach(function (p, k) { if (p.stars <= 0 && !p._walked) { walkBack(k, nth * 1400); nth++; } });
+    /* 本轮有人掉光星（淘汰）→ 下一题前插入「罚站」插播窗口（Req 6：切断游戏、播老师「某某回教室罚站」） */
+    S._penalty = (nth > 0);
+    later(afterResolve, S._penalty ? PENALTY_PAUSE_MS : 1700);
   }
 
   /* 掉光星 → 头像走进左侧教室区（left% 过渡）+ 缩小 + ❌ + 灰；老师逐个点名回教室好好学习。
@@ -767,13 +805,17 @@
      现在明确走进屏内的教室区，且只有「掉光星」的人进去，真人输了也不会把全场都拉去罚站。
      delayMs：同 round 多人同时掉星时错开播报，避免语音被引擎合并成一团 */
   function walkBack(i, delayMs) {
-    var p = S.players[i]; p._walked = true;
+    var p = S.players[i];
+    /* ★ 2026-09-22 防御：只有 4 星掉光（stars<=0）的学生才罚站。掉星未掉光的人留在操场，
+       即便被误调用也直接返回，绝不走进教室、绝不点名罚站。 */
+    if (!p || p.stars > 0) return;
+    p._walked = true;
     var el = avatarEls[i]; if (!el) return;
     el.style.transition = "left .8s ease, transform .3s ease";
     el.classList.add("rest", "small");
     placeAvatar(i, "class");
     /* 老师点名：某某，回教室好好学习（每个被淘汰的学生各播一次，靠 _walked 守卫，绝不漏、绝不重复） */
-    var msg = T(p.isMe ? "你" : p.name) + "，回教室好好学习";
+    var msg = T(p.isMe ? "你" : p.name) + "，回教室罚站";
     if (delayMs && delayMs > 0) later(function () { tts(msg, "zh-CN"); }, delayMs);
     else tts(msg, "zh-CN");
     refreshAvatar(i);
@@ -787,7 +829,8 @@
     if (alive.length <= 1) { endGame(); return; }
     S.qn++;
     if (S.qn > TOTAL_Q) { endGame(); return; }   /* 8 题后结算（按星判定胜负） */
-    later(showQuestion, 1800);                    /* 等本轮掉星回教室动画走完 */
+    /* 本轮有罚站插播 → 多留点时间让「回教室罚站」动画+语音播完，再下一题（Req 6） */
+    later(showQuestion, S._penalty ? 1500 : 1800);
   }
 
   /* ★ 2026-09-21 修复：原先只调用了 endGame()，但这个函数从来没定义过 ——
@@ -813,7 +856,7 @@
 
   function renderOver(hud) {
     var me = S.players[0];
-    var meFull = (me.stars >= START_STARS);          /* 满星 = 5/5，全程没掉星 */
+    var meFull = (me.stars >= START_STARS);          /* 满星 = 4/4，全程没掉星 */
     /* ★ 2026-09-21 修正（用户明确规则）：8 题后按星判定胜负
        满星        → 真人必第一，受表扬（👑 知识王者）
        不满星且星 ≥ 存活 AI 最高星 → 真人第一，但被批评（没拿满星）
@@ -854,7 +897,7 @@
     }
     hud.innerHTML = head +
       '<div style="text-align:center;font-size:15px;font-weight:800;margin:8px 0">本局得分 ' + num(me.score, 0) + ' 分 · ' + (meFull ? "满星 ⭐⭐⭐⭐⭐" : ("剩 " + num(me.stars, 0) + " 星")) + "</div>" +
-      '<div style="text-align:center;font-size:13px;color:#888">🎒 配件 ' + readInv().attachments + " · 成品 " + readInv().finished + "</div>" +
+      '<div style="text-align:center;font-size:13px;color:#888">🎒 配件 ' + readInv().pieces + " · 成品 " + readInv().finished + "</div>" +
       '<div class="a-bottom" style="margin-top:12px">' +
         '<button onclick="arenaTeacherTalk()">🔊 听老师</button>' +
         '<button style="background:linear-gradient(180deg,#5fd08a,#37b26a);color:#fff" onclick="arenaRestart()">🔁 再来一局</button>' +
@@ -892,15 +935,22 @@
     if (!wrongs.length) return;
     S.excluded = pick(wrongs); S.hintUsed = true; battleRender();
   };
+  /* 游戏内快速佩戴：无 → 第一个拥有的枪 → 第一个拥有的娃娃 → 无（循环）。
+     真正的兑换统一在选角后的仓库界面（Req 4），这里不替换舞台，避免 DOM 被破坏。 */
   window.arenaEquip = function () {
-    /* 装备粒度（桩）：玩家在 无→枪→娃娃 间循环，覆盖层即时显示 */
     var me = S && S.players[0]; if (!me) return;
-    if (!me.equip) { me.equip = "gun"; me.equipImg = pick(GUN_IMG); }
-    else if (me.equip === "gun") { me.equip = "doll"; me.equipImg = pick(DOLL_IMG); }
-    else { me.equip = null; me.equipImg = ""; }
-    refreshAvatar(0); banner(me.equip ? ("装备：" + (me.equip === "gun" ? "🔫" : "🧸")) : "已卸下装备");
+    var v = readInv();
+    var cur = (me.equip === "gun") ? "gun" : (me.equip === "doll" ? "doll" : null);
+    var next = null;
+    if (!cur) { if (v.guns.length) next = { type: "gun", img: v.guns[0] }; }
+    else if (cur === "gun") { if (v.dolls.length) next = { type: "doll", img: v.dolls[0] }; }
+    if (next) { me.equip = next.type; me.equipImg = next.img; v.equipped = next; }
+    else { me.equip = null; me.equipImg = ""; v.equipped = null; }
+    saveInv(v); refreshAvatar(0);
+    banner(me.equip ? ("佩戴：" + (me.equip === "gun" ? "🔫 枪" : "🧸 娃娃")) : "已卸下装备");
   };
-  window.arenaExchange = function () { exchangePiece(); battleRender(); };
+  /* 游戏内兑换按钮：提示去选角后的仓库（不在中途替换舞台） */
+  window.arenaExchange = function () { banner("🎁 兑换请在选角后的「仓库」里进行"); };
   window.arenaExit = function () {
     battleStop();
     try { if (typeof state !== "undefined" && state) { state.mode = null; state.view = "modes"; } } catch (e) {}
@@ -993,29 +1043,86 @@
     tts("选一个你喜欢的角色吧");
   }
 
+  /* 选角回调里不直接开打，而是先进仓库 / 兑换商店（Req 4）：可凭碎片兑换娃娃或枪、点击佩戴，
+     佩戴后点「开始游戏」才真正进入开场（"同学们，去操场集合！"也改到这里播放，Req 5）。 */
+  var whHero = 0;   /* 当前选中的角色索引，供仓库界面全局按钮复用 */
   function startArena() {
     buildBank();
     battleStop();
     ensureStyle();
     runId++;
     /* 开场前先让真人选角色（30s 倒计时）。选中的学生排到 0 号位当真人，其余 5 个 AI。 */
-    chooseHero(function (heroIdx) {
-      var order = [heroIdx];
-      for (var k = 0; k < 6; k++) if (k !== heroIdx) order.push(k);
-      var players = [];
-      for (var i = 0; i < 6; i++) {
-        var si = order[i];
-        players.push({
-          name: STU_NAME[si], emoji: STU_EMOJI[si], img: STU_IMG[si],
-          isMe: (i === 0), alive: true, resting: false, _walked: false,
-          stars: START_STARS, score: 0, correct: 0, equip: null, equipImg: ""
-        });
-      }
-      S = { players: players, qn: 1, time: BASE_TIME, left: BASE_TIME, locked: false, q: null, chosen: -1, revealed: false, fb: "", tick: null, phase: "opening", hintUsed: false, showHint: false, excluded: null };
-      window.__gameExit = function () { if (!S) return false; window.arenaExit(); return true; };
-      mountStage();
-      startOpening();
-    });
+    chooseHero(function (heroIdx) { whHero = heroIdx; showWarehouse(); });
+  }
+
+  /* ---------- 仓库 / 兑换商店（选角后、开场前） ---------- */
+  /* 手机触屏直接点；TV 焦点靠 tv.js 通用导航（按钮均 tabindex=0）。 */
+  function showWarehouse() { renderWarehouse(); }
+  function renderWarehouse() {
+    var v = readInv();
+    var gunCards = (v.guns && v.guns.length ? v.guns : []).map(function (g, i) {
+      var on = (v.equipped && v.equipped.type === "gun" && v.equipped.img === g);
+      return '<button class="a-wh-item' + (on ? " on" : "") + '" tabindex="0" onclick="arenaWhEquip(\'gun\',\'' + T(g) + '\')">' +
+        '<img src="' + T(IMG + g) + '" onerror="this.style.display=\'none\'"><span>' + (on ? "✅ " : "") + "枪" + (i + 1) + "</span></button>";
+    }).join("") || '<span class="a-wh-empty">暂无，去兑换吧</span>';
+    var dollCards = (v.dolls && v.dolls.length ? v.dolls : []).map(function (d, i) {
+      var on = (v.equipped && v.equipped.type === "doll" && v.equipped.img === d);
+      return '<button class="a-wh-item' + (on ? " on" : "") + '" tabindex="0" onclick="arenaWhEquip(\'doll\',\'' + T(d) + '\')">' +
+        '<img src="' + T(IMG + d) + '" onerror="this.style.display=\'none\'"><span>' + (on ? "✅ " : "") + "娃" + (i + 1) + "</span></button>";
+    }).join("") || '<span class="a-wh-empty">暂无，去兑换吧</span>';
+    var eqTxt = v.equipped ? ("已佩戴：" + (v.equipped.type === "gun" ? "🔫 枪" : "🧸 娃娃")) : "未佩戴（可点击下方装备佩戴）";
+    var html =
+      '<div class="arena arena-wh">' +
+      '<div class="a-top">' +
+        '<button class="pill" onclick="arenaExit()" style="cursor:pointer">← 退出</button>' +
+        '<span class="pill">🎒 我的仓库</span>' +
+        '<span class="pill">🧩 碎片 <b id="a-wh-pieces">' + v.pieces + "</b></span>" +
+      "</div>" +
+      '<div class="a-wh-body">' +
+        '<div class="a-wh-sec">' +
+          '<div class="a-wh-title">🎁 兑换商店（3 碎片换 1 件）</div>' +
+          '<div class="a-wh-row">' +
+            '<button class="a-wh-btn" tabindex="0" onclick="arenaWhExchange(\'gun\')">🔫 兑换枪</button>' +
+            '<button class="a-wh-btn" tabindex="0" onclick="arenaWhExchange(\'doll\')">🧸 兑换娃娃</button>' +
+          "</div>" +
+        "</div>" +
+        '<div class="a-wh-sec"><div class="a-wh-title">🔫 我的枪（点击佩戴）</div><div class="a-wh-row">' + gunCards + "</div></div>" +
+        '<div class="a-wh-sec"><div class="a-wh-title">🧸 我的娃娃（点击佩戴）</div><div class="a-wh-row">' + dollCards + "</div></div>" +
+        '<div class="a-wh-eq">' + eqTxt + "</div>" +
+      "</div>" +
+      '<div class="a-bottom">' +
+        '<button onclick="arenaExit()">← 返回</button>' +
+        '<button style="background:linear-gradient(180deg,#5fd08a,#37b26a);color:#fff" onclick="arenaWhStart()">▶ 开始游戏</button>' +
+      "</div>" +
+      "</div>";
+    setApp(html);
+    /* 进入仓库时让焦点落到第一个可交互按钮（TV 首屏可达、手机无影响） */
+    try { var f = document.querySelector("#app .arena-wh .a-wh-btn"); if (f) f.focus(); } catch (e) {}
+  }
+
+  /* 仓库界面全局控制 */
+  window.arenaWhExchange = function (type) { exchangePiece(type); renderWarehouse(); };
+  window.arenaWhEquip = function (type, img) { equipItem(type, img); renderWarehouse(); };
+  window.arenaWhStart = function () { var v = readInv(); beginArena(whHero, v.equipped); };
+
+  /* 真正开打：应用佩戴、建 S、上台、开场（"同学们，去操场集合！"在此播放，Req 5） */
+  function beginArena(heroIdx, equipped) {
+    var order = [heroIdx];
+    for (var k = 0; k < 6; k++) if (k !== heroIdx) order.push(k);
+    var players = [];
+    for (var i = 0; i < 6; i++) {
+      var si = order[i];
+      players.push({
+        name: STU_NAME[si], emoji: STU_EMOJI[si], img: STU_IMG[si],
+        isMe: (i === 0), alive: true, resting: false, _walked: false,
+        stars: START_STARS, score: 0, correct: 0, equip: null, equipImg: ""
+      });
+    }
+    if (equipped && equipped.type && equipped.img) { players[0].equip = equipped.type; players[0].equipImg = equipped.img; }
+    S = { players: players, qn: 1, time: BASE_TIME, left: BASE_TIME, locked: false, q: null, chosen: -1, revealed: false, fb: "", tick: null, phase: "opening", hintUsed: false, showHint: false, excluded: null, _penalty: false };
+    window.__gameExit = function () { if (!S) return false; window.arenaExit(); return true; };
+    mountStage();
+    startOpening();
   }
 
   try { if (typeof log === "function") log("arena registering"); } catch (e) {}
