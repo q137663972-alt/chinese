@@ -75,8 +75,10 @@
   function num(x, d) { var n = Number(x); return (isFinite(n) ? n : (d || 0)); }
   /* 头像：emoji 永远兜底，照片加载失败自动移除 → 不依赖资源也能跑 */
   function faceHTML(emoji, img) {
-    return '<span class="a-face">' + T(emoji) + '</span>' +
-      (img ? '<img class="a-photo" src="' + T(IMG + img) + '" alt="" onerror="this.remove()">' : "");
+    /* ★ 2026-09-24 用户要求：选角卡片只用自带人物原图，不再叠加 emoji/贴图。
+       原图缺失时才退回 emoji 兜底，避免卡片空白。 */
+    if (img) return '<img class="a-photo" src="' + T(IMG + img) + '" alt="" onerror="this.remove()">';
+    return emoji ? '<span class="a-face">' + T(emoji) + '</span>' : "";
   }
 
   /* ---------- 声音系统（2026-09-21 补：之前全程静音） ----------
@@ -114,21 +116,40 @@
   /* 独立语音函数：优先有道 MP3（用户手机实测可用），但 <audio> 受 autoplay 限制——
      必须在用户手势 / 已解锁会话内调用，否则被静默拒绝；系统语音引擎兜底。
      单独封装，开场 / 罚站 / 得分反馈统一走它（用户要求「封装一个单独的函数」）。 */
+  /* 系统语音兜底（speechSynthesis）。手机 WebView 上不受 <audio> 的 autoplay 限制，
+     作为 speakAudio 的必出保底通道。 */
+  function sysSpeak(text, lang) {
+    try {
+      if (!window.speechSynthesis) return false;
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = lang; u.rate = 1; u.pitch = 1; u.volume = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+      return true;
+    } catch (e) { return false; }
+  }
+  /* 独立语音函数：有道 MP3(speakAudio) 优先 —— 但它是队列式的，遇到 _aBusy 卡死或
+     非手势上下文被 autoplay 拒绝时会「静默什么都不播」。所以在调用后主动验活：
+     若短时间内该段仍未出声，立即回退系统语音兜底，确保老师台词一定有声音。 */
   function say(text, lang, mode) {
     text = T(text); if (!text) return;
     if (!lang) lang = curLang();
+    if (!ttsOn()) return;
     var m = (mode === "queue") ? "queue" : "cut";
-    if (ttsOn()) {
-      try { if (typeof window.speakAudio === "function") { window.speakAudio(text, (window.__isTV ? 2 : 1), lang, m); return; } } catch (e) {}
+    if (typeof window.speakAudio !== "function") { sysSpeak(text, lang); return; }
+    /* 计时验活：调用 speakAudio 与片刻后检查「是否真的在播」 */
+    var t0 = Date.now(), played = false;
+    try {
+      if (window.speakAudio(text, (window.__isTV ? 2 : 1), lang, m) !== false) played = true;
+    } catch (e) { played = false; }
+    if (!played) { sysSpeak(text, lang); return; }
+    /* speakAudio 队列若已卡死（_aCur 为空且无待播、或仍停在旧段），回退系统语音 */
+    setTimeout(function () {
       try {
-        if (window.speechSynthesis) {
-          var u = new SpeechSynthesisUtterance(text);
-          u.lang = lang; u.rate = 1; u.pitch = 1; u.volume = 1;
-          window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
-          return;
-        }
+        var busy = (typeof window.__ttsBusy === "function") ? window.__ttsBusy() : null;
+        if (busy === false) sysSpeak(text, lang);   /* 明确没在播 → 兜底 */
       } catch (e) {}
-    }
+    }, 700);
   }
   /* 兼容旧调用点（arenaTeacher / arenaReplay 等直接调 tts） */
   function tts(text, lang, mode) { say(text, lang, mode); }
@@ -774,7 +795,11 @@
     var cd = document.getElementById("a-cd");
     if (n <= 0) { if (cd) cd.style.display = "none"; showQuestion(); return; }
     if (cd) { cd.style.display = "flex"; cd.textContent = T(n); }
-    sfx("tick"); tts(T(String(n)));
+    sfx("tick");
+    /* ★ 2026-09-24 用户要求：倒计时每个数字念两遍（5,5,4,4,3,3…），孩子听得更清楚。
+       两次之间错开 520ms，避免被合成引擎合并成一串。 */
+    tts(T(String(n)));
+    later(function () { tts(T(String(n))); }, 520);
     later(function () { countdown(n - 1); }, 1000);
   }
 

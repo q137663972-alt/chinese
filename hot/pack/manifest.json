@@ -1,19 +1,19 @@
 {
   "app": "chinese",
   "sig": "chinese-2026",
-  "build": "f49bc58e6397c2f4",
+  "build": "4aac96fe7c755958",
   "min_apk": 3,
-  "ts": 1790246944319,
+  "ts": 1790248275369,
   "packs": [
     {
-      "name": "assets.f49bc58e6397c2f4.zip",
+      "name": "assets.4aac96fe7c755958.zip",
       "sha256": "c9a6b195f4be328a85616e41723abee103eed93366c63f1c58ee119870b4f548",
       "size": 3570572
     },
     {
-      "name": "code.f49bc58e6397c2f4.zip",
-      "sha256": "f8d3b5edf495cdea4e7a7340bfa7eac9041b59a06f8347ba741f70fb55381129",
-      "size": 836114
+      "name": "code.4aac96fe7c755958.zip",
+      "sha256": "74591d9f0c672db5daa502b07a3152e3e18ee4dce5830fc8d584595f3e9ba068",
+      "size": 838807
     }
   ]
 }

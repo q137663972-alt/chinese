@@ -80,11 +80,33 @@ function playOne(url, token, cap){
   } catch (e) { setTimeout(next, 300); }
 }
 
+/* ★ 2026-09-24 自愈：_aBusy 是全局标志，一旦某段 playOne 的 next() 没被触发
+   （安卓 WebView 上 onended 与兜底定时器双双失效的极端情况），_aBusy 会永久停在 true，
+   此后所有 flushAudio 全被拦下、整条语音彻底哑掉 —— 表现为「有的台词有声、有的永远没声」。
+   这里记下当前段的开始时间，超过估算时长+4s 仍未释放就强行解锁并推进，绝不卡死。 */
+var _aSince = 0, _aCap = 0;
+/* 供调用方（game-battle-v2 的 say）验活：现在是否真的有一段在播 / 待播。
+   返回 false 表示队列空且无当前段 —— 说明刚才那次 speakAudio 很可能没出得了声。 */
+window.__ttsBusy = function(){
+  try { return !!(_aBusy || _aCur || (_aQ && _aQ.length)); } catch (e) { return null; }
+};
+
 function flushAudio(token){
-  if (token !== _aToken || _aBusy) return;
+  if (token !== _aToken) return;
+  if (_aBusy) {
+    var over = _aSince ? (Date.now() - _aSince) : 0;
+    if (over > (_aCap || 0) + 4000) {           /* 陈旧占用 → 解锁自愈 */
+      _aBusy = false;
+      try { if (_aCur) { _aCur.pause(); } } catch (e) {}
+      _aCur = null;
+    } else {
+      return;
+    }
+  }
   var it = _aQ.shift();
   if (!it) return;
   _aBusy = true;
+  _aSince = Date.now(); _aCap = it.cap || 0;
   playOne(it.u, token, it.cap);
 }
 

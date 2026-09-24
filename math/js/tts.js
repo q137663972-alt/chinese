@@ -80,6 +80,12 @@ function playOne(url, token, cap){
   } catch (e) { setTimeout(next, 300); }
 }
 
+/* 供调用方（game-battle-v2 的 say）验活：现在是否真的有一段在播 / 待播。
+   返回 false 表示队列空且无当前段 —— 说明刚才那次 speakAudio 很可能没出得了声。 */
+window.__ttsBusy = function(){
+  try { return !!(_aBusy || _aCur || (_aQ && _aQ.length)); } catch (e) { return null; }
+};
+
 function flushAudio(token){
   if (token !== _aToken || _aBusy) return;
   var it = _aQ.shift();
