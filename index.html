@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>学习乐园 · 小学1-6年级 · 语文/数学/英语</title>
+<!-- 【冻结文件】index.html 不能热更 —— 热更包只能换 js 和 css。
+     所以这里凡是可能要改的东西，一律不写死：
+       · 学科名称/图标/顺序   → js/subject.js（可热更）
+       · 学科配色             → css/shell.css + 各科 style.css（可热更）
+       · 下面这些 DOM 节点      → 三科共用同一套 id，别改 id，改了三科一起崩。 -->
+
+<!-- ① 壳样式：必须最先。选学科页只有它一个 css 在岗，得独自撑住手机/平板/TV。 -->
+<link rel="stylesheet" href="css/shell.css" id="cssShell">
+<!-- ② 学科样式：index.html 里**故意不写**。学科由 localStorage 决定，
+     写死就等于"先闪一下某一科的配色"。boot.js 读标记后动态创建
+     <link id="cssSub">，插在本行之前 —— 热更替换时 CSS_MAP 会保住这个位置。 -->
+<!-- ③ 电视样式：三科共用一份（选择器全是通用类名），必须排在学科样式之后。 -->
+<link rel="stylesheet" href="css/tv.css" id="cssTV">
+</head>
+<body>
+<!-- shell:begin —— tools/gen-hot.mjs 抽取这段生成 hot/shell.html，别删标记 -->
+<div id="app"></div>
+
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-card">
+    <h3 onclick="window.__hotLog&&window.__hotLog()">⚙️ 设置</h3>
+    <div class="set-row"><label>学科</label>
+      <button class="btn ghost" style="width:auto;padding:8px 12px" onclick="if(window.__pickSubject)window.__pickSubject()">🔄 换学科</button>
+    </div>
+    <div class="set-row"><label>🔊 朗读</label><div id="ttsSwitch" class="switch on"></div></div>
+    <div class="set-row"><label>语速</label><input id="rateRange" type="range" min="0.5" max="1.2" step="0.05" value="0.85"></div>
+    <div class="set-row"><label>试听</label><button class="btn ghost" style="width:auto;padding:8px 16px" onclick="window.__demoSpeak?window.__demoSpeak():(typeof speak==='function'&&speak('欢迎来到学习乐园'))">🔊 播放</button></div>
+    <div class="set-row"><label>进度备份</label>
+      <div>
+        <button class="btn ghost" style="width:auto;padding:8px 12px" onclick="exportProgress()">💾 导出</button>
+        <button class="btn ghost" style="width:auto;padding:8px 12px" onclick="importProgress()">📥 恢复</button>
+      </div>
+    </div>
+    <textarea id="backupBox" class="hidden" rows="3" style="width:100%;font-size:12px;margin-top:6px"></textarea>
+    <button class="btn pink" style="margin-top:8px" onclick="closeSettings()">完成</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<!-- shell:end -->
+
+<!-- 冻结文件：热更引导器（永不热更，改它必须出新 APK）。
+     所有 js 与 css 都由 boot.js 按清单顺序注入：
+     有资源包用资源包（离线也是新版），没资源包用内置 —— 启动路径零网络。
+     三科的 js 里有大量同名的全局变量（state/render/$/speak/GAMES/GRADES），
+     所以一次只注入一科；换学科 = 写 localStorage 标记 + reload。 -->
+<script src="js/boot.js"></script>
+</body>
+</html>

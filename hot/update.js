@@ -1,0 +1,11 @@
+window.APP_UPDATE={
+  "code": 11,
+  "name": "2.4.0",
+  "note": "语数英三科已经通过热更新下发到你这台机器上，不需要换 APK、不需要点任何按钮：打开后会先让你选学科（语文 / 数学 / 英语），之后也能在「设置」里用「🔄 换学科」随时切换，三科进度各自独立保存。玩法增减、界面样式、电视显示参数同样走热更。APK 只在极少数必须改壳的情况下才会出新版，功能更新一律走这条路。",
+  "apk": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
+  "apkMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@7a8ab1759980702523981c5e34b119376a6c4eec/apk/ChinesePlayground.apk",
+  "phone": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
+  "phoneMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@7a8ab1759980702523981c5e34b119376a6c4eec/apk/ChinesePlayground.apk",
+  "tv": "https://q137663972-alt.github.io/chinese/apk/ChinesePlayground.apk",
+  "tvMirror": "https://cdn.jsdelivr.net/gh/q137663972-alt/chinese@7a8ab1759980702523981c5e34b119376a6c4eec/apk/ChinesePlayground.apk"
+};
