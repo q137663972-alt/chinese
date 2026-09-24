@@ -111,29 +111,27 @@
     try { if (typeof settings !== "undefined" && settings && !settings.tts) return false; } catch (e) {}
     return true;
   }
-  function tts(text, lang, mode) {
+  /* 独立语音函数：优先有道 MP3（用户手机实测可用），但 <audio> 受 autoplay 限制——
+     必须在用户手势 / 已解锁会话内调用，否则被静默拒绝；系统语音引擎兜底。
+     单独封装，开场 / 罚站 / 得分反馈统一走它（用户要求「封装一个单独的函数」）。 */
+  function say(text, lang, mode) {
     text = T(text); if (!text) return;
     if (!lang) lang = curLang();
-    /* ★ 2026-09-24 修正：手机/通用语音主路径回归「系统语音引擎优先」。
-       安卓 WebView 上系统 speechSynthesis 能出声、且不受 <audio> 的 autoplay 媒体策略限制；
-       之前把有道 MP3 当主路径，结果 <audio>.play() 在 setTimeout（非直接手势）上下文被 autoplay
-       静默拒绝 → 全部静音（"半句"退化为"完全没声"）。有道 MP3 仅作引擎不可用/失败兜底。
-       系统引擎本就串行，cancel 即打断，短台词靠延迟错峰即可，无需 queue/cut 介入。 */
-    if (ttsOn() && _nativeSpeak) {
-      try { _nativeSpeak(text, lang); return; } catch (e) {}
-    }
     var m = (mode === "queue") ? "queue" : "cut";
-    try {
-      if (typeof window.speakAudio === "function") { window.speakAudio(text, (window.__isTV ? 2 : 1), lang, m); return; }
-    } catch (e) {}
-    try {
-      if (window.speechSynthesis) {
-        var u = new SpeechSynthesisUtterance(text);
-        u.lang = lang; u.rate = 1; u.pitch = 1; u.volume = 1;
-        window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
-      }
-    } catch (e) {}
+    if (ttsOn()) {
+      try { if (typeof window.speakAudio === "function") { window.speakAudio(text, (window.__isTV ? 2 : 1), lang, m); return; } } catch (e) {}
+      try {
+        if (window.speechSynthesis) {
+          var u = new SpeechSynthesisUtterance(text);
+          u.lang = lang; u.rate = 1; u.pitch = 1; u.volume = 1;
+          window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+          return;
+        }
+      } catch (e) {}
+    }
   }
+  /* 兼容旧调用点（arenaTeacher / arenaReplay 等直接调 tts） */
+  function tts(text, lang, mode) { say(text, lang, mode); }
   /* 音效：正确/错误/倒计时/出局/夺冠，用振荡器即时合成 */
   function sfx(type) {
     var ac = audioCtx(); if (!ac) return;
@@ -764,8 +762,7 @@
   function startOpening() {
     S.phase = "opening";
     battleRender();
-    /* 开场老师语音（与气泡文案一致）：同学们，去操场集合！ */
-    later(function () { tts("同学们，去操场集合！", "zh-CN"); }, 400);
+    /* 开场老师语音已移到「开始游戏」点击手势内（arenaWhStart）播放，此处不再播，避免重复 / 被打断 */
     later(function () {
       S.phase = "countdown";
       countdown(5);
@@ -1138,7 +1135,13 @@
   /* 仓库界面全局控制 */
   window.arenaWhExchange = function (type) { exchangePiece(type); renderWarehouse(); };
   window.arenaWhEquip = function (type, img) { equipItem(type, img); renderWarehouse(); };
-  window.arenaWhStart = function () { var v = readInv(); beginArena(whHero, v.equipped); };
+  window.arenaWhStart = function () {
+    var v = readInv();
+    /* 在「开始游戏」点击手势内播开场语音：autoplay 策略要求手势上下文，否则 <audio> 被静默拒绝；
+       说完（按语音时长估算 ~2.6s）再真正进入开场，避免进场动画打断语音（用户要求「说完再进下一步」）。 */
+    try { say("同学们，去操场集合！", "zh-CN"); } catch (e) {}
+    setTimeout(function () { beginArena(whHero, v.equipped); }, 2600);
+  };
 
   /* 真正开打：应用佩戴、建 S、上台、开场（"同学们，去操场集合！"在此播放，Req 5） */
   function beginArena(heroIdx, equipped) {
